@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SanyaaDelivery.Domain\SanyaaDelivery.Domain.csproj" />
+    <ProjectReference Include="..\SanyaaDelivery.Infra.Data\SanyaaDelivery.Infra.Data.csproj" />
+  </ItemGroup>
+
+</Project>
