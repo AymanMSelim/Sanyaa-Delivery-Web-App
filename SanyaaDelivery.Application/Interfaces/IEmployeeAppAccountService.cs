@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Interfaces
 {
@@ -12,7 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
         /// </summary>
         /// <param name="id">Employee id</param>
         /// <returns>Return an object of LoginT class</returns>
-        LoginT Get(string id);
+        Task<LoginT> Get(string id);
 
         /// <summary>
         /// Get the date of last seen on mobile application

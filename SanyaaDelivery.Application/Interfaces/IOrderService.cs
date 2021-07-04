@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Interfaces
 {
@@ -9,7 +10,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         int GetOrdersCount(string employeeId, DateTime time);
 
-        RequestT Get(int orderId);
+        Task<RequestT> Get(int orderId);
 
         List<RequestT> GetEmployeeOrders(string employeeId, DateTime time);
 

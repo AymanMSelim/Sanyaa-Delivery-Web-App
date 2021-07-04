@@ -8,9 +8,7 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class EmployeeController : ControllerBase
+    public class EmployeeController : APIBaseController
     {
         private readonly IEmployeeService employeeService;
 

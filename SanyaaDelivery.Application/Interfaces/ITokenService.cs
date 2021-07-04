@@ -1,12 +1,12 @@
-﻿using SanyaaDelivery.Application.DTO;
+﻿using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace SanyaaDelivery.Application.Interfaces
 {
-    public interface IClientService
+    public interface ITokenService
     {
-        ClientDto GetAllClients();
+        string CreateToken(SystemUserT systemUser);
     }
 }

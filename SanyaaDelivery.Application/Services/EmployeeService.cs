@@ -1,11 +1,12 @@
 ﻿using SanyaaDelivery.Application.Interfaces;
-using SanyaaDelivery.Application.ModelViews;
+using SanyaaDelivery.Application.DTO;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -18,7 +19,7 @@ namespace SanyaaDelivery.Application.Services
             this.employeeRepository = employeeRepository;
         }
 
-        public EmployeeT Get(string id)
+        public Task<EmployeeT> Get(string id)
         {
             return employeeRepository.Get(id);
         }
@@ -29,7 +30,7 @@ namespace SanyaaDelivery.Application.Services
             //return employeeRepository.Where(d => d.DepartmentEmployeeT == null).Select(d => d.DepartmentEmployeeT.Select(d => d.Employee));
         }
 
-        public EmployeeModelView GetCustomInfo(string id)
+        public EmployeeDto GetCustomInfo(string id)
         {
             throw new NotImplementedException();
         }

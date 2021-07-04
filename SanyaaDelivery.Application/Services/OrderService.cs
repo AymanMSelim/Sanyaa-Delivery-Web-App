@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -17,7 +18,7 @@ namespace SanyaaDelivery.Application.Services
             this.orderRepository = orderRepository;
         }
 
-        public RequestT Get(int orderId)
+        public Task<RequestT> Get(int orderId)
         {
             return orderRepository.Get(orderId);
         }

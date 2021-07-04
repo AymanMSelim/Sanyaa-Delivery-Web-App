@@ -4,6 +4,7 @@ using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -16,24 +17,25 @@ namespace SanyaaDelivery.Application.Services
             this.accountRepository = accountRepository;
         }
         
-        public LoginT Get(string id)
+        public Task<LoginT> Get(string id)
         {
             return accountRepository.Get(id);
         }
 
         public bool IsActive(string id)
         {
-            return accountRepository.Get(id).LoginAccountState == 0 ? false : true;
+            var empLogin = Get(id).Result;
+            return empLogin.LoginAccountState == 0 ? false : true;
         }
 
         public bool IsOnline(string id)
         {
-            return accountRepository.Get(id).LastActiveTimestamp > DateTime.Now.AddMinutes(-3) ? true : false;
+            return accountRepository.Get(id).Result.LastActiveTimestamp > DateTime.Now.AddMinutes(-3) ? true : false;
         }
 
         public DateTime LastSeenTime(string id)
         {
-            return accountRepository.Get(id).LastActiveTimestamp;
+            return accountRepository.Get(id).Result.LastActiveTimestamp;
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using SanyaaDelivery.Application.Interfaces;
-using SanyaaDelivery.Application.ModelViews;
+using SanyaaDelivery.Application.DTO;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -16,9 +16,10 @@ namespace SanyaaDelivery.Application.Services
         {
             this.clientRepository = clientRepository;
         }
-        public ClientModelView GetAllClients()
+        public ClientDto GetAllClients()
         {
-            return new ClientModelView{ Clients = clientRepository.GetAll() };
+            //return new ClientDto{ Clients = clientRepository.GetAll() };
+            return null;
         }
     }
 }

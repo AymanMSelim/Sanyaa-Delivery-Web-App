@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SanyaaDelivery.Application.ModelViews
+namespace SanyaaDelivery.Application.DTO
 {
-    public class EmployeeModelView
+    public class EmployeeDto
     {
         public string Id { get; set; }
 

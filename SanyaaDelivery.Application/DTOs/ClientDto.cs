@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SanyaaDelivery.Application.ModelViews
+namespace SanyaaDelivery.Application.DTO
 {
-    public class ClientModelView
+    public class ClientDto
     {
         public IEnumerable<ClientT> Clients { get; set; }
     }

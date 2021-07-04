@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Domain
 {
@@ -18,9 +19,9 @@ namespace SanyaaDelivery.Domain
 
         void Delete(object id);
 
-        Entity Get(object id);
+        Task<Entity> Get(object id);
 
-        IEnumerable<Entity> GetAll();
+        Task<List<Entity>> GetAll();
 
         IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter);
     }

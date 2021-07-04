@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Infra.Data.Repositories
 {
@@ -25,19 +26,18 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 
         public void Delete(object id)
         {
-            Entity entity = Get(id);
+            Entity entity =  Get(id).Result;
             DbSet.Remove(entity);
         }
 
-        public Entity Get(object id)
+        public Task<Entity> Get(object id)
         {
-            return DbSet.Find(id);
-            
+            return DbSet.FindAsync(id);
         }
 
-        public IEnumerable<Entity> GetAll()
+        public Task<List<Entity>> GetAll()
         {
-            return DbSet;
+            return DbSet.ToListAsync();
         }
 
         public void Insert(Entity entity)
@@ -47,7 +47,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 
         public void Update(object id, Entity entity)
         {
-            Entity entity1 = Get(id);
+            Entity entity1 = Get(id).Result ;
             entity1 = entity;
             DbContext.Entry(entity1).State = EntityState.Modified;
         }
@@ -55,6 +55,11 @@ namespace SanyaaDelivery.Infra.Data.Repositories
         public IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter)
         {
             return DbSet.Where(filter);
+        }
+
+        public async void Save()
+        {
+            await DbContext.SaveChangesAsync();
         }
     }
 }
