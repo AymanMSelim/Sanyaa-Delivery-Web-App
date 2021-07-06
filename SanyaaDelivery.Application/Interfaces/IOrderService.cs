@@ -8,11 +8,17 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IOrderService
     {
-        int GetOrdersCount(string employeeId, DateTime time);
+        Task<int> GetOrdersCount(string employeeId, DateTime time);
+
+        Task<int> GetComlpeteOrdersCount(string employeeId, DateTime time);
+
+        Task<int> GetWaitingOrdersCount(string employeeId, DateTime time);
+
+        Task<int> GetCanceledOrdersCount(string employeeId, DateTime time);
 
         Task<RequestT> Get(int orderId);
 
-        List<RequestT> GetEmployeeOrders(string employeeId, DateTime time);
+        Task<List<RequestT>> GetEmployeeOrders(string employeeId, DateTime time);
 
     }
 }

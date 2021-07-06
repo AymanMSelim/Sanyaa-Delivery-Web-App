@@ -21,10 +21,20 @@ namespace SanyaaDelivery.Application.Services
         {
             var claims = new List<Claim>
            {
-               new Claim(JwtRegisteredClaimNames.NameId, systemUser.SystemUserId.ToString())
+               new Claim(JwtRegisteredClaimNames.NameId, systemUser.SystemUserId.ToString()),
+               new Claim(JwtRegisteredClaimNames.Name, systemUser.SystemUserUsername)
            };
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
-            var tokenDiscreptor = 
+            
+            var tokenDiscreptor = new SecurityTokenDescriptor();
+            tokenDiscreptor.SigningCredentials = creds;
+            tokenDiscreptor.Subject = new ClaimsIdentity(claims);
+            tokenDiscreptor.Expires = DateTime.Now.AddDays(1);
+            
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDiscreptor);
+            
+            return tokenHandler.WriteToken(token);
         }
     }
 }

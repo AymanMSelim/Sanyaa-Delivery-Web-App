@@ -9,10 +9,9 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
-    public class EmpDeptController : APIBaseController
+    public class EmpDeptController : APIBaseAuthorizeController
     {
         private readonly IEmpDeptService empDeptService;
-
 
         public EmpDeptController(IEmpDeptService empDeptService)
         {
