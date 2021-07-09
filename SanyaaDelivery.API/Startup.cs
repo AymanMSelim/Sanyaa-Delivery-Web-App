@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using SanyaaDelivery.API.ActionsFilter;
 
 namespace SanyaaDelivery.API
 {
@@ -43,8 +44,8 @@ namespace SanyaaDelivery.API
                         ValidateIssuer = false
                     };
                 });
-
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddDbContext<sanyaadatabaseContext>(options =>
                 options.UseMySql(
              Configuration.GetConnectionString("sanyaaDatabaseContext")

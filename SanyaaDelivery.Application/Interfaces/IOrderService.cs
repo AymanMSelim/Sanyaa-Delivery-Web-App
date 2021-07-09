@@ -1,4 +1,5 @@
-﻿using SanyaaDelivery.Domain.Models;
+﻿using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -19,6 +20,8 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<RequestT> Get(int orderId);
 
         Task<List<RequestT>> GetEmployeeOrders(string employeeId, DateTime time);
+
+        Task<List<OrderDto>> GetEmployeeOrdersCustom(string employeeId, DateTime day);
 
     }
 }
