@@ -23,6 +23,7 @@ namespace SanyaaDelivery.Domain.Models
 
         public BranchT Branch { get; set; }
         public SystemUserT SystemUser { get; set; }
+        public CleaningSubscribersT CleaningSubctibe { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
     }
 }

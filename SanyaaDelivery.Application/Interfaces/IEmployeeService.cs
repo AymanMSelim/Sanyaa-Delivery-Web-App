@@ -11,6 +11,8 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<EmployeeT> Get(string id);
 
+        Task<EmployeeT> GetWithBeancesAndTimetable(string id);
+
         EmployeeDto GetCustomInfo(string id);
 
         List<EmployeeT> GetByDepartment(string departmentName);

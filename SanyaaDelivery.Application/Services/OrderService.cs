@@ -13,7 +13,7 @@ namespace SanyaaDelivery.Application.Services
 {
     public class OrderService : IOrderService
     {
-        #region Oreder Status
+        #region Order Status
 
         static List<int> CompleteStatus = new List<int>
         {
@@ -43,22 +43,29 @@ namespace SanyaaDelivery.Application.Services
             this.orderRepository = orderRepository;
         }
 
-        public Task<RequestT> Get(int orderId)
+        public Task<RequestT> Get(int requestId)
         {
-            return orderRepository.Get(orderId);
+            return orderRepository.Get(requestId);
         }
 
-        public Task<int> GetCanceledOrdersCount(string employeeId, DateTime time)
+        public Task<RequestT> GetDetails(int requestId)
+        {
+            return orderRepository.Where(r => r.RequestId == requestId)
+                .Include("RequestServicesT")
+                .Include("RequestStagesT").FirstOrDefaultAsync();
+        }
+
+        public Task<int> GetCanceledOrdersCountByEmployee(string employeeId, DateTime time)
         {
             return orderRepository
               .Where(o => o.EmployeeId == employeeId
               && o.RequestTimestamp.Value.Year == time.Year
               && o.RequestTimestamp.Value.Month == time.Month
               && o.RequestTimestamp.Value.Day == time.Day
-              && o.RequestCanceledT != null).CountAsync();
+              && o.RequestCanceledT.Count > 0).CountAsync();
         }
 
-        public Task<int> GetComlpeteOrdersCount(string employeeId, DateTime time)
+        public Task<int> GetComlpeteOrdersCountByEmployee(string employeeId, DateTime time)
         {
             return orderRepository
               .Where(o => o.EmployeeId == employeeId
@@ -66,10 +73,10 @@ namespace SanyaaDelivery.Application.Services
               && o.RequestTimestamp.Value.Month == time.Month
               && o.RequestTimestamp.Value.Day == time.Day
               && CompleteStatus.Contains(o.RequestStatus)
-              && o.RequestCanceledT == null).CountAsync();
+              && o.RequestCanceledT.Count == 0).CountAsync();
         }
 
-        public Task<List<RequestT>> GetEmployeeOrders(string employeeId, DateTime time)
+        public Task<List<RequestT>> GetEmployeeOrdersList(string employeeId, DateTime time)
         {
             return orderRepository
                .Where(o => o.EmployeeId == employeeId
@@ -78,8 +85,48 @@ namespace SanyaaDelivery.Application.Services
                && o.RequestTimestamp.Value.Day == time.Day).ToListAsync();
         }
 
+        public Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(string employeeId, DateTime time)
+        {
+            return orderRepository
+               .Where(o => o.EmployeeId == employeeId
+               && o.RequestTimestamp.Value.Year == time.Year
+               && o.RequestTimestamp.Value.Month == time.Month
+               && o.RequestTimestamp.Value.Day == time.Day
+               && o.RequestCanceledT.Count == 0).ToListAsync();
+        }
 
-        public Task<List<OrderDto>> GetEmployeeOrdersCustom(string employeeId, DateTime day)
+        public Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(DateTime day)
+        {
+            return orderRepository
+               .Where(o => o.RequestTimestamp.Value.Year == day.Year
+               && o.RequestTimestamp.Value.Month == day.Month
+               && o.RequestTimestamp.Value.Day == day.Day
+               && o.RequestCanceledT.Count == 0
+               ).ToListAsync();
+        }
+
+        public Task<List<DayOrderDto>> GetDayOrdersCustom(DateTime day)
+        {
+            return orderRepository
+               .Where(o => o.RequestTimestamp.Value.Year == day.Year
+               && o.RequestTimestamp.Value.Month == day.Month
+               && o.RequestTimestamp.Value.Day == day.Day
+               ).Select(orderDay => new DayOrderDto
+               {
+                   Day = day,
+                   RequestId = orderDay.RequestId,
+                   ClientId = orderDay.ClientId,
+                   EmployeeId = orderDay.EmployeeId,
+                   RequestStatus = orderDay.RequestStatus,
+                   ClientName = orderDay.Client.ClientName,
+                   EmployeeName = orderDay.Employee.EmployeeName,
+                   IsCanceled = orderDay.RequestCanceledT.Count == 0 ? false : true,
+                   IsCleaningSubscriber = orderDay.Client.CleaningSubctibe == null ? false : true
+               }
+               ).ToListAsync();
+        }
+
+        public Task<List<OrderDto>> GetEmployeeOrdersCustomList(string employeeId, DateTime day)
         {
             var data = orderRepository
                .Where(o => o.EmployeeId == employeeId
@@ -95,23 +142,22 @@ namespace SanyaaDelivery.Application.Services
                    BranchName = d.Branch.BranchName,
                    OrderTime = d.RequestTimestamp,
                    OrderStatus = d.RequestStatus,
-                   IsCanceled = d.RequestCanceledT == null ? false : true,
+                   IsCanceled = d.RequestCanceledT.Count == 0 ? false : true,
                    OrderCost = d.RequestStagesT.Cost})
                .ToListAsync();
             return data;
         }
 
-        public Task<int> GetOrdersCount(string employeeId, DateTime time)
+        public Task<int> GetAllOrdersCountByEmployee(string employeeId, DateTime time)
         {
             return orderRepository
                 .Where(o => o.EmployeeId == employeeId
                 && o.RequestTimestamp.Value.Year == time.Year
                 && o.RequestTimestamp.Value.Month == time.Month
                 && o.RequestTimestamp.Value.Day == time.Day).CountAsync();
-               
         }
 
-        public Task<int> GetWaitingOrdersCount(string employeeId, DateTime time)
+        public Task<int> GetWaitingOrdersCountByEmployee(string employeeId, DateTime time)
         {
             return orderRepository
                  .Where(o => o.EmployeeId == employeeId
@@ -119,6 +165,22 @@ namespace SanyaaDelivery.Application.Services
                  && o.RequestTimestamp.Value.Month == time.Month
                  && o.RequestTimestamp.Value.Day == time.Day
                  && WaitingStatus.Contains(o.RequestStatus)).CountAsync();
+        }
+
+        public Task<int> GetOrdersExceptCanceledCountByEmployee(string employeeId, DateTime time)
+        {
+            return orderRepository
+               .Where(o => o.EmployeeId == employeeId
+               && o.RequestTimestamp.Value.Year == time.Year
+               && o.RequestTimestamp.Value.Month == time.Month
+               && o.RequestTimestamp.Value.Day == time.Day
+               && o.RequestCanceledT.Count == 0).CountAsync();
+        }
+
+        public Task<int> Add(RequestT request)
+        {
+            orderRepository.Insert(request);
+            return orderRepository.Save();
         }
     }
 }

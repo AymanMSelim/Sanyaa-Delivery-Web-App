@@ -18,6 +18,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<EmployeeT>, EmployeeRepository>();
             services.AddScoped<IRepository<DepartmentEmployeeT>, EmpDeptRepository>();
             services.AddScoped<IRepository<SystemUserT>, SystemUserRepository>();
+            services.AddScoped<IRepository<CleaningSubscribersT>, SubscribeRepository>();
 
 
 
@@ -28,6 +29,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IEmpDeptService, EmpDeptService>();
             services.AddScoped<ISystemUserService, SystemUserService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ICleaningSubscriberService, CleaningSubscriberService>();
         }
     }
 }

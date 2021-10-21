@@ -5,6 +5,9 @@ using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -20,6 +23,21 @@ namespace SanyaaDelivery.Application.Services
         {
             //return new ClientDto{ Clients = clientRepository.GetAll() };
             return null;
+        }
+
+        public Task<ClientT> GetById(int id)
+        {
+            return clientRepository.Get(id);
+        }
+
+        public Task<List<ClientT>> GetByName(string name)
+        {
+            return clientRepository.Where(c => c.ClientName.Contains(name)).ToListAsync();
+        }
+
+        public Task<ClientT> GetByPhone(string phone)
+        {
+            return clientRepository.Where(c => c.CurrentPhone == phone).FirstOrDefaultAsync();
         }
     }
 }

@@ -9,19 +9,21 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IOrderService
     {
-        Task<int> GetOrdersCount(string employeeId, DateTime time);
-
-        Task<int> GetComlpeteOrdersCount(string employeeId, DateTime time);
-
-        Task<int> GetWaitingOrdersCount(string employeeId, DateTime time);
-
-        Task<int> GetCanceledOrdersCount(string employeeId, DateTime time);
-
-        Task<RequestT> Get(int orderId);
-
-        Task<List<RequestT>> GetEmployeeOrders(string employeeId, DateTime time);
-
-        Task<List<OrderDto>> GetEmployeeOrdersCustom(string employeeId, DateTime day);
+        Task<int> GetAllOrdersCountByEmployee(string employeeId, DateTime time);
+        Task<int> GetComlpeteOrdersCountByEmployee(string employeeId, DateTime time);
+        Task<int> GetWaitingOrdersCountByEmployee(string employeeId, DateTime time);
+        Task<int> GetCanceledOrdersCountByEmployee(string employeeId, DateTime time);
+        Task<int> GetOrdersExceptCanceledCountByEmployee(string employeeId, DateTime time);
+        Task<RequestT> Get(int requestId);
+        Task<RequestT> GetDetails(int requestId);
+        Task<List<RequestT>> GetEmployeeOrdersList(string employeeId, DateTime time);
+        Task<List<OrderDto>> GetEmployeeOrdersCustomList(string employeeId, DateTime day);
+        Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(DateTime day);
+        Task<List<DayOrderDto>> GetDayOrdersCustom(DateTime day);
+        Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(string employeeId, DateTime day);
+        Task<int> Add(RequestT request);
 
     }
+
+
 }

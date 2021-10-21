@@ -11,19 +11,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{2870E6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InfrastructureData", "InfrastructureData", "{86443BFB-B0BB-49E2-B7C6-5E5E1276C4B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SanyaaDelivery.Infra.Data", "SanyaaDelivery.Infra.Data\SanyaaDelivery.Infra.Data.csproj", "{9BDB8082-8BD8-4670-8920-53D9755C81C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SanyaaDelivery.Infra.Data", "SanyaaDelivery.Infra.Data\SanyaaDelivery.Infra.Data.csproj", "{9BDB8082-8BD8-4670-8920-53D9755C81C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SanyaaDelivery.Application", "SanyaaDelivery.Application\SanyaaDelivery.Application.csproj", "{5EDE6896-8183-4DBE-861B-B200C2F5A823}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SanyaaDelivery.Application", "SanyaaDelivery.Application\SanyaaDelivery.Application.csproj", "{5EDE6896-8183-4DBE-861B-B200C2F5A823}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SanyaaDelivery.Domain", "SanyaaDelivery.Domain\SanyaaDelivery.Domain.csproj", "{3C9FBE04-0DC2-4A94-9620-291D8C67E236}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SanyaaDelivery.Domain", "SanyaaDelivery.Domain\SanyaaDelivery.Domain.csproj", "{3C9FBE04-0DC2-4A94-9620-291D8C67E236}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InfrastructureIoC", "InfrastructureIoC", "{D5EC4486-234E-480B-A85A-4EDD5C89BE06}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SanyaaDelivery.Infra.IoC", "SanyaaDelivery.Infra.IoC\SanyaaDelivery.Infra.IoC.csproj", "{EB56B9F6-6158-4054-8BF4-7CB1A0D6817B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SanyaaDelivery.Infra.IoC", "SanyaaDelivery.Infra.IoC\SanyaaDelivery.Infra.IoC.csproj", "{EB56B9F6-6158-4054-8BF4-7CB1A0D6817B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{D80557FB-B72F-48C6-B962-06FCAE01E7AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SanyaaDelivery.UI.MVC", "SanyaaDelivery.UI.MVC\SanyaaDelivery.UI.MVC.csproj", "{ACE80BB6-F62A-45D6-A96A-650E4E1B6554}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SanyaaDelivery.UI.MVC", "SanyaaDelivery.UI.MVC\SanyaaDelivery.UI.MVC.csproj", "{ACE80BB6-F62A-45D6-A96A-650E4E1B6554}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{27BC3BA8-029B-4A85-BA72-076AE9AEB4CD}"
 EndProject

@@ -24,5 +24,7 @@ namespace SanyaaDelivery.Domain
         Task<List<Entity>> GetAll();
 
         IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter);
+
+        Task<int> Save();
     }
 }

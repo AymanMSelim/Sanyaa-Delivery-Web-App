@@ -21,16 +21,15 @@ namespace SanyaaDelivery.Application.Services
         {
             var claims = new List<Claim>
            {
-               new Claim(JwtRegisteredClaimNames.NameId, systemUser.SystemUserId.ToString()),
-               new Claim(JwtRegisteredClaimNames.Name, systemUser.SystemUserUsername)
+               new Claim(ClaimTypes.NameIdentifier, systemUser.SystemUserId.ToString()),
+               new Claim(ClaimTypes.Name, systemUser.SystemUserUsername),
+               new Claim(ClaimTypes.Role, "Employee")
            };
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
-            
             var tokenDiscreptor = new SecurityTokenDescriptor();
             tokenDiscreptor.SigningCredentials = creds;
             tokenDiscreptor.Subject = new ClaimsIdentity(claims);
-            tokenDiscreptor.Expires = DateTime.Now.AddDays(1);
-            
+            tokenDiscreptor.Expires = DateTime.Now.AddDays(60);
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);
             

@@ -45,7 +45,7 @@ namespace SanyaaDelivery.API
                     };
                 });
             services.AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
             services.AddDbContext<sanyaadatabaseContext>(options =>
                 options.UseMySql(
              Configuration.GetConnectionString("sanyaaDatabaseContext")
@@ -68,7 +68,6 @@ namespace SanyaaDelivery.API
             app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
             app.UseHttpsRedirection();
             app.UseAuthentication();
-            
             app.UseMvc();
            
         }

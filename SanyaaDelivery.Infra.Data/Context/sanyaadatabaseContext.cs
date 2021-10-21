@@ -65,12 +65,12 @@ namespace SanyaaDelivery.Infra.Data.Context
         public virtual DbSet<TimetableT> TimetableT { get; set; }
         public virtual DbSet<VersionT> VersionT { get; set; }
         public virtual DbSet<WorkingAreaT> WorkingAreaT { get; set; }
+        public virtual DbSet<CleaningSubscribersT> CleaningSubscribers { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
                 optionsBuilder.UseMySql("server=localhost;database=sanyaadatabase;uid=user;password=user@5100");
             }
         }

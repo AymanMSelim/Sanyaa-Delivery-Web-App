@@ -15,12 +15,12 @@ namespace SanyaaDelivery.Infra.Data.Repositories
         public DbContext DbContext { get ; set; }
         public DbSet<Entity> DbSet { get ; set; }
 
-        sanyaadatabaseContext sanyaaContext;
+        //sanyaadatabaseContext sanyaaContext;
 
         public BaseRepository(sanyaadatabaseContext dbContext)
         {
             this.DbContext = dbContext;
-            this.sanyaaContext = dbContext;
+            //this.sanyaaContext = dbContext;
             DbSet = dbContext.Set<Entity>();
         }
 
@@ -57,9 +57,9 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             return DbSet.Where(filter);
         }
 
-        public async void Save()
+        public Task<int> Save()
         {
-            await DbContext.SaveChangesAsync();
+            return DbContext.SaveChangesAsync();
         }
     }
 }

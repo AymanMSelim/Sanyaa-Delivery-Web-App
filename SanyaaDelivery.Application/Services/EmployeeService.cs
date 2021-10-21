@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -22,6 +23,16 @@ namespace SanyaaDelivery.Application.Services
         public Task<EmployeeT> Get(string id)
         {
             return employeeRepository.Get(id);
+        }
+
+        public Task<EmployeeT> GetWithBeancesAndTimetable(string id)
+        {
+            return employeeRepository
+                .Where(d=> d.EmployeeId == id)
+                .Include("EmployeeWorkplacesT")
+                .Include("TimetableT")
+                .Include("FiredStaffT")
+                .FirstOrDefaultAsync();
         }
 
         public List<EmployeeT> GetByDepartment(string departmentName)
