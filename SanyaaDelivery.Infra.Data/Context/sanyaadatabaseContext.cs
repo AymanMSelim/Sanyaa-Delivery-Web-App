@@ -16,11 +16,16 @@ namespace SanyaaDelivery.Infra.Data.Context
         {
         }
 
+
+        public virtual DbSet<AccountRoleT> AccountRoleT { get; set; }
+        public virtual DbSet<AccountT> AccountT { get; set; }
+        public virtual DbSet<AccountTypeT> AccountTypeT { get; set; }
         public virtual DbSet<AddressT> AddressT { get; set; }
         public virtual DbSet<BillDetailsT> BillDetailsT { get; set; }
         public virtual DbSet<BillNumberT> BillNumberT { get; set; }
         public virtual DbSet<BranchT> BranchT { get; set; }
         public virtual DbSet<Cart> Cart { get; set; }
+        public virtual DbSet<CleaningSubscribersT> CleaningSubscribersT { get; set; }
         public virtual DbSet<ClientPhonesT> ClientPhonesT { get; set; }
         public virtual DbSet<ClientT> ClientT { get; set; }
         public virtual DbSet<DepartmentEmployeeT> DepartmentEmployeeT { get; set; }
@@ -37,6 +42,7 @@ namespace SanyaaDelivery.Infra.Data.Context
         public virtual DbSet<FawryChargeT> FawryChargeT { get; set; }
         public virtual DbSet<FiredStaffT> FiredStaffT { get; set; }
         public virtual DbSet<FollowUpT> FollowUpT { get; set; }
+        public virtual DbSet<GeneralDiscountT> GeneralDiscountT { get; set; }
         public virtual DbSet<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public virtual DbSet<LoginT> LoginT { get; set; }
         public virtual DbSet<MessagesT> MessagesT { get; set; }
@@ -49,23 +55,21 @@ namespace SanyaaDelivery.Infra.Data.Context
         public virtual DbSet<ProductReceiptT> ProductReceiptT { get; set; }
         public virtual DbSet<ProductSoldT> ProductSoldT { get; set; }
         public virtual DbSet<ProductT> ProductT { get; set; }
-        public virtual DbSet<Promocode> Promocode { get; set; }
         public virtual DbSet<QuantityHistoryT> QuantityHistoryT { get; set; }
         public virtual DbSet<RegestrationT> RegestrationT { get; set; }
-        public virtual DbSet<RejectRequestT> RejectRequestT { get; set; }
         public virtual DbSet<RequestCanceledT> RequestCanceledT { get; set; }
         public virtual DbSet<RequestComplaintT> RequestComplaintT { get; set; }
         public virtual DbSet<RequestDelayedT> RequestDelayedT { get; set; }
         public virtual DbSet<RequestServicesT> RequestServicesT { get; set; }
         public virtual DbSet<RequestStagesT> RequestStagesT { get; set; }
         public virtual DbSet<RequestT> RequestT { get; set; }
+        public virtual DbSet<RoleT> RoleT { get; set; }
         public virtual DbSet<ServiceT> ServiceT { get; set; }
         public virtual DbSet<SettingT> SettingT { get; set; }
         public virtual DbSet<SystemUserT> SystemUserT { get; set; }
         public virtual DbSet<TimetableT> TimetableT { get; set; }
         public virtual DbSet<VersionT> VersionT { get; set; }
         public virtual DbSet<WorkingAreaT> WorkingAreaT { get; set; }
-        public virtual DbSet<CleaningSubscribersT> CleaningSubscribers { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -75,18 +79,162 @@ namespace SanyaaDelivery.Infra.Data.Context
             }
         }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AccountRoleT>(entity =>
+            {
+                entity.HasKey(e => e.AccountRoleId);
+
+                entity.ToTable("account_role_t");
+
+                entity.HasIndex(e => e.AccountId)
+                    .HasName("fk_account_role_account_idx");
+
+                entity.HasIndex(e => e.RoleId)
+                    .HasName("account_role_role_idx");
+
+                entity.Property(e => e.AccountRoleId)
+                    .HasColumnName("account_role_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("account_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.IsAcive)
+                    .IsRequired()
+                    .HasColumnName("is_acive")
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("'b\\'1\\''");
+
+                entity.Property(e => e.RoleId)
+                    .HasColumnName("role_id")
+                    .HasColumnType("int(11)");
+
+                entity.HasOne(d => d.Account)
+                    .WithMany(p => p.AccountRoleT)
+                    .HasForeignKey(d => d.AccountId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_account_role_account");
+
+                entity.HasOne(d => d.Role)
+                    .WithMany(p => p.AccountRoleT)
+                    .HasForeignKey(d => d.RoleId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_account_type_role_role");
+            });
+
+            modelBuilder.Entity<AccountT>(entity =>
+            {
+                entity.HasKey(e => e.AccountId);
+
+                entity.ToTable("account_t");
+
+                entity.HasIndex(e => e.AccountTypeId)
+                    .HasName("fk_account_account_type_t_idx");
+
+                entity.HasIndex(e => e.SystemUserId)
+                    .HasName("fk_account_system_user_idx");
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("account_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AccountHashSlat)
+                    .IsRequired()
+                    .HasColumnName("account_hash_slat")
+                    .HasColumnType("longtext");
+
+                entity.Property(e => e.AccountPassword)
+                    .IsRequired()
+                    .HasColumnName("account_password")
+                    .HasColumnType("longtext");
+
+                entity.Property(e => e.AccountReferenceId)
+                    .HasColumnName("account_reference_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AccountSecurityCode)
+                    .HasColumnName("account_security_code")
+                    .HasColumnType("longtext");
+
+                entity.Property(e => e.AccountTypeId)
+                    .HasColumnName("account_type_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AccountUsername)
+                    .IsRequired()
+                    .HasColumnName("account_username")
+                    .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.CreationDate)
+                    .HasColumnName("creation_date")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasColumnName("is_active")
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("'b\\'1\\''");
+
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
+
+                entity.HasOne(d => d.AccountType)
+                    .WithMany(p => p.AccountT)
+                    .HasForeignKey(d => d.AccountTypeId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_account_account_type_t");
+
+                entity.HasOne(d => d.SystemUser)
+                    .WithMany(p => p.AccountT)
+                    .HasForeignKey(d => d.SystemUserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_account_system_user");
+            });
+
+            modelBuilder.Entity<AccountTypeT>(entity =>
+            {
+                entity.HasKey(e => e.AccountTypeId);
+
+                entity.ToTable("account_type_t");
+
+                entity.Property(e => e.AccountTypeId)
+                    .HasColumnName("account_type_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AccountTypeDes)
+                    .HasColumnName("account_type_des")
+                    .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.AccountTypeName)
+                    .IsRequired()
+                    .HasColumnName("account_type_name")
+                    .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasColumnName("is_active")
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("'b\\'1\\''");
+            });
+
             modelBuilder.Entity<AddressT>(entity =>
             {
                 entity.HasKey(e => e.AddressId);
 
                 entity.ToTable("address_t");
 
-                entity.Property(e => e.AddressId).HasColumnName("address_id");
+                entity.Property(e => e.AddressId)
+                    .HasColumnName("address_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.AddressBlockNum)
                     .HasColumnName("address_block_num")
+                    .HasColumnType("smallint(6)")
                     .HasDefaultValueSql("'0'");
 
                 entity.Property(e => e.AddressCity)
@@ -99,6 +247,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.AddressFlatNum)
                     .HasColumnName("address_flat_num")
+                    .HasColumnType("smallint(6)")
                     .HasDefaultValueSql("'0'");
 
                 entity.Property(e => e.AddressGov)
@@ -113,7 +262,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("address_street")
                     .HasColumnType("text");
 
-                entity.Property(e => e.ClientId).HasColumnName("client_id");
+                entity.Property(e => e.ClientId)
+                    .HasColumnName("client_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Latitude).HasColumnType("varchar(75)");
 
@@ -132,7 +283,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("bill_number")
                     .HasColumnType("varchar(45)");
 
-                entity.Property(e => e.BillType).HasColumnName("bill_type");
+                entity.Property(e => e.BillType)
+                    .HasColumnName("bill_type")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.BillCost).HasColumnName("bill_cost");
 
@@ -171,9 +324,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Request)
                     .WithMany(p => p.BillNumberT)
@@ -200,9 +357,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("branch_phone_UNIQUE")
                     .IsUnique();
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchBlockNum).HasColumnName("branch_block_num");
+                entity.Property(e => e.BranchBlockNum)
+                    .HasColumnName("branch_block_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.BranchCity)
                     .IsRequired()
@@ -213,7 +374,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("branch_des")
                     .HasColumnType("varchar(150)");
 
-                entity.Property(e => e.BranchFlatNum).HasColumnName("branch_flat_num");
+                entity.Property(e => e.BranchFlatNum)
+                    .HasColumnName("branch_flat_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.BranchGov)
                     .IsRequired()
@@ -245,7 +408,9 @@ namespace SanyaaDelivery.Infra.Data.Context
             {
                 entity.ToTable("cart");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Barcode)
                     .IsRequired()
@@ -255,7 +420,42 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .IsRequired()
                     .HasColumnType("text");
 
-                entity.Property(e => e.Qte).HasColumnName("QTE");
+                entity.Property(e => e.Qte)
+                    .HasColumnName("QTE")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.UserId).HasColumnType("int(11)");
+            });
+
+            modelBuilder.Entity<CleaningSubscribersT>(entity =>
+            {
+                entity.ToTable("cleaning_subscribers_t");
+
+                entity.HasIndex(e => e.ClientId)
+                    .HasName("IX_CleaningSubscribers_ClientId");
+
+                entity.HasIndex(e => e.SystemUserId)
+                    .HasName("IX_CleaningSubscribers_SystemUserId");
+
+                entity.Property(e => e.Id).HasColumnType("int(11)");
+
+                entity.Property(e => e.ClientId).HasColumnType("int(11)");
+
+                entity.Property(e => e.Package).HasColumnType("int(11)");
+
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnType("int(11)")
+                    .HasDefaultValueSql("'0'");
+
+                entity.HasOne(d => d.Client)
+                    .WithMany(p => p.CleaningSubscribersT)
+                    .HasForeignKey(d => d.ClientId)
+                    .HasConstraintName("FK_CleaningSubscribers_client_t_ClientId");
+
+                entity.HasOne(d => d.SystemUser)
+                    .WithMany(p => p.CleaningSubscribersT)
+                    .HasForeignKey(d => d.SystemUserId)
+                    .HasConstraintName("FK_CleaningSubscribers_system_user_t_SystemUserId");
             });
 
             modelBuilder.Entity<ClientPhonesT>(entity =>
@@ -268,7 +468,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("client_phone_UNIQUE")
                     .IsUnique();
 
-                entity.Property(e => e.ClientId).HasColumnName("client_id");
+                entity.Property(e => e.ClientId)
+                    .HasColumnName("client_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ClientPhone)
                     .HasColumnName("client_phone")
@@ -276,6 +478,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.Active)
                     .HasColumnName("active")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'0'");
 
                 entity.Property(e => e.Code)
@@ -298,12 +501,19 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.BranchId)
                     .HasName("fk_client_t_branch_t1_idx");
 
+                entity.HasIndex(e => e.ClientName)
+                    .HasName("name_index");
+
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("fk_client_systemuser_idx");
 
-                entity.Property(e => e.ClientId).HasColumnName("client_id");
+                entity.Property(e => e.ClientId)
+                    .HasColumnName("client_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ClientEmail)
                     .HasColumnName("client_email")
@@ -326,7 +536,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
 
-                entity.Property(e => e.CurrentAddress).HasColumnName("current_address");
+                entity.Property(e => e.CurrentAddress)
+                    .HasColumnName("current_address")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.CurrentPhone)
                     .HasColumnName("current_phone")
@@ -334,6 +546,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.SystemUserId)
                     .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)")
                     .HasDefaultValueSql("'500'");
 
                 entity.HasOne(d => d.Branch)
@@ -415,7 +628,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("dept")
                     .IsUnique();
 
-                entity.Property(e => e.DepartmentId).HasColumnName("department_id");
+                entity.Property(e => e.DepartmentId)
+                    .HasColumnName("department_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.DepartmentDes)
                     .HasColumnName("department_des")
@@ -461,7 +676,9 @@ namespace SanyaaDelivery.Infra.Data.Context
             {
                 entity.ToTable("discount_t");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Discount2).HasColumnName("discount2");
 
@@ -539,7 +756,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("employee_id")
                     .HasColumnType("varchar(14)");
 
-                entity.Property(e => e.EmployeeBlockNum).HasColumnName("employee_block_num");
+                entity.Property(e => e.EmployeeBlockNum)
+                    .HasColumnName("employee_block_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeCity)
                     .HasColumnName("employee_city")
@@ -554,7 +773,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("employee_file_num")
                     .HasColumnType("varchar(10)");
 
-                entity.Property(e => e.EmployeeFlatNum).HasColumnName("employee_flat_num");
+                entity.Property(e => e.EmployeeFlatNum)
+                    .HasColumnName("employee_flat_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeGov)
                     .HasColumnName("employee_gov")
@@ -569,6 +790,10 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .IsRequired()
                     .HasColumnName("employee_name")
                     .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.EmployeePercentage)
+                    .HasColumnName("employee_percentage")
+                    .HasDefaultValueSql("'70'");
 
                 entity.Property(e => e.EmployeePhone)
                     .IsRequired()
@@ -596,6 +821,11 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.Property(e => e.EmployeeStreet)
                     .HasColumnName("employee_street")
                     .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.EmployeeType)
+                    .HasColumnName("employee_type")
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("'1'");
             });
 
             modelBuilder.Entity<EmployeeWorkplacesT>(entity =>
@@ -614,7 +844,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("employee_id")
                     .HasColumnType("varchar(14)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Branch)
                     .WithMany(p => p.EmployeeWorkplacesT)
@@ -644,28 +876,36 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("employee_national_id_UNIQUE")
                     .IsUnique();
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ApplicationStatus)
                     .HasColumnName("application_status")
                     .HasColumnType("varchar(10)")
                     .HasDefaultValueSql("'جديد'");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Department)
                     .IsRequired()
                     .HasColumnName("department")
                     .HasColumnType("varchar(25)");
 
-                entity.Property(e => e.EmployeeBlockNum).HasColumnName("employee_block_num");
+                entity.Property(e => e.EmployeeBlockNum)
+                    .HasColumnName("employee_block_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeDes)
                     .HasColumnName("employee_des")
                     .HasColumnType("varchar(100)")
                     .HasDefaultValueSql("'null'");
 
-                entity.Property(e => e.EmployeeFlatNum).HasColumnName("employee_flat_num");
+                entity.Property(e => e.EmployeeFlatNum)
+                    .HasColumnName("employee_flat_num")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeName)
                     .IsRequired()
@@ -715,9 +955,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.RequestId)
                     .HasName("fk_request_idx");
 
-                entity.Property(e => e.ChargeId).HasColumnName("charge_id");
+                entity.Property(e => e.ChargeId)
+                    .HasColumnName("charge_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Charge)
                     .WithMany(p => p.FawryChargeRequestT)
@@ -743,7 +987,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.FawryRefNumber)
                     .HasName("fk_fawry_charge_t_idx");
 
-                entity.Property(e => e.SystemId).HasColumnName("system_id");
+                entity.Property(e => e.SystemId)
+                    .HasColumnName("system_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ChargeAmount).HasColumnName("charge_amount");
 
@@ -760,7 +1006,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("employee_id")
                     .HasColumnType("varchar(14)");
 
-                entity.Property(e => e.FawryRefNumber).HasColumnName("fawry_ref_number");
+                entity.Property(e => e.FawryRefNumber)
+                    .HasColumnName("fawry_ref_number")
+                    .HasColumnType("bigint(20)");
 
                 entity.Property(e => e.IsConfirmed)
                     .HasColumnName("is_confirmed")
@@ -814,7 +1062,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("system_user_fk_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Timestamp)
                     .HasColumnName("timestamp")
@@ -825,7 +1075,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("behavior")
                     .HasColumnType("varchar(15)");
 
-                entity.Property(e => e.Cleaness).HasColumnName("cleaness");
+                entity.Property(e => e.Cleaness)
+                    .HasColumnName("cleaness")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.Paid).HasColumnName("paid");
 
@@ -833,11 +1085,15 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("prices")
                     .HasColumnType("varchar(15)");
 
-                entity.Property(e => e.Product).HasColumnName("product");
+                entity.Property(e => e.Product)
+                    .HasColumnName("product")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.ProductCost).HasColumnName("product_cost");
 
-                entity.Property(e => e.Rate).HasColumnName("rate");
+                entity.Property(e => e.Rate)
+                    .HasColumnName("rate")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.Reason)
                     .HasColumnName("reason")
@@ -850,11 +1106,16 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.SystemUserId)
                     .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)")
                     .HasDefaultValueSql("'1'");
 
-                entity.Property(e => e.Time).HasColumnName("time");
+                entity.Property(e => e.Time)
+                    .HasColumnName("time")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.Tps).HasColumnName("tps");
+                entity.Property(e => e.Tps)
+                    .HasColumnName("tps")
+                    .HasColumnType("tinyint(4)");
 
                 entity.HasOne(d => d.Request)
                     .WithMany(p => p.FollowUpT)
@@ -865,6 +1126,79 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .WithMany(p => p.FollowUpT)
                     .HasForeignKey(d => d.SystemUserId)
                     .HasConstraintName("system_user_fk");
+            });
+
+            modelBuilder.Entity<GeneralDiscountT>(entity =>
+            {
+                entity.HasKey(e => e.DiscountId);
+
+                entity.ToTable("general_discount_t");
+
+                entity.HasIndex(e => e.ServiceId)
+                    .HasName("fk_discount_service_id_idx");
+
+                entity.HasIndex(e => e.SystemUserId)
+                    .HasName("fk_discount_system_user_idx");
+
+                entity.Property(e => e.DiscountId)
+                    .HasColumnName("discount_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.CreationDate)
+                    .HasColumnName("creation_date")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
+
+                entity.Property(e => e.DepartmentId)
+                    .HasColumnName("department_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.DiscountAppliedTo)
+                    .IsRequired()
+                    .HasColumnName("discount_applied_to")
+                    .HasColumnType("varchar(15)");
+
+                entity.Property(e => e.DiscountTarget)
+                    .HasColumnName("discount_target")
+                    .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.DiscountType)
+                    .HasColumnName("discount_type")
+                    .HasColumnType("tinyint(4)");
+
+                entity.Property(e => e.DiscountValidFrom)
+                    .HasColumnName("discount_valid_from")
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.DiscountValidTo)
+                    .HasColumnName("discount_valid_to")
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.DiscountValue).HasColumnName("discount_value");
+
+                entity.Property(e => e.IsActive)
+                    .HasColumnName("is_active")
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("'1'");
+
+                entity.Property(e => e.ServiceId)
+                    .HasColumnName("service_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
+
+                entity.HasOne(d => d.Service)
+                    .WithMany(p => p.GeneralDiscountT)
+                    .HasForeignKey(d => d.ServiceId)
+                    .HasConstraintName("fk_discount_service_id");
+
+                entity.HasOne(d => d.SystemUser)
+                    .WithMany(p => p.GeneralDiscountT)
+                    .HasForeignKey(d => d.SystemUserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_discount_system_user");
             });
 
             modelBuilder.Entity<IncreaseDiscountT>(entity =>
@@ -889,11 +1223,17 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("increase_discount_reason")
                     .HasColumnType("varchar(45)");
 
-                entity.Property(e => e.IncreaseDiscountType).HasColumnName("increase_discount_type");
+                entity.Property(e => e.IncreaseDiscountType)
+                    .HasColumnName("increase_discount_type")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.IncreaseDiscountValue).HasColumnName("increase_discount_value");
+                entity.Property(e => e.IncreaseDiscountValue)
+                    .HasColumnName("increase_discount_value")
+                    .HasColumnType("smallint(6)");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Employee)
                     .WithMany(p => p.IncreaseDiscountT)
@@ -928,6 +1268,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.LoginAccountState)
                     .HasColumnName("login_account_state")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'1'");
 
                 entity.Property(e => e.LoginAvailability)
@@ -972,6 +1313,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.IsRead)
                     .HasColumnName("is_read")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'0'");
 
                 entity.Property(e => e.Title)
@@ -988,7 +1330,9 @@ namespace SanyaaDelivery.Infra.Data.Context
             {
                 entity.ToTable("notifications");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Body)
                     .IsRequired()
@@ -1005,11 +1349,17 @@ namespace SanyaaDelivery.Infra.Data.Context
             {
                 entity.ToTable("partiner_cart_t");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ServiceCount).HasColumnName("service_count");
+                entity.Property(e => e.ServiceCount)
+                    .HasColumnName("service_count")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ServiceId).HasColumnName("service_id");
+                entity.Property(e => e.ServiceId)
+                    .HasColumnName("service_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.SystemUsername)
                     .IsRequired()
@@ -1026,9 +1376,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.RequestId)
                     .HasName("partiner_request_fk_idx");
 
-                entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+                entity.Property(e => e.PaymentId)
+                    .HasColumnName("payment_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Payment)
                     .WithMany(p => p.PartinerPaymentRequestT)
@@ -1049,7 +1403,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("partiner_systemuser_fk_idx");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Amount).HasColumnName("amount");
 
@@ -1066,7 +1422,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.SystemUser)
                     .WithMany(p => p.PartinerPaymentT)
@@ -1087,7 +1445,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("fk_payment_t_system_user_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Payment).HasColumnName("payment");
 
@@ -1096,7 +1456,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Request)
                     .WithOne(p => p.PaymentT)
@@ -1116,7 +1478,9 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.ToTable("poll");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.Employee)
                     .IsRequired()
@@ -1165,9 +1529,13 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.ToTable("product_receipt_t");
 
-                entity.Property(e => e.ReceiptId).HasColumnName("receipt_id");
+                entity.Property(e => e.ReceiptId)
+                    .HasColumnName("receipt_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ProductReceiptPaid).HasColumnName("product_receipt_paid");
 
@@ -1197,9 +1565,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.ReceiptId)
                     .HasName("fk_product_receipt_t_has_product_t_product_receipt_t1_idx");
 
-                entity.Property(e => e.ReceiptId).HasColumnName("receipt_id");
+                entity.Property(e => e.ReceiptId)
+                    .HasColumnName("receipt_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ProductId).HasColumnName("product_id");
+                entity.Property(e => e.ProductId)
+                    .HasColumnName("product_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ProductSoldNote)
                     .HasColumnName("product_sold_note")
@@ -1208,7 +1580,9 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.ProductSoldPrice).HasColumnName("product_sold_price");
 
-                entity.Property(e => e.ProductSoldQuantity).HasColumnName("product_sold_quantity");
+                entity.Property(e => e.ProductSoldQuantity)
+                    .HasColumnName("product_sold_quantity")
+                    .HasColumnType("smallint(6)");
 
                 entity.HasOne(d => d.Product)
                     .WithMany(p => p.ProductSoldT)
@@ -1235,9 +1609,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("product_name_UNIQUE")
                     .IsUnique();
 
-                entity.Property(e => e.ProductId).HasColumnName("product_id");
+                entity.Property(e => e.ProductId)
+                    .HasColumnName("product_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ProductCustomerPrice).HasColumnName("product_customer_price");
 
@@ -1258,61 +1636,15 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.ProductPriceSell).HasColumnName("product_price_sell");
 
-                entity.Property(e => e.ProductQuantity).HasColumnName("product_quantity");
+                entity.Property(e => e.ProductQuantity)
+                    .HasColumnName("product_quantity")
+                    .HasColumnType("smallint(6)");
 
                 entity.HasOne(d => d.Branch)
                     .WithMany(p => p.ProductT)
                     .HasForeignKey(d => d.BranchId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("fk_products_t_branch_t1");
-            });
-
-            modelBuilder.Entity<Promocode>(entity =>
-            {
-                entity.ToTable("promocode");
-
-                entity.Property(e => e.Code)
-                    .IsRequired()
-                    .HasColumnType("varchar(25)");
-
-                entity.Property(e => e.DateEx)
-                    .IsRequired()
-                    .HasColumnName("Date_Ex")
-                    .HasColumnType("varchar(100)");
-
-                entity.Property(e => e.DisAmount)
-                    .IsRequired()
-                    .HasColumnName("Dis_Amount")
-                    .HasColumnType("varchar(10)");
-
-                entity.Property(e => e.DisPercent)
-                    .IsRequired()
-                    .HasColumnName("Dis_Percent")
-                    .HasColumnType("varchar(10)");
-
-                entity.Property(e => e.MinimumCharge)
-                    .IsRequired()
-                    .HasColumnName("Minimum_Charge")
-                    .HasColumnType("varchar(10)");
-
-                entity.Property(e => e.NumMax)
-                    .IsRequired()
-                    .HasColumnName("Num_Max")
-                    .HasColumnType("varchar(10)");
-
-                entity.Property(e => e.NumNow)
-                    .IsRequired()
-                    .HasColumnName("Num_Now")
-                    .HasColumnType("varchar(10)");
-
-                entity.Property(e => e.Type)
-                    .IsRequired()
-                    .HasColumnType("varchar(25)");
-
-                entity.Property(e => e.UserId)
-                    .IsRequired()
-                    .HasColumnName("User_ID")
-                    .HasColumnType("varchar(10)");
             });
 
             modelBuilder.Entity<QuantityHistoryT>(entity =>
@@ -1329,9 +1661,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
 
-                entity.Property(e => e.ProductId).HasColumnName("product_id");
+                entity.Property(e => e.ProductId)
+                    .HasColumnName("product_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.QuantityHistory).HasColumnName("quantity_history");
+                entity.Property(e => e.QuantityHistory)
+                    .HasColumnName("quantity_history")
+                    .HasColumnType("smallint(6)");
 
                 entity.Property(e => e.SystemUsername)
                     .HasColumnName("system_username")
@@ -1362,7 +1698,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("regestration_phone")
                     .HasColumnType("varchar(11)");
 
-                entity.Property(e => e.RegestrationAge).HasColumnName("regestration_age");
+                entity.Property(e => e.RegestrationAge)
+                    .HasColumnName("regestration_age")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.RegestrationCity)
                     .IsRequired()
@@ -1374,7 +1712,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("regestration_department")
                     .HasColumnType("varchar(25)");
 
-                entity.Property(e => e.RegestrationExperience).HasColumnName("regestration_experience");
+                entity.Property(e => e.RegestrationExperience)
+                    .HasColumnName("regestration_experience")
+                    .HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.RegestrationGov)
                     .IsRequired()
@@ -1401,34 +1741,6 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasDefaultValueSql("'لا'");
             });
 
-            modelBuilder.Entity<RejectRequestT>(entity =>
-            {
-                entity.ToTable("reject_request_t");
-
-                entity.HasIndex(e => e.EmployeeId)
-                    .HasName("fk_reject_request_t_employee_t1_idx");
-
-                entity.HasIndex(e => e.RequestId)
-                    .HasName("fk_reject_request_t_request_t1_idx");
-
-                entity.Property(e => e.EmployeeId)
-                    .IsRequired()
-                    .HasColumnName("employee_id")
-                    .HasColumnType("varchar(14)");
-
-                entity.Property(e => e.RejectRequestTimestamp)
-                    .HasColumnName("reject_request_timestamp")
-                    .HasColumnType("datetime")
-                    .HasDefaultValueSql("'CURRENT_TIMESTAMP'");
-
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
-
-                entity.HasOne(d => d.Employee)
-                    .WithMany(p => p.RejectRequestT)
-                    .HasForeignKey(d => d.EmployeeId)
-                    .HasConstraintName("fk_reject_request_t_employee_t1");
-            });
-
             modelBuilder.Entity<RequestCanceledT>(entity =>
             {
                 entity.HasKey(e => new { e.RequestId, e.CancelRequestTimestamp });
@@ -1438,7 +1750,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("fk_cancel_request_t_system_user_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.CancelRequestTimestamp)
                     .HasColumnName("cancel_request_timestamp")
@@ -1450,7 +1764,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("cancel_request_reason")
                     .HasColumnType("text");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Request)
                     .WithMany(p => p.RequestCanceledT)
@@ -1476,7 +1792,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => new { e.RequestId, e.NewRequestId })
                     .HasName("fk_request_complaint_t_request_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.ComplaintTimestamp)
                     .HasColumnName("complaint_timestamp")
@@ -1493,9 +1811,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("varchar(3)")
                     .HasDefaultValueSql("'لا'");
 
-                entity.Property(e => e.NewRequestId).HasColumnName("new_request_id");
+                entity.Property(e => e.NewRequestId)
+                    .HasColumnName("new_request_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Request)
                     .WithMany(p => p.RequestComplaintT)
@@ -1521,7 +1843,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("fk_delay_request_t_system_user_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.DelayRequestTimestamp)
                     .HasColumnName("delay_request_timestamp")
@@ -1537,7 +1861,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("delay_request_reason")
                     .HasColumnType("text");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Request)
                     .WithMany(p => p.RequestDelayedT)
@@ -1563,9 +1889,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.ServiceId)
                     .HasName("fk_requests_t_has_service_t_service_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ServiceId).HasColumnName("service_id");
+                entity.Property(e => e.ServiceId)
+                    .HasColumnName("service_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.AddTimestamp)
                     .HasColumnName("add_timestamp")
@@ -1574,6 +1904,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.RequestServicesQuantity)
                     .HasColumnName("request_services_quantity")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'1'");
 
                 entity.HasOne(d => d.Request)
@@ -1596,7 +1927,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.RequestId)
                     .HasName("fk_request_stages_request_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.AcceptTimestamp)
                     .HasColumnName("accept_timestamp")
@@ -1610,6 +1943,7 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.PaymentFlag)
                     .HasColumnName("payment_flag")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'0'");
 
                 entity.Property(e => e.ReceiveTimestamp)
@@ -1642,14 +1976,26 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.EmployeeId)
                     .HasName("fk_request_t_employee_t1_idx");
 
+                entity.HasIndex(e => e.RequestStatus)
+                    .HasName("status_index");
+
+                entity.HasIndex(e => e.RequestTimestamp)
+                    .HasName("timestamp_index");
+
                 entity.HasIndex(e => e.SystemUserId)
                     .HasName("fk_request_t_system_user_t1_idx");
 
-                entity.Property(e => e.RequestId).HasColumnName("request_id");
+                entity.Property(e => e.RequestId)
+                    .HasColumnName("request_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ClientId).HasColumnName("client_id");
+                entity.Property(e => e.ClientId)
+                    .HasColumnName("client_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeId)
                     .HasColumnName("employee_id")
@@ -1666,13 +2012,16 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.RequestStatus)
                     .HasColumnName("request_status")
+                    .HasColumnType("tinyint(4)")
                     .HasDefaultValueSql("'1'");
 
                 entity.Property(e => e.RequestTimestamp)
                     .HasColumnName("request_timestamp")
                     .HasColumnType("datetime");
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Branch)
                     .WithMany(p => p.RequestT)
@@ -1697,6 +2046,32 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasConstraintName("fk_request_t_system_user_t1");
             });
 
+            modelBuilder.Entity<RoleT>(entity =>
+            {
+                entity.HasKey(e => e.RoleId);
+
+                entity.ToTable("role_t");
+
+                entity.Property(e => e.RoleId)
+                    .HasColumnName("role_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.IsActive)
+                    .IsRequired()
+                    .HasColumnName("is_active")
+                    .HasColumnType("bit(1)")
+                    .HasDefaultValueSql("'b\\'1\\''");
+
+                entity.Property(e => e.RoleDes)
+                    .HasColumnName("role_des")
+                    .HasColumnType("varchar(45)");
+
+                entity.Property(e => e.RoleName)
+                    .IsRequired()
+                    .HasColumnName("role_name")
+                    .HasColumnType("varchar(45)");
+            });
+
             modelBuilder.Entity<ServiceT>(entity =>
             {
                 entity.HasKey(e => e.ServiceId);
@@ -1706,11 +2081,17 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.HasIndex(e => e.DepartmentId)
                     .HasName("fk_service_t_department_sub1t1_idx");
 
-                entity.Property(e => e.ServiceId).HasColumnName("service_id");
+                entity.Property(e => e.ServiceId)
+                    .HasColumnName("service_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.DepartmentId).HasColumnName("department_id");
+                entity.Property(e => e.DepartmentId)
+                    .HasColumnName("department_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.ServiceCost).HasColumnName("service_cost");
+                entity.Property(e => e.ServiceCost)
+                    .HasColumnName("service_cost")
+                    .HasColumnType("smallint(6)");
 
                 entity.Property(e => e.ServiceDes)
                     .HasColumnName("service_des")
@@ -1734,7 +2115,9 @@ namespace SanyaaDelivery.Infra.Data.Context
             {
                 entity.ToTable("setting_t");
 
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.FawryAutoUpdateStausFlag)
                     .HasColumnName("fawry_auto_update_staus_flag")
@@ -1765,9 +2148,13 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasName("system_user_username_UNIQUE")
                     .IsUnique();
 
-                entity.Property(e => e.SystemUserId).HasColumnName("system_user_id");
+                entity.Property(e => e.SystemUserId)
+                    .HasColumnName("system_user_id")
+                    .HasColumnType("int(11)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.EmployeeId)
                     .IsRequired()
@@ -1816,15 +2203,25 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("timetable_date")
                     .HasColumnType("date");
 
-                entity.Property(e => e.Timetable1).HasColumnName("timetable_1");
+                entity.Property(e => e.Timetable1)
+                    .HasColumnName("timetable_1")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.Timetable10).HasColumnName("timetable_10");
+                entity.Property(e => e.Timetable10)
+                    .HasColumnName("timetable_10")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.Timetable4).HasColumnName("timetable_4");
+                entity.Property(e => e.Timetable4)
+                    .HasColumnName("timetable_4")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.Timetable7).HasColumnName("timetable_7");
+                entity.Property(e => e.Timetable7)
+                    .HasColumnName("timetable_7")
+                    .HasColumnType("tinyint(4)");
 
-                entity.Property(e => e.Timetable9).HasColumnName("timetable_9");
+                entity.Property(e => e.Timetable9)
+                    .HasColumnName("timetable_9")
+                    .HasColumnType("tinyint(4)");
 
                 entity.HasOne(d => d.Employee)
                     .WithMany(p => p.TimetableT)
@@ -1839,7 +2236,9 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.ToTable("version_t");
 
-                entity.Property(e => e.VersionNumber).HasColumnName("version_number");
+                entity.Property(e => e.VersionNumber)
+                    .HasColumnName("version_number")
+                    .HasColumnType("int(11)");
             });
 
             modelBuilder.Entity<WorkingAreaT>(entity =>
@@ -1863,7 +2262,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("working_area_region")
                     .HasColumnType("varchar(25)");
 
-                entity.Property(e => e.BranchId).HasColumnName("branch_id");
+                entity.Property(e => e.BranchId)
+                    .HasColumnName("branch_id")
+                    .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.Branch)
                     .WithMany(p => p.WorkingAreaT)

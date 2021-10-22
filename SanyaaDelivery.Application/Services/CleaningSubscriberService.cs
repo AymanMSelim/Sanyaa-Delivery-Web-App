@@ -34,7 +34,10 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> EditPackage(int clientId, int newPackage)
         {
-            throw new NotImplementedException();
+            var oldPackage = GetInfo(clientId).Result;
+            oldPackage.Package = newPackage;
+            subscribeRepository.Update(oldPackage.Id, oldPackage);
+            return subscribeRepository.Save();
         }
 
         public Task<CleaningSubscribersT> GetInfo(int clientId)

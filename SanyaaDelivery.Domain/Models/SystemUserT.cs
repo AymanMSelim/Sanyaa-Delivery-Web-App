@@ -7,9 +7,12 @@ namespace SanyaaDelivery.Domain.Models
     {
         public SystemUserT()
         {
+            AccountT = new HashSet<AccountT>();
             BillNumberT = new HashSet<BillNumberT>();
+            CleaningSubscribersT = new HashSet<CleaningSubscribersT>();
             ClientT = new HashSet<ClientT>();
             FollowUpT = new HashSet<FollowUpT>();
+            GeneralDiscountT = new HashSet<GeneralDiscountT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
             PartinerPaymentT = new HashSet<PartinerPaymentT>();
             PaymentT = new HashSet<PaymentT>();
@@ -28,9 +31,12 @@ namespace SanyaaDelivery.Domain.Models
 
         public BranchT Branch { get; set; }
         public EmployeeT Employee { get; set; }
+        public ICollection<AccountT> AccountT { get; set; }
         public ICollection<BillNumberT> BillNumberT { get; set; }
+        public ICollection<CleaningSubscribersT> CleaningSubscribersT { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
+        public ICollection<GeneralDiscountT> GeneralDiscountT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public ICollection<PartinerPaymentT> PartinerPaymentT { get; set; }
         public ICollection<PaymentT> PaymentT { get; set; }

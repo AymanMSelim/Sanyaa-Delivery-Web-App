@@ -12,5 +12,7 @@ namespace SanyaaDelivery.Application.DTO
 
         [Required]
         public string Password { get; set; }
+
+        public int? AccountType { get; set; }
     }
 }

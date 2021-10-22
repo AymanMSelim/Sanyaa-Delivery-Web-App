@@ -121,7 +121,7 @@ namespace SanyaaDelivery.Application.Services
                    ClientName = orderDay.Client.ClientName,
                    EmployeeName = orderDay.Employee.EmployeeName,
                    IsCanceled = orderDay.RequestCanceledT.Count == 0 ? false : true,
-                   IsCleaningSubscriber = orderDay.Client.CleaningSubctibe == null ? false : true
+                   IsCleaningSubscriber = orderDay.Client.CleaningSubscribersT == null ? false : true
                }
                ).ToListAsync();
         }

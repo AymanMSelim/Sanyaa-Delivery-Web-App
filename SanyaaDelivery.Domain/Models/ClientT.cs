@@ -7,6 +7,7 @@ namespace SanyaaDelivery.Domain.Models
     {
         public ClientT()
         {
+            CleaningSubscribersT = new HashSet<CleaningSubscribersT>();
             RequestT = new HashSet<RequestT>();
         }
 
@@ -23,7 +24,7 @@ namespace SanyaaDelivery.Domain.Models
 
         public BranchT Branch { get; set; }
         public SystemUserT SystemUser { get; set; }
-        public CleaningSubscribersT CleaningSubctibe { get; set; }
+        public ICollection<CleaningSubscribersT> CleaningSubscribersT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
     }
 }

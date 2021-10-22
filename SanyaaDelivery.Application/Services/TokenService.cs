@@ -17,22 +17,22 @@ namespace SanyaaDelivery.Application.Services
         {
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
         }
-        public string CreateToken(SystemUserT systemUser)
+        public string CreateToken(string userId, string username, List<AccountRoleT> roles)
         {
-            var claims = new List<Claim>
-           {
-               new Claim(ClaimTypes.NameIdentifier, systemUser.SystemUserId.ToString()),
-               new Claim(ClaimTypes.Name, systemUser.SystemUserUsername),
-               new Claim(ClaimTypes.Role, "Employee")
-           };
+            var claims = new List<Claim>();
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+            claims.Add(new Claim(ClaimTypes.Name, username));
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role.Role.RoleName));
+            }
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
             var tokenDiscreptor = new SecurityTokenDescriptor();
             tokenDiscreptor.SigningCredentials = creds;
             tokenDiscreptor.Subject = new ClaimsIdentity(claims);
-            tokenDiscreptor.Expires = DateTime.Now.AddDays(60);
+            tokenDiscreptor.Expires = DateTime.Now.AddDays(1);
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);
-            
             return tokenHandler.WriteToken(token);
         }
     }

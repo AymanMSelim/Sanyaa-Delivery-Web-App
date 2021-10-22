@@ -7,6 +7,7 @@ namespace SanyaaDelivery.Domain.Models
     {
         public ServiceT()
         {
+            GeneralDiscountT = new HashSet<GeneralDiscountT>();
             RequestServicesT = new HashSet<RequestServicesT>();
         }
 
@@ -18,6 +19,7 @@ namespace SanyaaDelivery.Domain.Models
         public string ServiceDes { get; set; }
 
         public DepartmentSub1T Department { get; set; }
+        public ICollection<GeneralDiscountT> GeneralDiscountT { get; set; }
         public ICollection<RequestServicesT> RequestServicesT { get; set; }
     }
 }

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
+    [Authorize(Roles = "Administrator,EmployeeApp")]
     public class EmployeeController : APIBaseAuthorizeController
     {
         private readonly IEmployeeService employeeService;
