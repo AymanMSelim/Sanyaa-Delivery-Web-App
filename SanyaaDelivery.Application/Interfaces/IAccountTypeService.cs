@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IAccountTypeService
     {
-        Task<List<AccountTypeT>> GetList(bool getActiveOnly);
+        Task<List<AccountTypeT>> GetList();
 
         Task<int> Add(AccountTypeT accountType);
     }

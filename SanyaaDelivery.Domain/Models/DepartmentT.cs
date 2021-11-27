@@ -13,6 +13,8 @@ namespace SanyaaDelivery.Domain.Models
 
         public string DepartmentName { get; set; }
         public string DepartmentImage { get; set; }
+        public int? DepartmentId { get; set; }
+        public string DepartmentDes { get; set; }
 
         public ICollection<DepartmentEmployeeT> DepartmentEmployeeT { get; set; }
         public ICollection<DepartmentSub0T> DepartmentSub0T { get; set; }

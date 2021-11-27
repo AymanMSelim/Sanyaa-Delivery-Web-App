@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Application.Services;
 using SanyaaDelivery.Domain.Models;

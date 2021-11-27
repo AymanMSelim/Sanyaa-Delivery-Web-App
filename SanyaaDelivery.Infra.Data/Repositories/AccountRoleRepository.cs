@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class AccountRoleRepository : BaseRepository<AccountRoleT>
     {
-        public AccountRoleRepository(sanyaadatabaseContext dbContext) : base(dbContext)
+        public AccountRoleRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
         {
 
         }

@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class OrderRepository : BaseRepository<RequestT>
     {
-        public OrderRepository(sanyaadatabaseContext dbContext) : base(dbContext)
+        public OrderRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
         {
 
         }

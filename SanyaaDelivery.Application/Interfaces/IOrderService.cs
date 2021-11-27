@@ -1,4 +1,4 @@
-﻿using SanyaaDelivery.Application.DTOs;
+﻿using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -16,6 +16,11 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> GetOrdersExceptCanceledCountByEmployee(string employeeId, DateTime time);
         Task<RequestT> Get(int requestId);
         Task<RequestT> GetDetails(int requestId);
+
+        Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStatus, bool? getCanceled,
+            bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, bool? getService = null, bool? getPrice = null,
+            bool? includeClient = null, bool? includeEmployee = null);
+
         Task<List<RequestT>> GetEmployeeOrdersList(string employeeId, DateTime time);
         Task<List<OrderDto>> GetEmployeeOrdersCustomList(string employeeId, DateTime day);
         Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(DateTime day);

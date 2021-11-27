@@ -8,6 +8,6 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class SystemUserRepository : BaseRepository<SystemUserT>
     {
-        public SystemUserRepository(sanyaadatabaseContext dbContext) : base(dbContext) { }
+        public SystemUserRepository(SanyaaDatabaseContext dbContext) : base(dbContext) { }
     }
 }

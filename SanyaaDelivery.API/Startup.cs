@@ -46,12 +46,17 @@ namespace SanyaaDelivery.API
                 });
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
-            services.AddDbContext<sanyaadatabaseContext>(options =>
+            services.AddDbContext<SanyaaDatabaseContext>(options =>
                 options.UseMySql(
              Configuration.GetConnectionString("sanyaaDatabaseContext")
              ));
             DependencyContainer.RegisterServices(services);
             services.AddCors();
+            //App.Global.SMS.SMSMisrService.SetParameters(
+            //    Configuration.GetConnectionString("SMSMisrUsername"),
+            //    Configuration.GetConnectionString("SMSMisrPassword"),
+            //    Configuration.GetConnectionString("SMSMisrSender")
+            //    );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,6 +73,16 @@ namespace SanyaaDelivery.API
             app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
             app.UseHttpsRedirection();
             app.UseAuthentication();
+            app.UseStaticFiles(new StaticFileOptions()
+            {
+                OnPrepareResponse = (context) =>
+                {
+                    if (!context.Context.User.Identity.IsAuthenticated)
+                    {
+                        throw new Exception("Not authenticated");
+                    }
+                }
+            });
             app.UseMvc();
            
         }

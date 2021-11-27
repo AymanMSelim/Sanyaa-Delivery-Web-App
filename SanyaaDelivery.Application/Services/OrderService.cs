@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
@@ -15,22 +15,22 @@ namespace SanyaaDelivery.Application.Services
     {
         #region Order Status
 
-        static List<int> CompleteStatus = new List<int>
+        static readonly List<int> CompleteStatus = new List<int>
         {
             14 ,20
         };
 
-        static List<int> WaitingStatus = new List<int>
+        static readonly List<int> WaitingStatus = new List<int>
         {
             11, 12, 1
         };
 
-        static List<int> InExcution = new List<int>
+        static readonly List<int> InExcution = new List<int>
         {
             13
         };
 
-        static List<int> Rejected = new List<int>
+        static readonly List<int> Rejected = new List<int>
         {
             2
         };
@@ -120,8 +120,8 @@ namespace SanyaaDelivery.Application.Services
                    RequestStatus = orderDay.RequestStatus,
                    ClientName = orderDay.Client.ClientName,
                    EmployeeName = orderDay.Employee.EmployeeName,
-                   IsCanceled = orderDay.RequestCanceledT.Count == 0 ? false : true,
-                   IsCleaningSubscriber = orderDay.Client.CleaningSubscribersT == null ? false : true
+                   IsCanceled = orderDay.RequestCanceledT.Count != 0,
+                   IsCleaningSubscriber = orderDay.Client.CleaningSubscribersT != null
                }
                ).ToListAsync();
         }
@@ -142,7 +142,7 @@ namespace SanyaaDelivery.Application.Services
                    BranchName = d.Branch.BranchName,
                    OrderTime = d.RequestTimestamp,
                    OrderStatus = d.RequestStatus,
-                   IsCanceled = d.RequestCanceledT.Count == 0 ? false : true,
+                   IsCanceled = d.RequestCanceledT.Count != 0,
                    OrderCost = d.RequestStagesT.Cost})
                .ToListAsync();
             return data;
@@ -177,9 +177,49 @@ namespace SanyaaDelivery.Application.Services
                && o.RequestCanceledT.Count == 0).CountAsync();
         }
 
+        public Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStaus, bool? getCanceled,
+            bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, bool? getService = null, bool? getPrice = null,
+            bool? includeClient = null, bool? includeEmployee = null)
+        {
+            var data = orderRepository.DbSet.AsQueryable();
+            if (startDate.HasValue)
+            {
+                data = data.Where(d => d.RequestTimestamp >= startDate);
+            }
+            if (endDate.HasValue)
+            {
+                data = data.Where(d => d.RequestTimestamp <= endDate);
+            }
+            if (requestId.HasValue)
+            {
+                data = data.Where(d => d.RequestId == requestId);
+            }
+            if (clientId.HasValue)
+            {
+                data = data.Where(d => d.ClientId == clientId) ;
+            }
+            if (systemUserId.HasValue)
+            {
+                data = data.Where(d => d.SystemUserId == systemUserId);
+            }
+            if (requestStaus.HasValue)
+            {
+                data = data.Where(d => d.RequestStatus == requestStaus);
+            }
+            if (getCanceled.HasValue)
+            {
+                data = data.Where(d => d.RequestCanceledT.Any() == getCanceled);
+            }
+            if (!string.IsNullOrEmpty(employeeId))
+            {
+                data = data.Where(d => d.EmployeeId == employeeId);
+            }
+            return data.ToListAsync();
+        }
+
         public Task<int> Add(RequestT request)
         {
-            orderRepository.Insert(request);
+            orderRepository.Add(request);
             return orderRepository.Save();
         }
     }

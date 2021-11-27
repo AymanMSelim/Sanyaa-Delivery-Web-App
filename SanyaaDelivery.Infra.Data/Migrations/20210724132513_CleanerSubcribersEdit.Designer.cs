@@ -8,7 +8,7 @@ using SanyaaDelivery.Infra.Data.Context;
 
 namespace SanyaaDelivery.Infra.Data.Migrations
 {
-    [DbContext(typeof(sanyaadatabaseContext))]
+    [DbContext(typeof(SanyaaDatabaseContext))]
     [Migration("20210724132513_CleanerSubcribersEdit")]
     partial class CleanerSubcribersEdit
     {

@@ -25,12 +25,12 @@ namespace SanyaaDelivery.Application.Services
         public bool IsActive(string id)
         {
             var empLogin = Get(id).Result;
-            return empLogin.LoginAccountState == 0 ? false : true;
+            return empLogin.LoginAccountState != 0;
         }
 
         public bool IsOnline(string id)
         {
-            return accountRepository.Get(id).Result.LastActiveTimestamp > DateTime.Now.AddMinutes(-3) ? true : false;
+            return accountRepository.Get(id).Result.LastActiveTimestamp > DateTime.Now.AddMinutes(-3);
         }
 
         public DateTime LastSeenTime(string id)

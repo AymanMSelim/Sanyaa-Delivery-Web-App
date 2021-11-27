@@ -19,18 +19,22 @@ namespace SanyaaDelivery.Application.Services
         }
         public string CreateToken(string userId, string username, List<AccountRoleT> roles)
         {
-            var claims = new List<Claim>();
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
-            claims.Add(new Claim(ClaimTypes.Name, username));
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(ClaimTypes.Name, username)
+            };
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role.Role.RoleName));
             }
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
-            var tokenDiscreptor = new SecurityTokenDescriptor();
-            tokenDiscreptor.SigningCredentials = creds;
-            tokenDiscreptor.Subject = new ClaimsIdentity(claims);
-            tokenDiscreptor.Expires = DateTime.Now.AddDays(1);
+            var tokenDiscreptor = new SecurityTokenDescriptor
+            {
+                SigningCredentials = creds,
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(1)
+            };
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);
             return tokenHandler.WriteToken(token);

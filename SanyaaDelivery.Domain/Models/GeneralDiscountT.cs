@@ -5,20 +5,25 @@ namespace SanyaaDelivery.Domain.Models
 {
     public partial class GeneralDiscountT
     {
-        public int DiscountId { get; set; }
-        public sbyte DiscountType { get; set; }
-        public double DiscountValue { get; set; }
-        public string DiscountAppliedTo { get; set; }
-        public sbyte IsActive { get; set; }
-        public int? DepartmentId { get; set; }
-        public int? ServiceId { get; set; }
-        public DateTime DiscountValidFrom { get; set; }
-        public DateTime DiscountValidTo { get; set; }
-        public int SystemUserId { get; set; }
-        public DateTime CreationDate { get; set; }
-        public string DiscountTarget { get; set; }
+        public GeneralDiscountT()
+        {
+            RequestDiscountT = new HashSet<RequestDiscountT>();
+        }
 
-        public ServiceT Service { get; set; }
+        public int DiscountId { get; set; }
+        public int DiscountTypeId { get; set; }
+        public double DiscountValue { get; set; }
+        public string DiscountRefernceId { get; set; }
+        public DateTime DiscountValidDateFrom { get; set; }
+        public DateTime DiscountValidDateTo { get; set; }
+        public double DiscountCompanyPercantage { get; set; }
+        public int SystemUserId { get; set; }
+        public double DiscountEmployeePercantage { get; set; }
+        public bool? IsActive { get; set; }
+        public DateTime CreationDate { get; set; }
+
+        public DiscountTypeT DiscountType { get; set; }
         public SystemUserT SystemUser { get; set; }
+        public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> AddSubscribe(int clientId, int package, int userId)
         {
-            subscribeRepository.Insert(new CleaningSubscribersT
+            subscribeRepository.Add(new CleaningSubscribersT
             {
                 SubscribeDate = DateTime.Now,
                 Package = package,

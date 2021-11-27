@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
+    [Authorize]
     public class APIBaseAuthorizeController : APIBaseController
     {
     }

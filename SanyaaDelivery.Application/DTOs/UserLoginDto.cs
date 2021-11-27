@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace SanyaaDelivery.Application.DTO
+namespace SanyaaDelivery.Domain.DTO
 {
     public class UserLoginDto
     {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -38,7 +38,7 @@ namespace SanyaaDelivery.API.Controllers
         [HttpGet("GetCleanerInfo")]
         public async Task<ActionResult<EmployeeT>> GetCleanerInfoWithOrders(string employeeId, DateTime? dateTime = null)
         {
-            EmployeeT employee = new EmployeeT();
+            EmployeeT employee;
             if(dateTime == null) { dateTime = DateTime.Now; };
             employee = await employeeService.GetWithBeancesAndTimetable(employeeId.Trim());
             employee.RequestT = await orderService.GetEmployeeOrdersExceptCanceledList(employeeId.Trim(), dateTime.Value);

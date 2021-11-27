@@ -1,4 +1,4 @@
-﻿using SanyaaDelivery.Application.DTO;
+﻿using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -16,5 +16,7 @@ namespace SanyaaDelivery.Application.Interfaces
         EmployeeDto GetCustomInfo(string id);
 
         List<EmployeeT> GetByDepartment(string departmentName);
+
+        Task<int> Add(EmployeeT employee);
     }
 }

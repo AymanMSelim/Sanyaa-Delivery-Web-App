@@ -10,8 +10,10 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<AccountT> Get(int id);
 
-        Task<AccountT> Get(int accountType, int referenceId);
+        Task<AccountT> Get(int accountType, string referenceId);
 
         Task<int> Add(AccountT account);
+
+        Task<int> Update(AccountT account);
     }
 }

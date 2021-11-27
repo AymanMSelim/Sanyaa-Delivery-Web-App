@@ -7,7 +7,7 @@ using SanyaaDelivery.Infra.Data.Context;
 
 namespace SanyaaDelivery.Infra.Data.Migrations
 {
-    [DbContext(typeof(sanyaadatabaseContext))]
+    [DbContext(typeof(SanyaaDatabaseContext))]
     partial class sanyaadatabaseContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

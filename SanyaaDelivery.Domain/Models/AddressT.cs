@@ -17,5 +17,7 @@ namespace SanyaaDelivery.Domain.Models
         public string Location { get; set; }
         public string Latitude { get; set; }
         public string Longitude { get; set; }
+
+        public ClientT Client { get; set; }
     }
 }

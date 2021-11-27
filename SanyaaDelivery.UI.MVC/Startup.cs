@@ -34,7 +34,7 @@ namespace SanyaaDelivery.UI.MVC
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddDbContext<sanyaadatabaseContext>(options =>
+            services.AddDbContext<SanyaaDatabaseContext>(options =>
             options.UseMySql(
                 Configuration.GetConnectionString("sanyaaDatabaseContext")
                 ));

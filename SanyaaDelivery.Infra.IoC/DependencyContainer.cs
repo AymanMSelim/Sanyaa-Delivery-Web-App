@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using App.Global.Fawry;
+using App.Global.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Application.Services;
 using SanyaaDelivery.Domain;
@@ -23,6 +25,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<AccountRoleT>, AccountRoleRepository>();
             services.AddScoped<IRepository<AccountTypeT>, AccountTypeRepository>();
             services.AddScoped<IRepository<RoleT>, RoleRepository>();
+            services.AddScoped<IRepository<WorkingAreaT>, WorkingAreaRepository>();
 
 
 
@@ -38,6 +41,10 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IAccountTypeService, AccountTypeService>();
             services.AddScoped<IAccountRoleService, AccountRoleService>();
             services.AddScoped<IRoleService, RoleService>();
+            services.AddScoped<IFawryService, FawryService>();
+            services.AddScoped<IRegisterService, RegisterService>();
+            services.AddScoped<IWorkingAreaService, WorkingAreaService>();
+            services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
 
         }
     }

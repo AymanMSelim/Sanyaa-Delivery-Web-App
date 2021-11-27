@@ -1,5 +1,5 @@
 ﻿using SanyaaDelivery.Application.Interfaces;
-using SanyaaDelivery.Application.DTO;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -41,6 +41,11 @@ namespace SanyaaDelivery.Application.Services
             //return employeeRepository.Where(d => d.DepartmentEmployeeT == null).Select(d => d.DepartmentEmployeeT.Select(d => d.Employee));
         }
 
+        public Task<int> Add(EmployeeT employee)
+        {
+            employeeRepository.Add(employee);
+            return employeeRepository.Save();
+        }
         public EmployeeDto GetCustomInfo(string id)
         {
             throw new NotImplementedException();

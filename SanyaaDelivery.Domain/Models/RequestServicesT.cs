@@ -9,6 +9,8 @@ namespace SanyaaDelivery.Domain.Models
         public int ServiceId { get; set; }
         public sbyte RequestServicesQuantity { get; set; }
         public DateTime? AddTimestamp { get; set; }
+        public int? ServicePrice { get; set; }
+        public double? ServiceDiscount { get; set; }
 
         public RequestT Request { get; set; }
         public ServiceT Service { get; set; }

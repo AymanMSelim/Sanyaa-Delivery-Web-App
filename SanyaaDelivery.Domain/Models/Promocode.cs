@@ -5,7 +5,6 @@ namespace SanyaaDelivery.Domain.Models
 {
     public partial class Promocode
     {
-        public int Id { get; set; }
         public string Code { get; set; }
         public string Type { get; set; }
         public string DateEx { get; set; }
@@ -15,5 +14,6 @@ namespace SanyaaDelivery.Domain.Models
         public string DisAmount { get; set; }
         public string DisPercent { get; set; }
         public string UserId { get; set; }
+        public int PromocodeId { get; set; }
     }
 }

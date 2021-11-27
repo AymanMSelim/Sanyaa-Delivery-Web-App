@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class EmployeeApplicationAccountRepository : BaseRepository<LoginT>
     {
-        public EmployeeApplicationAccountRepository(sanyaadatabaseContext dbContext) : base(dbContext)
+        public EmployeeApplicationAccountRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
         {
                 
         }

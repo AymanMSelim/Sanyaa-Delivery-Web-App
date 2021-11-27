@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SanyaaDelivery.Application.DTO
+namespace SanyaaDelivery.Domain.DTO
 {
     public class ClientDto
     {

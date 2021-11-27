@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SanyaaDelivery.Application.DTOs
+namespace SanyaaDelivery.Domain.DTOs
 {
     public class SystemUserDto
     {

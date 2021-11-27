@@ -5,12 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DTOs\**" />
+    <EmbeddedResource Remove="DTOs\**" />
+    <None Remove="DTOs\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="2.1.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.11.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SanyaaDelivery.Domain\SanyaaDelivery.Domain.csproj" />
+    <ProjectReference Include="..\SanyaaDelivery.Global\App.Global.csproj" />
     <ProjectReference Include="..\SanyaaDelivery.Infra.Data\SanyaaDelivery.Infra.Data.csproj" />
   </ItemGroup>
 

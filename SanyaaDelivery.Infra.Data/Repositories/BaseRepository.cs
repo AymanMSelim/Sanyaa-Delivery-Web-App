@@ -17,7 +17,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 
         //sanyaadatabaseContext sanyaaContext;
 
-        public BaseRepository(sanyaadatabaseContext dbContext)
+        public BaseRepository(SanyaaDatabaseContext dbContext)
         {
             this.DbContext = dbContext;
             //this.sanyaaContext = dbContext;
@@ -40,16 +40,16 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             return DbSet.ToListAsync();
         }
 
-        public void Insert(Entity entity)
+        public void Add(Entity entity)
         {
             DbSet.Add(entity);
         }
 
-        public void Update(object id, Entity entity)
+        public void Update(object id, Entity updatedEntity)
         {
-            Entity entity1 = Get(id).Result ;
-            entity1 = entity;
-            DbContext.Entry(entity1).State = EntityState.Modified;
+            Entity entity = Get(id).Result ;
+            entity = updatedEntity;
+            DbContext.Entry(entity).State = EntityState.Modified;
         }
 
         public IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter)

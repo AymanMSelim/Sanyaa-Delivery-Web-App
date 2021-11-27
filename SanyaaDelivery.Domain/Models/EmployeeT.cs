@@ -12,6 +12,7 @@ namespace SanyaaDelivery.Domain.Models
             FawryChargeT = new HashSet<FawryChargeT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
             MessagesT = new HashSet<MessagesT>();
+            RejectRequestT = new HashSet<RejectRequestT>();
             RequestT = new HashSet<RequestT>();
             SystemUserT = new HashSet<SystemUserT>();
             TimetableT = new HashSet<TimetableT>();
@@ -43,6 +44,7 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<FawryChargeT> FawryChargeT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public ICollection<MessagesT> MessagesT { get; set; }
+        public ICollection<RejectRequestT> RejectRequestT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
         public ICollection<SystemUserT> SystemUserT { get; set; }
         public ICollection<TimetableT> TimetableT { get; set; }

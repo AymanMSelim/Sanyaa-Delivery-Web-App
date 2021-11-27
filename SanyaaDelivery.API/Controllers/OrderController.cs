@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SanyaaDelivery.API.ActionsFilter;
-using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -41,7 +41,7 @@ namespace SanyaaDelivery.API.Controllers
                     return BadRequest(new { Message = "Error happend while adding your request" });
                 }
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 return BadRequest(new { Message = "Exception happen" });
             }
@@ -73,6 +73,13 @@ namespace SanyaaDelivery.API.Controllers
             {
                 return NoContent();
             }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("GetList")]
+        public async Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStatus, bool? getCanceled)
+        {
+            return await orderService.GetList(startDate, endDate, requestId, clientId, employeeId, systemUserId, requestStatus, getCanceled);
         }
 
         [HttpGet("GetEmployeeOrders")]

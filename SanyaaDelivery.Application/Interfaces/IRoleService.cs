@@ -10,6 +10,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<RoleT> Get(int id);
 
+        Task<List<RoleT>> GetList();
 
         Task<int> Add(RoleT role);
     }

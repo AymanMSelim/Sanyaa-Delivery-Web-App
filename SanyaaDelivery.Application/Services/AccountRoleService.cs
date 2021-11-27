@@ -19,7 +19,7 @@ namespace SanyaaDelivery.Application.Services
         }
         public Task<int> Add(AccountRoleT accountRole)
         {
-            accountRoleRepository.Insert(accountRole);
+            accountRoleRepository.Add(accountRole);
             return accountRoleRepository.Save();
         }
 

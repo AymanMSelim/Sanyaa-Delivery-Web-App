@@ -9,7 +9,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
     public class SubscribeRepository : BaseRepository<CleaningSubscribersT>
     {
 
-        public SubscribeRepository(sanyaadatabaseContext dbContext) : base(dbContext)
+        public SubscribeRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
         {
 
         }

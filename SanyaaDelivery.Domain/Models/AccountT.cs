@@ -15,8 +15,13 @@ namespace SanyaaDelivery.Domain.Models
         public string AccountPassword { get; set; }
         public string AccountHashSlat { get; set; }
         public int AccountTypeId { get; set; }
-        public int? AccountReferenceId { get; set; }
+        public string AccountReferenceId { get; set; }
         public string AccountSecurityCode { get; set; }
+        public string MobileOtpCode { get; set; }
+        public bool? IsMobileVerfied { get; set; }
+        public string EmailOtpCode { get; set; }
+        public DateTime? LastOtpCreationTime { get; set; }
+        public bool? IsEmailVerfied { get; set; }
         public bool? IsActive { get; set; }
         public DateTime CreationDate { get; set; }
         public int SystemUserId { get; set; }

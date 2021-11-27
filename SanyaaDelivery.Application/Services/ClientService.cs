@@ -1,5 +1,5 @@
 ﻿using SanyaaDelivery.Application.Interfaces;
-using SanyaaDelivery.Application.DTO;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -37,7 +37,13 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<ClientT> GetByPhone(string phone)
         {
-            return clientRepository.Where(c => c.CurrentPhone == phone).FirstOrDefaultAsync();
+            return clientRepository.Where(c => c.ClientPhonesT.Where(p => p.ClientPhone == phone).Any()).FirstOrDefaultAsync();
+        }
+
+        public Task<int> Add(ClientT client)
+        {
+            clientRepository.Add(client);
+            return clientRepository.Save();
         }
     }
 }

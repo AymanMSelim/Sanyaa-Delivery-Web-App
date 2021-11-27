@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SanyaaDelivery.Application.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Application.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace SanyaaDelivery.API.Controllers
                 EmployeeId = employeeId,
                 LastActive = account.LastActiveTimestamp,
                 IsActive = account.LastActiveTimestamp > DateTime.Now.AddMinutes(-3),
-                IsEnabled = account.LoginAccountState == 0 ? false : true,
+                IsEnabled = account.LoginAccountState != 0,
                 Message = account.LoginAccountDeactiveMessage
             });
         }
