@@ -19,7 +19,7 @@ namespace SanyaaDelivery.Application.Services
         
         public Task<LoginT> Get(string id)
         {
-            return accountRepository.Get(id);
+            return accountRepository.GetAsync(id);
         }
 
         public bool IsActive(string id)
@@ -30,12 +30,12 @@ namespace SanyaaDelivery.Application.Services
 
         public bool IsOnline(string id)
         {
-            return accountRepository.Get(id).Result.LastActiveTimestamp > DateTime.Now.AddMinutes(-3);
+            return accountRepository.GetAsync(id).Result.LastActiveTimestamp > DateTime.Now.AddMinutes(-3);
         }
 
         public DateTime LastSeenTime(string id)
         {
-            return accountRepository.Get(id).Result.LastActiveTimestamp;
+            return accountRepository.GetAsync(id).Result.LastActiveTimestamp;
         }
     }
 }

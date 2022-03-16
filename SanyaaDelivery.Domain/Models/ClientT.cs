@@ -12,6 +12,7 @@ namespace SanyaaDelivery.Domain.Models
             ClientPhonesT = new HashSet<ClientPhonesT>();
             ClientPointT = new HashSet<ClientPointT>();
             RequestT = new HashSet<RequestT>();
+            SiteT = new HashSet<SiteT>();
         }
 
         public int ClientId { get; set; }
@@ -33,5 +34,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<ClientPhonesT> ClientPhonesT { get; set; }
         public ICollection<ClientPointT> ClientPointT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
+        public ICollection<SiteT> SiteT { get; set; }
     }
 }

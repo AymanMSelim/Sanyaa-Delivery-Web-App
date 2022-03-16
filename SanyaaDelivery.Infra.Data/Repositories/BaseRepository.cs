@@ -24,42 +24,97 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             DbSet = dbContext.Set<Entity>();
         }
 
-        public void Delete(object id)
+        public async Task DeleteAsync(object id)
         {
-            Entity entity =  Get(id).Result;
-            DbSet.Remove(entity);
+            try
+            {
+                Entity entity = await GetAsync(id);
+                DbSet.Remove(entity);
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
+          
         }
 
-        public Task<Entity> Get(object id)
+        public Task<Entity> GetAsync(object id)
         {
-            return DbSet.FindAsync(id);
+            try
+            {
+                return DbSet.FindAsync(id);
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return null;
+            }
         }
 
-        public Task<List<Entity>> GetAll()
+        public Task<List<Entity>> GetListAsync()
         {
-            return DbSet.ToListAsync();
+            try
+            {
+                return DbSet.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return null;
+            }
         }
 
-        public void Add(Entity entity)
+        public void AddAsync(Entity entity)
         {
-            DbSet.Add(entity);
+            try
+            {
+                DbSet.AddAsync(entity);
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
         }
 
-        public void Update(object id, Entity updatedEntity)
+        public async void Update(object id, Entity updatedEntity)
         {
-            Entity entity = Get(id).Result ;
-            entity = updatedEntity;
-            DbContext.Entry(entity).State = EntityState.Modified;
+            try
+            {
+                Entity entity = await GetAsync(id);
+                entity = updatedEntity;
+                DbContext.Entry(entity).State = EntityState.Modified;
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
+          
         }
 
         public IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter)
         {
-            return DbSet.Where(filter);
+            try
+            {
+                return DbSet.Where(filter);
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return null;
+            }
         }
 
-        public Task<int> Save()
+        public Task<int> SaveAsync()
         {
-            return DbContext.SaveChangesAsync();
+            try
+            {
+                return DbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return null;
+            }
         }
     }
 }

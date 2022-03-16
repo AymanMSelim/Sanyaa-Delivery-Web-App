@@ -25,6 +25,7 @@ namespace App.Global
 
         public enum ResponseStatusCode
         {
+            ModelNotValid = -14,
             Exception = -13,
             OTPExpired = -12,
             InvalidUserOrPassword = -11,

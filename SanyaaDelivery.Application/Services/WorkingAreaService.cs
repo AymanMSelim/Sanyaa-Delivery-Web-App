@@ -22,13 +22,13 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> Add(WorkingAreaT workingArea)
         {
-            workingAreaRepository.Add(workingArea);
-            return workingAreaRepository.Save();
+            workingAreaRepository.AddAsync(workingArea);
+            return workingAreaRepository.SaveAsync();
         }
 
         public Task<WorkingAreaT> Get(int id)
         {
-            return workingAreaRepository.Get(id);
+            return workingAreaRepository.GetAsync(id);
         }
 
         public Task<List<WorkingAreaT>> GetList(string govName, string cityName, string regionName)

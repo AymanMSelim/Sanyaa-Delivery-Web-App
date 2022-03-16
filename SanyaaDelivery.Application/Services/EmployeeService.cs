@@ -22,7 +22,7 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<EmployeeT> Get(string id)
         {
-            return employeeRepository.Get(id);
+            return employeeRepository.GetAsync(id);
         }
 
         public Task<EmployeeT> GetWithBeancesAndTimetable(string id)
@@ -43,8 +43,8 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> Add(EmployeeT employee)
         {
-            employeeRepository.Add(employee);
-            return employeeRepository.Save();
+            employeeRepository.AddAsync(employee);
+            return employeeRepository.SaveAsync();
         }
         public EmployeeDto GetCustomInfo(string id)
         {

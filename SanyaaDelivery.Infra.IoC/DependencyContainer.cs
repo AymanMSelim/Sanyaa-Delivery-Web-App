@@ -6,7 +6,6 @@ using SanyaaDelivery.Application.Services;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using SanyaaDelivery.Infra.Data.Repositories;
-using System;
 
 namespace SanyaaDelivery.Infra.IoC
 {
@@ -26,7 +25,11 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<AccountTypeT>, AccountTypeRepository>();
             services.AddScoped<IRepository<RoleT>, RoleRepository>();
             services.AddScoped<IRepository<WorkingAreaT>, WorkingAreaRepository>();
-
+            services.AddScoped<IRepository<AppLandingScreenItemT>, AppLandingScreenItemRepository>();
+            services.AddScoped<IRepository<ServiceT>, ServiceRepository>();
+            services.AddScoped<IRepository<DepartmentT>, DepartmentRepository>();
+            services.AddScoped<IRepository<DepartmentSub0T>, DepartmentSub0Repository>();
+            services.AddScoped<IRepository<DepartmentSub1T>, DepartmentSub1Repository>();
 
 
             services.AddScoped<IClientService, ClientService>();
@@ -44,6 +47,9 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IFawryService, FawryService>();
             services.AddScoped<IRegisterService, RegisterService>();
             services.AddScoped<IWorkingAreaService, WorkingAreaService>();
+            services.AddScoped<IAppLandingScreenService, AppLandingScreenService>();
+            services.AddScoped<IServiceService, ServiceService>();
+            services.AddScoped<IDepartmentService, DepartmentService>();
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
 
         }

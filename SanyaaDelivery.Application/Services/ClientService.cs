@@ -27,7 +27,7 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<ClientT> GetById(int id)
         {
-            return clientRepository.Get(id);
+            return clientRepository.GetAsync(id);
         }
 
         public Task<List<ClientT>> GetByName(string name)
@@ -42,8 +42,8 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> Add(ClientT client)
         {
-            clientRepository.Add(client);
-            return clientRepository.Save();
+            clientRepository.AddAsync(client);
+            return clientRepository.SaveAsync();
         }
     }
 }

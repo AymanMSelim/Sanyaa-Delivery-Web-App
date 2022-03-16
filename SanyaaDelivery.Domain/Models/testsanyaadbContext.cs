@@ -1,20 +1,20 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using SanyaaDelivery.Domain.Models;
 
-namespace SanyaaDelivery.Infra.Data.Context
+namespace SanyaaDelivery.Domain.Models
 {
-    public partial class SanyaaDatabaseContext : DbContext
+    public partial class testsanyaadbContext : DbContext
     {
-        public SanyaaDatabaseContext()
+        public testsanyaadbContext()
         {
         }
 
-        public SanyaaDatabaseContext(DbContextOptions<SanyaaDatabaseContext> options)
+        public testsanyaadbContext(DbContextOptions<testsanyaadbContext> options)
             : base(options)
         {
         }
+
         public virtual DbSet<AccountRoleT> AccountRoleT { get; set; }
         public virtual DbSet<AccountT> AccountT { get; set; }
         public virtual DbSet<AccountTypeT> AccountTypeT { get; set; }
@@ -91,10 +91,10 @@ namespace SanyaaDelivery.Infra.Data.Context
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseMySql("server=localhost;database=sanyaadatabase;uid=user;password=user@5100");
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
+                optionsBuilder.UseMySql("Server=den1.mysql5.gear.host;database=testsanyaadb;uid=testsanyaadb;password=Dp830EBs-_o7");
             }
         }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -962,10 +962,6 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.Property(e => e.DepartmentName)
                     .HasColumnName("department_name")
                     .HasColumnType("varchar(25)");
-
-                entity.Property(e => e.DepartmentSub0Id)
-                 .HasColumnName("department_sub0_id")
-                 .HasColumnType("int(11)");
 
                 entity.HasOne(d => d.DepartmentNameNavigation)
                     .WithMany(p => p.DepartmentSub0T)

@@ -18,18 +18,18 @@ namespace SanyaaDelivery.Application.Services
         }
         public Task<int> Add(RoleT role)
         {
-            roleRepository.Add(role);
-            return roleRepository.Save();
+            roleRepository.AddAsync(role);
+            return roleRepository.SaveAsync();
         }
 
         public Task<RoleT> Get(int id)
         {
-            return roleRepository.Get(id);
+            return roleRepository.GetAsync(id);
         }
 
         public Task<List<RoleT>> GetList()
         {
-            return roleRepository.GetAll();
+            return roleRepository.GetListAsync();
         }
     }
 }

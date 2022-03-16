@@ -19,13 +19,13 @@ namespace SanyaaDelivery.Application.Services
         }
         public Task<int> Add(AccountTypeT accountType)
         {
-            accountTypeRepository.Add(accountType);
-            return accountTypeRepository.Save();
+            accountTypeRepository.AddAsync(accountType);
+            return accountTypeRepository.SaveAsync();
         }
 
         public Task<List<AccountTypeT>> GetList()
         {
-            return accountTypeRepository.GetAll();
+            return accountTypeRepository.GetListAsync();
         }
     }
 }

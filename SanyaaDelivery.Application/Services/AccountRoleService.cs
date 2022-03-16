@@ -19,8 +19,8 @@ namespace SanyaaDelivery.Application.Services
         }
         public Task<int> Add(AccountRoleT accountRole)
         {
-            accountRoleRepository.Add(accountRole);
-            return accountRoleRepository.Save();
+            accountRoleRepository.AddAsync(accountRole);
+            return accountRoleRepository.SaveAsync();
         }
 
         public Task<List<AccountRoleT>> GetList(int accountId, bool getActiveOnly = true)

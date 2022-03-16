@@ -45,7 +45,7 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<RequestT> Get(int requestId)
         {
-            return orderRepository.Get(requestId);
+            return orderRepository.GetAsync(requestId);
         }
 
         public Task<RequestT> GetDetails(int requestId)
@@ -177,9 +177,11 @@ namespace SanyaaDelivery.Application.Services
                && o.RequestCanceledT.Count == 0).CountAsync();
         }
 
-        public Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStaus, bool? getCanceled,
-            bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, bool? getService = null, bool? getPrice = null,
-            bool? includeClient = null, bool? includeEmployee = null)
+        public Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId,
+            int? clientId, string employeeId, int? systemUserId, int? requestStaus, bool? getCanceled,
+            bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, 
+            bool? getService = null, bool? getPrice = null,
+            bool? includeClient = null, bool? includeEmployee = null, int? branchId = null)
         {
             var data = orderRepository.DbSet.AsQueryable();
             if (startDate.HasValue)
@@ -214,13 +216,22 @@ namespace SanyaaDelivery.Application.Services
             {
                 data = data.Where(d => d.EmployeeId == employeeId);
             }
+            if (branchId.HasValue)
+            {
+                data = data.Where(d => d.BranchId == branchId.Value);
+            }
             return data.ToListAsync();
         }
 
         public Task<int> Add(RequestT request)
         {
-            orderRepository.Add(request);
-            return orderRepository.Save();
+            orderRepository.AddAsync(request);
+            return orderRepository.SaveAsync();
+        }
+
+        public Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStatus, bool? getCanceled, bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, bool? getService = null, bool? getPrice = null, bool? includeClient = null, bool? includeEmployee = null)
+        {
+            throw new NotImplementedException();
         }
     }
 }

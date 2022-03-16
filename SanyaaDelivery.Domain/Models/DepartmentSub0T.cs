@@ -10,6 +10,7 @@ namespace SanyaaDelivery.Domain.Models
             DepartmentSub1T = new HashSet<DepartmentSub1T>();
         }
 
+        public int DepartmentSub0Id { get; set; }
         public string DepartmentName { get; set; }
         public string DepartmentSub0 { get; set; }
 

@@ -20,19 +20,19 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> Add(AccountT account)
         {
-            accountRepository.Add(account);
-            return accountRepository.Save();
+            accountRepository.AddAsync(account);
+            return accountRepository.SaveAsync();
         }
 
         public Task<int> Update(AccountT account)
         {
             accountRepository.Update(account.AccountId, account);
-            return accountRepository.Save();
+            return accountRepository.SaveAsync();
         }
 
         public Task<AccountT> Get(int id)
         {
-            return accountRepository.Get(id);
+            return accountRepository.GetAsync(id);
         }
 
         public Task<AccountT> Get(int accountType, string referenceId)

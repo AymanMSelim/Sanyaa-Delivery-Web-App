@@ -13,18 +13,18 @@ namespace SanyaaDelivery.Domain
 
         DbSet<Entity> DbSet { get; set; }
 
-        void Add(Entity entity);
+        void AddAsync(Entity entity);
 
         void Update(object id, Entity entity);
 
-        void Delete(object id);
+        Task DeleteAsync(object id);
 
-        Task<Entity> Get(object id);
+        Task<Entity> GetAsync(object id);
 
-        Task<List<Entity>> GetAll();
+        Task<List<Entity>> GetListAsync();
 
         IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter);
 
-        Task<int> Save();
+        Task<int> SaveAsync();
     }
 }

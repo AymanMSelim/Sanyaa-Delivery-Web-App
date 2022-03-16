@@ -22,14 +22,14 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<int> AddSubscribe(int clientId, int package, int userId)
         {
-            subscribeRepository.Add(new CleaningSubscribersT
+            subscribeRepository.AddAsync(new CleaningSubscribersT
             {
                 SubscribeDate = DateTime.Now,
                 Package = package,
                 ClientId = clientId,
                 SystemUserId = userId
             }) ;
-            return subscribeRepository.Save();
+            return subscribeRepository.SaveAsync();
         }
 
         public Task<int> EditPackage(int clientId, int newPackage)
@@ -37,7 +37,7 @@ namespace SanyaaDelivery.Application.Services
             var oldPackage = GetInfo(clientId).Result;
             oldPackage.Package = newPackage;
             subscribeRepository.Update(oldPackage.Id, oldPackage);
-            return subscribeRepository.Save();
+            return subscribeRepository.SaveAsync();
         }
 
         public Task<CleaningSubscribersT> GetInfo(int clientId)

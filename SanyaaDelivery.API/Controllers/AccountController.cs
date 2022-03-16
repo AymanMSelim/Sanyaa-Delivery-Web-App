@@ -47,12 +47,13 @@ namespace SanyaaDelivery.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new HttpResponseDto<object> { StatusCode = 0, Message = "Empty username or password", StatusDescreption = "Failed" });
+                var response = HttpResponseDtoFactory<string>.CreateModelNotValidResponse("Empty username or password");
+                return BadRequest(response);
             }
 
             string userId = null;
             object userData = null;
-            if (user.AccountType == 1)
+            if (user.AccountType == ((int)Domain.Enum.AccountType.User))
             {
                 var userModel = await systemUserService.Get(user.Username);
                 if (userModel != null)
@@ -61,7 +62,7 @@ namespace SanyaaDelivery.API.Controllers
                     userData = userModel;
                 }
             }
-            else if (user.AccountType == 2)
+            else if (user.AccountType == ((int)Domain.Enum.AccountType.Employee))
             {
                 var employeeModel = await employeeService.Get(user.Username);
                 if (employeeModel != null)
@@ -70,7 +71,7 @@ namespace SanyaaDelivery.API.Controllers
                     userData = employeeModel;
                 }
             }
-            else if (user.AccountType == 3)
+            else if (user.AccountType == ((int)Domain.Enum.AccountType.Client))
             {
                 var clientModel = await clientService.GetByPhone(user.Username);
                 if (clientModel != null)
@@ -84,20 +85,50 @@ namespace SanyaaDelivery.API.Controllers
             {
                 var account = await accountService.Get(user.AccountType.Value, userId);
                 if (account == null)
-                    return BadRequest(new HttpResponseDto<object> { StatusCode = 0, Message = "No account for this user", StatusDescreption = "Failed" });
+                {
+                    var response = new HttpResponseDto<object>
+                    {
+                        StatusCode = 0,
+                        Message = "No account for this user",
+                        StatusDescreption = "Failed"
+                    };
+                    return BadRequest(response);
+
+                }
 
                 if (account.IsActive == false)
-                    return BadRequest(new HttpResponseDto<object> { StatusCode = 0, Message = "this account is suspend", StatusDescreption = "Failed" });
-
-
+                {
+                    var response = new HttpResponseDto<object>
+                    {
+                        StatusCode = 0,
+                        Message = "this account is suspend",
+                        StatusDescreption = "Failed"
+                    };
+                    return BadRequest(response);
+                }
+                
                 var accountRoles = await accountRoleService.GetList(account.AccountId, true);
                 if (accountRoles == null)
-                    return BadRequest(new HttpResponseDto<object> { StatusCode = 0, Message = "No roles for this user", StatusDescreption = "Failed" });
+                {
+                    var response = new HttpResponseDto<object>
+                    {
+                        StatusCode = 0,
+                        Message = "No roles for this user",
+                        StatusDescreption = "Failed"
+                    };
+                    return BadRequest(response);
+                }
 
                 var password = App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(account.AccountHashSlat, user.Password);
                 if (account.AccountPassword != password)
                 {
-                    return BadRequest(new HttpResponseDto<object> { StatusCode = 0, Message = "Invalid username or password", StatusDescreption = "Failed" });
+                    var response = new HttpResponseDto<object>
+                    {
+                        StatusCode = 0,
+                        Message = "Invalid username or password",
+                        StatusDescreption = "Failed"
+                    };
+                    return BadRequest(response);
                 }
                 return Ok(
                     new HttpResponseDto<SystemUserDto>
@@ -171,117 +202,148 @@ namespace SanyaaDelivery.API.Controllers
         [HttpPost("RegisterClient")]
         public async Task<ActionResult<HttpResponseDto<ClientRegisterResponseDto>>> RegisterClient(ClientRegisterDto clientRegisterDto)
         {
+            HttpResponseDto<ClientRegisterResponseDto> response;
+            ClientRegisterResponseDto clientRegisterResponseDto;
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(HttpResponseDtoFactory<ClientRegisterResponseDto>.CreateErrorResponseMessage("Empty username or password", App.Global.Eumns.ResponseStatusCode.EmptyData));
+                    response = HttpResponseDtoFactory<ClientRegisterResponseDto>
+                        .CreateErrorResponseMessage("Empty username or password", App.Global.Eumns.ResponseStatusCode.EmptyData);
+                    return BadRequest(response);
                 }
 
-                var clientExist = await clientService.GetByPhone(clientRegisterDto.Phone);
-                if (clientExist != null)
+                var client = await clientService.GetByPhone(clientRegisterDto.Phone);
+                if (client != null)
                 {
                     var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientRegisterDto.Phone);
-                    return Ok(HttpResponseDtoFactory<ClientRegisterResponseDto>.CreateSuccessResponse(
-                        new ClientRegisterResponseDto 
-                        { 
-                            Client = clientExist,
-                            OtpCode = account.MobileOtpCode,
-                            OTPExpireTime = account.LastOtpCreationTime.Value,
-                            SecurityCode = account.AccountSecurityCode
-                        }
-                        ,App.Global.Eumns.ResponseStatusCode.AlreadyExist, "This phone is already exist"));
+                    clientRegisterResponseDto = new ClientRegisterResponseDto
+                    {
+                        Client = client,
+                        OtpCode = account.MobileOtpCode,
+                        OTPExpireTime = account.LastOtpCreationTime.Value,
+                        SecurityCode = account.AccountSecurityCode
+                    };
+                    response = HttpResponseDtoFactory<ClientRegisterResponseDto>
+                        .CreateSuccessResponse(clientRegisterResponseDto, App.Global.Eumns.ResponseStatusCode.AlreadyExist, "This phone is already token");
+                    return Ok(response);
                 }
-
-                ClientRegisterResponseDto clientRegisterResponseDto = await registerService.RegisterClient(clientRegisterDto);
+               
+                clientRegisterResponseDto = await registerService.RegisterClient(clientRegisterDto);
                 if (clientRegisterResponseDto == null)
                 {
                     return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponse());
                 }
 
-                await App.Global.SMS.SMSMisrService.SendSmsAsync("2", clientRegisterDto.Phone, $"Your confirmation OTP code is {clientRegisterResponseDto.OtpCode}");
-                return Created($"https://{HttpContext.Request.Host}/api/client/get/{clientRegisterResponseDto.Client.ClientId}",
-                    HttpResponseDtoFactory<ClientRegisterResponseDto>.CreateSuccessResponse(
-                        clientRegisterResponseDto,
-                        App.Global.Eumns.ResponseStatusCode.ClientRegisterdSuccessfully)
-                    );
+                response = HttpResponseDtoFactory<ClientRegisterResponseDto>.CreateSuccessResponse(clientRegisterResponseDto, App.Global.Eumns.ResponseStatusCode.ClientRegisterdSuccessfully);
+                _ = App.Global.SMS.SMSMisrService.SendSmsAsync("2", clientRegisterDto.Phone, $"Your confirmation OTP code is {clientRegisterResponseDto.OtpCode}");
+                return Created($"https://{HttpContext.Request.Host}/api/client/get/{clientRegisterResponseDto.Client.ClientId}", response);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponse());
+                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateExceptionResponse(ex));
             }
-
         }
 
         [AllowAnonymous]
         [HttpPost("ConfirmOTPCode")]
         public async Task<ActionResult<HttpResponseDto<ClientT>>> ConfirmOTPCode(int? clientId, string phone, string otpCode, string signature)
         {
-            if (!clientId.HasValue || string.IsNullOrEmpty(otpCode) || string.IsNullOrEmpty(signature))
+            HttpResponseDto<ClientT> response;
+            try
             {
-                return NotFound(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("Empty data", App.Global.Eumns.ResponseStatusCode.EmptyData));
+                if (!clientId.HasValue || string.IsNullOrEmpty(otpCode) || string.IsNullOrEmpty(signature))
+                {
+                    response = HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("Empty data", App.Global.Eumns.ResponseStatusCode.EmptyData);
+                    return NotFound(response);
+                }
+
+                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientId.ToString());
+                if (account == null)
+                {
+                    response = HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("This client not found", App.Global.Eumns.ResponseStatusCode.NotFound);
+                    return NotFound(response);
+                }
+
+                var passwordHash = App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + otpCode + account.AccountSecurityCode);
+                if (!HttpContext.User.Identity.IsAuthenticated && passwordHash.ToLower() != signature.ToLower())
+                {
+                    response = HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Eumns.ResponseStatusCode.InvalidSignature);
+                    return BadRequest(response);
+                }
+
+                if (account.MobileOtpCode != otpCode)
+                {
+                    response = HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("OTP code is invalid", App.Global.Eumns.ResponseStatusCode.InvalidOTP);
+                    return BadRequest(response);
+                }
+
+                if (account.LastOtpCreationTime.Value.AddMilliseconds(GeneralSetting.OTPExpireMinutes) > DateTime.Now)
+                {
+                    response = HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("OTP code is expired", App.Global.Eumns.ResponseStatusCode.OTPExpired);
+                    return BadRequest(response);
+                }
+
+                account.IsMobileVerfied = true;
+                account.IsActive = true;
+                int affectedRecord = await accountService.Update(account);
+                if (affectedRecord < 0)
+                {
+                    return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponse());
+                }
+                return Ok(HttpResponseDtoFactory<ClientT>.CreateSuccessResponse());
             }
-            var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientId.ToString());
-            if (account == null)
+            catch (Exception ex) 
             {
-                return NotFound(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("This client not found", App.Global.Eumns.ResponseStatusCode.NotFound));
+                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateExceptionResponse(ex));
             }
-            if (!HttpContext.User.Identity.IsAuthenticated && App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + otpCode + account.AccountSecurityCode).ToLower() != signature.ToLower())
-            {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Eumns.ResponseStatusCode.InvalidSignature));
-            }
-            if (account.MobileOtpCode != otpCode)
-            {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("OTP code is invalid", App.Global.Eumns.ResponseStatusCode.InvalidOTP));
-            }
-            if (account.LastOtpCreationTime.Value.AddMilliseconds(GeneralSetting.OTPExpireMinutes) > DateTime.Now)
-            {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("OTP code is expired", App.Global.Eumns.ResponseStatusCode.OTPExpired));
-            }
-            account.IsMobileVerfied = true;
-            account.IsActive = true;
-            int affectedRecord = await accountService.Update(account);
-            if (affectedRecord < 0)
-            {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponse());
-            }
-            return Ok(HttpResponseDtoFactory<ClientT>.CreateSuccessResponse());
         }
 
         [AllowAnonymous]
         [HttpPost("ResendOTPCode")]
-        public async Task<ActionResult<HttpResponseDto<object>>> ResendOTPCode(int? clientId, string phone, string signature)
+        public async Task<ActionResult<HttpResponseDto<OTPCodeDto>>> ResendOTPCode(int? clientId, string phone, string signature)
         {
-            if (!clientId.HasValue || string.IsNullOrEmpty(phone) || string.IsNullOrEmpty(signature))
+            HttpResponseDto<OTPCodeDto> response;
+            try
             {
-                return NotFound(HttpResponseDtoFactory<object>.CreateErrorResponseMessage("Empty data", App.Global.Eumns.ResponseStatusCode.EmptyData));
-            }
+                if (!clientId.HasValue || string.IsNullOrEmpty(phone) || string.IsNullOrEmpty(signature))
+                {
+                    response = HttpResponseDtoFactory<OTPCodeDto>.CreateErrorResponseMessage("Empty data", App.Global.Eumns.ResponseStatusCode.EmptyData);
+                    return NotFound(response);
+                }
 
-            var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientId.ToString());
-            if (account == null)
+                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientId.ToString());
+                if (account == null)
+                {
+                    response = HttpResponseDtoFactory<OTPCodeDto>.CreateErrorResponseMessage("This client not found", App.Global.Eumns.ResponseStatusCode.NotFound);
+                    return NotFound(response);
+                }
+
+                if (!HttpContext.User.Identity.IsAuthenticated && App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + account.AccountSecurityCode).ToLower() != signature.ToLower())
+                {
+                    response = HttpResponseDtoFactory<OTPCodeDto>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Eumns.ResponseStatusCode.InvalidSignature);
+                    return BadRequest(response);
+                }
+
+                account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
+                account.LastOtpCreationTime = DateTime.Now;
+                _ = App.Global.SMS.SMSMisrService.SendSmsAsync("2", phone, $"Your confirmation OTP code is {account.MobileOtpCode}");
+                int affectedRecord = await accountService.Update(account);
+                if (affectedRecord < 0)
+                {
+                    return BadRequest(HttpResponseDtoFactory<OTPCodeDto>.CreateErrorResponse());
+                }
+                return Ok(HttpResponseDtoFactory<OTPCodeDto>.CreateSuccessResponse(new OTPCodeDto
+                {
+                    OTPCode = account.MobileOtpCode,
+                    OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes)
+                }));
+            }
+            catch (Exception ex)
             {
-                return NotFound(HttpResponseDtoFactory<object>.CreateErrorResponseMessage("This client not found", App.Global.Eumns.ResponseStatusCode.NotFound));
+                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateExceptionResponse(ex));
             }
-
             
-            if (!HttpContext.User.Identity.IsAuthenticated && App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + account.AccountSecurityCode).ToLower() != signature.ToLower())
-            {
-                return BadRequest(HttpResponseDtoFactory<ClientT>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Eumns.ResponseStatusCode.InvalidSignature));
-            }
-
-            account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
-            account.LastOtpCreationTime = DateTime.Now;
-            await App.Global.SMS.SMSMisrService.SendSmsAsync("2", phone, $"Your confirmation OTP code is {account.MobileOtpCode}");
-            int affectedRecord = await accountService.Update(account);
-            if (affectedRecord < 0)
-            {
-                return BadRequest(HttpResponseDtoFactory<object>.CreateErrorResponse());
-            }
-            return Ok(HttpResponseDtoFactory<object>.CreateSuccessResponse(new 
-            { 
-                OTPCode = account.MobileOtpCode ,
-                OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes)
-            }));
         }
 
     }

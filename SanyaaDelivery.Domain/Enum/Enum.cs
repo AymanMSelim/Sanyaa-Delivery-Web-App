@@ -12,10 +12,17 @@ namespace SanyaaDelivery.Domain.Enum
 
     public enum LandingScreenItemType
     {
-        Image = 1,
-        DepartmentSeviceOffer = 2,
-        DepartmentSection = 3,
-        Department = 4
+        Banner = 1,
+        Offer = 2,
+        Department = 3
+    }
+
+    public enum AccountType
+    {
+        User = 1,
+        Employee = 2,
+        Client = 3,
+        
     }
 
 }

@@ -16,7 +16,9 @@ namespace SanyaaDelivery.Domain.Models
         public short ServiceCost { get; set; }
         public float ServiceDuration { get; set; }
         public string ServiceDes { get; set; }
-        public int? ServicePoint { get; set; }
+        public short? ServiceDiscount { get; set; }
+        public sbyte? ServicePoint { get; set; }
+        public short? MaterialCost { get; set; }
 
         public DepartmentSub1T Department { get; set; }
         public ICollection<RequestServicesT> RequestServicesT { get; set; }

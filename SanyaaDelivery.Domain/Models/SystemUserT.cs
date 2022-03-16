@@ -11,6 +11,7 @@ namespace SanyaaDelivery.Domain.Models
             BillNumberT = new HashSet<BillNumberT>();
             CleaningSubscribersT = new HashSet<CleaningSubscribersT>();
             ClientT = new HashSet<ClientT>();
+            ContractPaymentT = new HashSet<ContractPaymentT>();
             DeliveryPriceT = new HashSet<DeliveryPriceT>();
             FollowUpT = new HashSet<FollowUpT>();
             GeneralDiscountT = new HashSet<GeneralDiscountT>();
@@ -23,6 +24,8 @@ namespace SanyaaDelivery.Domain.Models
             RequestDiscountT = new HashSet<RequestDiscountT>();
             RequestT = new HashSet<RequestT>();
             ServiceCityRatioT = new HashSet<ServiceCityRatioT>();
+            SiteContractT = new HashSet<SiteContractT>();
+            SiteT = new HashSet<SiteT>();
         }
 
         public int SystemUserId { get; set; }
@@ -38,6 +41,7 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<BillNumberT> BillNumberT { get; set; }
         public ICollection<CleaningSubscribersT> CleaningSubscribersT { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
+        public ICollection<ContractPaymentT> ContractPaymentT { get; set; }
         public ICollection<DeliveryPriceT> DeliveryPriceT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
         public ICollection<GeneralDiscountT> GeneralDiscountT { get; set; }
@@ -50,5 +54,7 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
         public ICollection<ServiceCityRatioT> ServiceCityRatioT { get; set; }
+        public ICollection<SiteContractT> SiteContractT { get; set; }
+        public ICollection<SiteT> SiteT { get; set; }
     }
 }

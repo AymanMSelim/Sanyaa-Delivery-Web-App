@@ -14,6 +14,7 @@ namespace SanyaaDelivery.Domain.Models
             MessagesT = new HashSet<MessagesT>();
             RejectRequestT = new HashSet<RejectRequestT>();
             RequestT = new HashSet<RequestT>();
+            SiteT = new HashSet<SiteT>();
             SystemUserT = new HashSet<SystemUserT>();
             TimetableT = new HashSet<TimetableT>();
         }
@@ -46,6 +47,7 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<MessagesT> MessagesT { get; set; }
         public ICollection<RejectRequestT> RejectRequestT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
+        public ICollection<SiteT> SiteT { get; set; }
         public ICollection<SystemUserT> SystemUserT { get; set; }
         public ICollection<TimetableT> TimetableT { get; set; }
     }

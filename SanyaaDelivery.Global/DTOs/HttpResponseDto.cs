@@ -4,8 +4,6 @@ namespace App.Global.DTOs
 {
     public class HttpResponseDto<T>
     {
-       
-
         public int StatusCode { get; set; }
         public string StatusDescreption { get; set; }
         public string Message { get; set; }
@@ -101,6 +99,11 @@ namespace App.Global.DTOs
         }
 
         public static HttpResponseDto<T> CreateErrorResponseMessage(string message, ResponseStatusCode responseStatusCode = ResponseStatusCode.Failed)
+        {
+            return CreateErrorResponse(responseStatusCode: responseStatusCode, message: message);
+        }
+
+        public static HttpResponseDto<T> CreateModelNotValidResponse(string message, ResponseStatusCode responseStatusCode = ResponseStatusCode.ModelNotValid)
         {
             return CreateErrorResponse(responseStatusCode: responseStatusCode, message: message);
         }
