@@ -17,10 +17,10 @@ namespace SanyaaDelivery.Application.Services
             this.departmentRepository = departmentRepository;
         }
 
-        public Task<int> AddAsync(DepartmentT department)
+        public async Task<int> AddAsync(DepartmentT department)
         {
-            departmentRepository.AddAsync(department);
-            return departmentRepository.SaveAsync();
+            await departmentRepository.AddAsync(department);
+            return await departmentRepository.SaveAsync();
         }
 
         public async Task<int> DeleteAsync(int departmentId)

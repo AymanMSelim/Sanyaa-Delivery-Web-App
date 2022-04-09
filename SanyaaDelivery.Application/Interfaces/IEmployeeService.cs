@@ -15,8 +15,20 @@ namespace SanyaaDelivery.Application.Interfaces
 
         EmployeeDto GetCustomInfo(string id);
 
-        List<EmployeeT> GetByDepartment(string departmentName);
+        Task<List<EmployeeT>> GetByDepartment(string departmentName);
 
-        Task<int> Add(EmployeeT employee);
+        Task<List<EmployeeT>> GetByDepartment(int departmentId);
+
+        Task<int> AddAsync(EmployeeT employee);
+
+        Task<int> AddDepartment(DepartmentEmployeeT departmentEmployee);
+
+        Task<int> DeleteDepartment(int id);
+
+        Task<int> AddBranch(EmployeeWorkplacesT employeeWorkplace);
+
+        Task<int> DeleteBranch(int id);
+
+        Task<int> UpdateAsync(EmployeeT employee);
     }
 }

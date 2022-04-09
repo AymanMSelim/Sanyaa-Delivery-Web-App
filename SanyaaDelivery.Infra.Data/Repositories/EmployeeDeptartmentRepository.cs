@@ -6,9 +6,9 @@ using System.Text;
 
 namespace SanyaaDelivery.Infra.Data.Repositories
 {
-    public class EmpDeptRepository : BaseRepository<DepartmentEmployeeT>
+    public class EmployeeDeptartmentRepository : BaseRepository<DepartmentEmployeeT>
     {
-        public EmpDeptRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public EmployeeDeptartmentRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
         {
 
         }

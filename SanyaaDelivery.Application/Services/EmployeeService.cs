@@ -14,10 +14,14 @@ namespace SanyaaDelivery.Application.Services
     public class EmployeeService : IEmployeeService
     {
         private readonly IRepository<EmployeeT> employeeRepository;
+        private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
+        private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
 
-        public EmployeeService(IRepository<EmployeeT> employeeRepository)
+        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository)
         {
             this.employeeRepository = employeeRepository;
+            this.employeeDepartmentRepository = employeeDepartmentRepository;
+            this.employeeWorkplaceRepository = employeeWorkplaceRepository;
         }
 
         public Task<EmployeeT> Get(string id)
@@ -35,20 +39,56 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public List<EmployeeT> GetByDepartment(string departmentName)
+        public async Task<List<EmployeeT>> GetByDepartment(string departmentName)
         {
-            return null;
-            //return employeeRepository.Where(d => d.DepartmentEmployeeT == null).Select(d => d.DepartmentEmployeeT.Select(d => d.Employee));
+            return await employeeDepartmentRepository.Where(d => d.DepartmentName == departmentName).Select(d => d.Employee).ToListAsync();
         }
 
-        public Task<int> Add(EmployeeT employee)
+        public async Task<List<EmployeeT>> GetByDepartment(int departmentId)
         {
-            employeeRepository.AddAsync(employee);
-            return employeeRepository.SaveAsync();
+            return await employeeDepartmentRepository.Where(d => d.DepartmentId == departmentId).Select(d => d.Employee).ToListAsync();
+        }
+
+        public async Task<int> AddAsync(EmployeeT employee)
+        {
+            await employeeRepository.AddAsync(employee);
+            return await employeeRepository.SaveAsync();
         }
         public EmployeeDto GetCustomInfo(string id)
         {
             throw new NotImplementedException();
         }
+
+        public Task<int> UpdateAsync(EmployeeT employee)
+        {
+            employeeRepository.Update(employee.EmployeeId, employee);
+            return employeeRepository.SaveAsync();
+        }
+
+        public async Task<int> AddDepartment(DepartmentEmployeeT departmentEmployee)
+        {
+            await employeeDepartmentRepository.AddAsync(departmentEmployee);
+            return await employeeDepartmentRepository.SaveAsync();
+        }
+
+        public async Task<int> DeleteDepartment(int id)
+        {
+            await employeeDepartmentRepository.DeleteAsync(id);
+            return await employeeDepartmentRepository.SaveAsync();
+        }
+
+        public async Task<int> AddBranch(EmployeeWorkplacesT employeeWorkplace)
+        {
+            await employeeWorkplaceRepository.AddAsync(employeeWorkplace);
+            return await employeeWorkplaceRepository.SaveAsync();
+        }
+
+        public async Task<int> DeleteBranch(int id)
+        {
+            await employeeWorkplaceRepository.DeleteAsync(id);
+            return await employeeWorkplaceRepository.SaveAsync();
+        }
+
+        
     }
 }

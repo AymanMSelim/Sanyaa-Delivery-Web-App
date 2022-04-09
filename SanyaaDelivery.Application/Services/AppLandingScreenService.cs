@@ -34,7 +34,7 @@ namespace SanyaaDelivery.Application.Services
             return GetListAsync((int)Domain.Enum.LandingScreenItemType.Offer);
         }
 
-        public Task<List<AppLandingScreenItemT>> GetPictureListAsync()
+        public Task<List<AppLandingScreenItemT>> GetBannerListAsync()
         {
             return GetListAsync((int)Domain.Enum.LandingScreenItemType.Banner);
         }

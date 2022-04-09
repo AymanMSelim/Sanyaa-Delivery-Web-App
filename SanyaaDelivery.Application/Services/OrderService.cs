@@ -121,7 +121,7 @@ namespace SanyaaDelivery.Application.Services
                    ClientName = orderDay.Client.ClientName,
                    EmployeeName = orderDay.Employee.EmployeeName,
                    IsCanceled = orderDay.RequestCanceledT.Count != 0,
-                   IsCleaningSubscriber = orderDay.Client.CleaningSubscribersT != null
+                   IsCleaningSubscriber = orderDay.Client.Cleaningsubscribers != null
                }
                ).ToListAsync();
         }
@@ -223,10 +223,10 @@ namespace SanyaaDelivery.Application.Services
             return data.ToListAsync();
         }
 
-        public Task<int> Add(RequestT request)
+        public async Task<int> Add(RequestT request)
         {
-            orderRepository.AddAsync(request);
-            return orderRepository.SaveAsync();
+            await orderRepository.AddAsync(request);
+            return await orderRepository.SaveAsync();
         }
 
         public Task<List<RequestT>> GetList(DateTime? startDate, DateTime? endDate, int? requestId, int? clientId, string employeeId, int? systemUserId, int? requestStatus, bool? getCanceled, bool? getClientName = null, bool? getEmploeeName = null, bool? getDepartment = null, bool? getService = null, bool? getPrice = null, bool? includeClient = null, bool? includeEmployee = null)

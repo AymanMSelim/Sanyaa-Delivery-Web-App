@@ -18,22 +18,24 @@ namespace SanyaaDelivery.API.Controllers
         {
             this.landingScreenService = landingScreenService;
         }
-
+        [HttpGet("GetDepartmentList")]
         public async Task<ActionResult<HttpResponseDto<List<AppLandingScreenItemT>>>> GetDepartmentList()
         {
             var list = await landingScreenService.GetDepartmentListAsync();
             return Ok(HttpResponseDtoFactory<List<AppLandingScreenItemT>>.CreateSuccessResponse(list));
         }
 
+        [HttpGet("GetOfferList")]
         public async Task<ActionResult<HttpResponseDto<List<AppLandingScreenItemT>>>> GetOfferList()
         {
             var list = await landingScreenService.GetOfferListAsync();
             return Ok(HttpResponseDtoFactory<List<AppLandingScreenItemT>>.CreateSuccessResponse(list));
         }
 
-        public async Task<ActionResult<HttpResponseDto<List<AppLandingScreenItemT>>>> GetPictureList()
+        [HttpGet("GetBannerList")]
+        public async Task<ActionResult<HttpResponseDto<List<AppLandingScreenItemT>>>> GetBannerList()
         {
-            var list = await landingScreenService.GetPictureListAsync();
+            var list = await landingScreenService.GetBannerListAsync();
             return Ok(HttpResponseDtoFactory<List<AppLandingScreenItemT>>.CreateSuccessResponse(list));
         }
     }

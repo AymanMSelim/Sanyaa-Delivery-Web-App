@@ -13,7 +13,7 @@ namespace SanyaaDelivery.Domain
 
         DbSet<Entity> DbSet { get; set; }
 
-        void AddAsync(Entity entity);
+        Task AddAsync(Entity entity);
 
         void Update(object id, Entity entity);
 

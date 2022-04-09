@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
-    [Authorize(Roles = "Administrator,CustomerApp")]
+    [Authorize]
     public class OrderController : APIBaseAuthorizeController
     {
         private readonly IOrderService orderService;

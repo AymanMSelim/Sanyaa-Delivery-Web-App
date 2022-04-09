@@ -17,10 +17,10 @@ namespace SanyaaDelivery.Application.Services
         {
             this.accountRoleRepository = accountRoleRepository;
         }
-        public Task<int> Add(AccountRoleT accountRole)
+        public async Task<int> Add(AccountRoleT accountRole)
         {
-            accountRoleRepository.AddAsync(accountRole);
-            return accountRoleRepository.SaveAsync();
+            await accountRoleRepository.AddAsync(accountRole);
+            return await accountRoleRepository.SaveAsync();
         }
 
         public Task<List<AccountRoleT>> GetList(int accountId, bool getActiveOnly = true)

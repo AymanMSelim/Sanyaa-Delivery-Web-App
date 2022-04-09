@@ -9,12 +9,10 @@ namespace SanyaaDelivery.Domain.Models
         {
             AccountT = new HashSet<AccountT>();
             BillNumberT = new HashSet<BillNumberT>();
-            CleaningSubscribersT = new HashSet<CleaningSubscribersT>();
+            Cleaningsubscribers = new HashSet<Cleaningsubscribers>();
             ClientT = new HashSet<ClientT>();
             ContractPaymentT = new HashSet<ContractPaymentT>();
-            DeliveryPriceT = new HashSet<DeliveryPriceT>();
             FollowUpT = new HashSet<FollowUpT>();
-            GeneralDiscountT = new HashSet<GeneralDiscountT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
             PartinerPaymentT = new HashSet<PartinerPaymentT>();
             PaymentT = new HashSet<PaymentT>();
@@ -23,7 +21,6 @@ namespace SanyaaDelivery.Domain.Models
             RequestDelayedT = new HashSet<RequestDelayedT>();
             RequestDiscountT = new HashSet<RequestDiscountT>();
             RequestT = new HashSet<RequestT>();
-            ServiceCityRatioT = new HashSet<ServiceCityRatioT>();
             SiteContractT = new HashSet<SiteContractT>();
             SiteT = new HashSet<SiteT>();
         }
@@ -39,12 +36,10 @@ namespace SanyaaDelivery.Domain.Models
         public EmployeeT Employee { get; set; }
         public ICollection<AccountT> AccountT { get; set; }
         public ICollection<BillNumberT> BillNumberT { get; set; }
-        public ICollection<CleaningSubscribersT> CleaningSubscribersT { get; set; }
+        public ICollection<Cleaningsubscribers> Cleaningsubscribers { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
         public ICollection<ContractPaymentT> ContractPaymentT { get; set; }
-        public ICollection<DeliveryPriceT> DeliveryPriceT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
-        public ICollection<GeneralDiscountT> GeneralDiscountT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public ICollection<PartinerPaymentT> PartinerPaymentT { get; set; }
         public ICollection<PaymentT> PaymentT { get; set; }
@@ -53,7 +48,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<RequestDelayedT> RequestDelayedT { get; set; }
         public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
-        public ICollection<ServiceCityRatioT> ServiceCityRatioT { get; set; }
         public ICollection<SiteContractT> SiteContractT { get; set; }
         public ICollection<SiteT> SiteT { get; set; }
     }

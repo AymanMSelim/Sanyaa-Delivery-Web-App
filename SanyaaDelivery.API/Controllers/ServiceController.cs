@@ -19,32 +19,167 @@ namespace SanyaaDelivery.API.Controllers
             this.serviceService = serviceService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetList(int departmentId)
+        [HttpGet("GetById/{serviceId}")]
+        public async Task<ActionResult<HttpResponseDto<ServiceT>>> GetById(int serviceId)
         {
-            var list = await serviceService.GetListAsync(departmentId);
-            return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            try
+            {
+                var service = await serviceService.GetAsync(serviceId);
+                return Ok(HttpResponseDtoFactory<ServiceT>.CreateSuccessResponse(service));
+
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ServiceT>(ex);
+            }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetList(string departmentName, string sub0DepartmentName, string sub1DeparmetnName, string serviceName)
+        [HttpGet("GetByName/{serviceName}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetByName(string serviceName)
         {
-            var list = await serviceService.GetListAsync(departmentName, sub0DepartmentName, sub1DeparmetnName, serviceName);
-            return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            try
+            {
+                var serviceList = await serviceService.GetAsync(serviceName);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(serviceList));
+
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetOfferList(int departmentId)
+        [HttpPost("Add")]
+        public async Task<ActionResult<HttpResponseDto<ServiceT>>> Add(ServiceT service)
         {
-            var list = await serviceService.GetOfferListAsync(departmentId);
-            return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            try
+            {
+                var result = await serviceService.AddAsync(service);
+                var newService = await serviceService.GetAsync(service.ServiceId);
+                return Ok(HttpResponseDtoFactory<ServiceT>.CreateSuccessResponse(service, App.Global.Eumns.ResponseStatusCode.RecordAddedSuccessfully));
+
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ServiceT>(ex);
+            }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetOfferList(string departmentName, string sub0DepartmentName, string sub1DeparmetnName, string serviceName)
+        [HttpPost("Update")]
+        public async Task<ActionResult<HttpResponseDto<ServiceT>>> Update(ServiceT service)
         {
-            var list = await serviceService.GetListAsync(departmentName, sub0DepartmentName, sub1DeparmetnName, serviceName, true);
-            return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            try
+            {
+                var result = await serviceService.UpdateAsync(service);
+                var updatedService = await serviceService.GetAsync(service.ServiceId);
+                return Ok(HttpResponseDtoFactory<ServiceT>.CreateSuccessResponse(updatedService, App.Global.Eumns.ResponseStatusCode.RecordUpdatedSuccessfully));
+
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ServiceT>(ex);
+            }
+        }
+
+        [HttpPost("Delete")]
+        public async Task<ActionResult<HttpResponseDto<string>>> Delete(int serviceId)
+        {
+            try
+            {
+                var updatedService = await serviceService.DeleteAsync(serviceId);
+                return Ok(HttpResponseDtoFactory<string>.CreateSuccessResponse("Success", App.Global.Eumns.ResponseStatusCode.RecordDeletedSuccessfully));
+
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<string>(ex);
+            }
+        }
+
+        [HttpGet("GetListByDepartmentSub1Id/{departmentSub1Id}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetListByDepartmentSub1Id(int departmentSub1Id)
+        {
+            try
+            {
+                var list = await serviceService.GetListByDepartmentSub1Async(departmentSub1Id);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
+          
+        }
+
+        [HttpGet("GetListByDepartmentSub0Id/{departmentSub0Id}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetListByDepartmentSub0Id(int departmentSub0Id)
+        {
+            try
+            {
+                var list = await serviceService.GetListByDeparmentSub0Async(departmentSub0Id);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
+        }
+
+        [HttpGet("GetListByMainDepartmentId/{mainDepartmentId}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetListByMainDepartmentId(int mainDepartmentId)
+        {
+            try
+            {
+                var list = await serviceService.GetListByMainDeparmentAsync(mainDepartmentId);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
+        }
+
+        [HttpGet("GetOfferListByDepartmentSub1Id/{departmentSub1Id}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetOfferListByDepartmentSub1Id(int departmentSub1Id)
+        {
+            try
+            {
+                var list = await serviceService.GetOfferListByDepartmentSub1Async(departmentSub1Id);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
+        }
+
+        [HttpGet("GetOfferListByDepartmentSub0Id/{departmentSub0Id}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetOfferListByDepartmentSub0Id(int departmentSub0Id)
+        {
+            try
+            {
+                var list = await serviceService.GetOfferListByDeparmentSub0Async(departmentSub0Id);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
+          
+        }
+
+        [HttpGet("GetOfferListByMainDeparment/{mainDepartmentId}")]
+        public async Task<ActionResult<HttpResponseDto<List<ServiceT>>>> GetOfferListByMainDeparment(int mainDepartmentId)
+        {
+            try
+            {
+                var list = await serviceService.GetOfferListByMainDeparmentAsync(mainDepartmentId);
+                return Ok(HttpResponseDtoFactory<List<ServiceT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ServiceT>>(ex);
+            }
         }
     }
 }

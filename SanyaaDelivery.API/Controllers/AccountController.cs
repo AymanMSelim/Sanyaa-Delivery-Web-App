@@ -40,6 +40,19 @@ namespace SanyaaDelivery.API.Controllers
             this.generalSetting = generalSetting;
             this.registerService = registerService;
         }
+        
+        [AllowAnonymous]
+        [HttpGet("GetToken")]
+        public object GetToken()
+        {
+            return Ok(
+                   new
+                   {
+                       Username = "AymanSelim",
+                       Token = tokenService.CreateToken("1", "AymanSelim", new List<AccountRoleT>()),
+                       TokenExpireDate = DateTime.Now.AddDays(1),
+                   });
+        }
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -216,7 +229,11 @@ namespace SanyaaDelivery.API.Controllers
                 var client = await clientService.GetByPhone(clientRegisterDto.Phone);
                 if (client != null)
                 {
-                    var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientRegisterDto.Phone);
+                    var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, client.ClientId.ToString());
+                    if(account == null)
+                    {
+                        account = await registerService.RegisterClientAccount(client, clientRegisterDto);
+                    }
                     clientRegisterResponseDto = new ClientRegisterResponseDto
                     {
                         Client = client,

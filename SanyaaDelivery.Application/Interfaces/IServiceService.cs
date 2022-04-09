@@ -16,10 +16,8 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<ServiceT>> GetListByDeparmentSub0Async(int departmentSub0Id);
         Task<List<ServiceT>> GetOfferListByMainDeparmentAsync(int departmentId);
         Task<List<ServiceT>> GetOfferListByDeparmentSub0Async(int departmentSub0Id);
-        Task<List<ServiceT>> GetListAsync(int departmentSub1Id);
-        Task<List<ServiceT>> GetListAsync(string departmentName, string sub0DepartmentName, string sub1DeparmetnName, string serviceName, bool getOfferOnly = false);
-        Task<List<ServiceT>> GetOfferListAsync(int departmentSub1Id);
-        Task<List<ServiceT>> GetOfferListAsync(string departmentName, string sub0DepartmentName, string sub1DeparmetnName, string serviceName);
+        Task<List<ServiceT>> GetListByDepartmentSub1Async(int departmentSub1Id);
+        Task<List<ServiceT>> GetOfferListByDepartmentSub1Async(int departmentSub1Id);
         Task<int> DeleteAsync(int serviceId);
 
     }

@@ -17,7 +17,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<RequestT>, OrderRepository>();
             services.AddScoped<IRepository<LoginT>, EmployeeApplicationAccountRepository>();
             services.AddScoped<IRepository<EmployeeT>, EmployeeRepository>();
-            services.AddScoped<IRepository<DepartmentEmployeeT>, EmpDeptRepository>();
+            services.AddScoped<IRepository<DepartmentEmployeeT>, EmployeeDeptartmentRepository>();
             services.AddScoped<IRepository<SystemUserT>, SystemUserRepository>();
             services.AddScoped<IRepository<CleaningSubscribersT>, SubscribeRepository>();
             services.AddScoped<IRepository<AccountT>, AccountRepository>();
@@ -30,6 +30,13 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<DepartmentT>, DepartmentRepository>();
             services.AddScoped<IRepository<DepartmentSub0T>, DepartmentSub0Repository>();
             services.AddScoped<IRepository<DepartmentSub1T>, DepartmentSub1Repository>();
+            services.AddScoped<IRepository<CountryT>, CountryRepository>();
+            services.AddScoped<IRepository<GovernorateT>, GovernorateRepository>();
+            services.AddScoped<IRepository<CityT>, CityRepository>();
+            services.AddScoped<IRepository<RegionT>, RegionRepository>();
+            services.AddScoped<IRepository<AddressT>, AddressRepository>();
+            services.AddScoped<IRepository<ClientPhonesT>, ClientPhoneRepository>();
+            services.AddScoped<IRepository<EmployeeWorkplacesT>, EmployeeWorkplaceRepository>();
 
 
             services.AddScoped<IClientService, ClientService>();
@@ -51,6 +58,10 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IServiceService, ServiceService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
+            services.AddScoped<ICountryService, CountryService>();
+            services.AddScoped<IGovernorateService, GovernorateService>();
+            services.AddScoped<ICityService, CityService>();
+            services.AddScoped<IRegionService, RegionService>();
 
         }
     }

@@ -21,12 +21,17 @@
       }
     },
     "SanyaaDelivery.API": {
-      "commandName": "Project",
+      "commandName": "IIS",
       "launchUrl": "api/values",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "Local": {
+      "commandName": "Project",
+      "applicationUrl": "https://localhost:5001;http://localhost:5000",
+      "jsWebView2Debugging": false
     }
   }
 }

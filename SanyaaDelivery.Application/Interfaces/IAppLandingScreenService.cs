@@ -7,7 +7,7 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IAppLandingScreenService
     {
-        Task<List<Domain.Models.AppLandingScreenItemT>> GetPictureListAsync();
+        Task<List<Domain.Models.AppLandingScreenItemT>> GetBannerListAsync();
         Task<List<Domain.Models.AppLandingScreenItemT>> GetOfferListAsync();
         Task<List<Domain.Models.AppLandingScreenItemT>> GetDepartmentListAsync();
         Task<List<Domain.Models.AppLandingScreenItemT>> GetListAsync(int type);

@@ -33,7 +33,7 @@ namespace SanyaaDelivery.Application.Services
         public Task<List<ValueWithIdDto>> FilerAsync(int departmentSub0Id)
         {
             return departmentSub1Repository
-                .Where(d => d.Department.DepartmentSub0Id == departmentSub0Id)
+                .Where(d => d.DepartmentSub0Id == departmentSub0Id)
                 .Select(d => new ValueWithIdDto
                 {
                     Id = d.DepartmentId.ToString(),

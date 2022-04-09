@@ -16,4 +16,10 @@
     <ProjectReference Include="..\SanyaaDelivery.Infra.IoC\SanyaaDelivery.Infra.IoC.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\LandingScreen\Banners\" />
+    <Folder Include="wwwroot\Images\LandingScreen\Departments\" />
+    <Folder Include="wwwroot\Images\LandingScreen\Offers\" />
+  </ItemGroup>
+
 </Project>

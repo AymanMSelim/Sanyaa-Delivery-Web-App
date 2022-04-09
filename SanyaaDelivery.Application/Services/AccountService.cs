@@ -18,10 +18,10 @@ namespace SanyaaDelivery.Application.Services
             this.accountRepository = accountRepository;
         }
 
-        public Task<int> Add(AccountT account)
+        public async Task<int> Add(AccountT account)
         {
-            accountRepository.AddAsync(account);
-            return accountRepository.SaveAsync();
+            await accountRepository.AddAsync(account);
+            return await accountRepository.SaveAsync();
         }
 
         public Task<int> Update(AccountT account)

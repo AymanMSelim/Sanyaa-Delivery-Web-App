@@ -64,15 +64,16 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             }
         }
 
-        public void AddAsync(Entity entity)
+        public Task AddAsync(Entity entity)
         {
             try
             {
-                DbSet.AddAsync(entity);
+                return DbSet.AddAsync(entity);
             }
             catch (Exception ex)
             {
                 App.Global.Logging.LogHandler.PublishException(ex);
+                return null;
             }
         }
 

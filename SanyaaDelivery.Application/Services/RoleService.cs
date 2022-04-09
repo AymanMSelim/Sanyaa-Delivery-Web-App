@@ -16,10 +16,10 @@ namespace SanyaaDelivery.Application.Services
         {
             this.roleRepository = roleRepository;
         }
-        public Task<int> Add(RoleT role)
+        public async Task<int> Add(RoleT role)
         {
-            roleRepository.AddAsync(role);
-            return roleRepository.SaveAsync();
+            await roleRepository.AddAsync(role);
+            return await roleRepository.SaveAsync();
         }
 
         public Task<RoleT> Get(int id)

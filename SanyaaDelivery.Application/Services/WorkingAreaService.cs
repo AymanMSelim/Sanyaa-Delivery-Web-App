@@ -20,10 +20,10 @@ namespace SanyaaDelivery.Application.Services
             this.workingAreaRepository = workingAreaRepository;
         }
 
-        public Task<int> Add(WorkingAreaT workingArea)
+        public async Task<int> Add(WorkingAreaT workingArea)
         {
-            workingAreaRepository.AddAsync(workingArea);
-            return workingAreaRepository.SaveAsync();
+            await workingAreaRepository.AddAsync(workingArea);
+            return await workingAreaRepository.SaveAsync();
         }
 
         public Task<WorkingAreaT> Get(int id)

@@ -12,6 +12,10 @@ namespace App.Global.RestAPI
     {
         public static async Task<string> GetResponseAsync(HttpResponseMessage httpResponseMessage)
         {
+            if(httpResponseMessage.Content == null)
+            {
+                return null;
+            }
             return await httpResponseMessage.Content.ReadAsStringAsync();
         }
 
@@ -19,6 +23,10 @@ namespace App.Global.RestAPI
         {
             try
             {
+                if(httpResponseMessage.Content == null)
+                {
+                    return null;
+                }
                 var responstText = await httpResponseMessage.Content.ReadAsStringAsync();
                 if (string.IsNullOrEmpty(responstText))
                 {

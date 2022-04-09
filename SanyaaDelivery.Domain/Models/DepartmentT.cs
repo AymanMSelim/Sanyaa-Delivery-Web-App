@@ -7,16 +7,18 @@ namespace SanyaaDelivery.Domain.Models
     {
         public DepartmentT()
         {
-            DepartmentEmployeeT = new HashSet<DepartmentEmployeeT>();
-            DepartmentSub0T = new HashSet<DepartmentSub0T>();
+            CartT = new HashSet<CartT>();
+            RequestT = new HashSet<RequestT>();
+            ServiceRatioDetailsT = new HashSet<ServiceRatioDetailsT>();
         }
 
+        public int DepartmentId { get; set; }
         public string DepartmentName { get; set; }
-        public string DepartmentImage { get; set; }
-        public int? DepartmentId { get; set; }
         public string DepartmentDes { get; set; }
+        public string DepartmentImage { get; set; }
 
-        public ICollection<DepartmentEmployeeT> DepartmentEmployeeT { get; set; }
-        public ICollection<DepartmentSub0T> DepartmentSub0T { get; set; }
+        public ICollection<CartT> CartT { get; set; }
+        public ICollection<RequestT> RequestT { get; set; }
+        public ICollection<ServiceRatioDetailsT> ServiceRatioDetailsT { get; set; }
     }
 }

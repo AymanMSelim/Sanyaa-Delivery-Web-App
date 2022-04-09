@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using SanyaaDelivery.API.ActionsFilter;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace SanyaaDelivery.API
 {
@@ -83,6 +84,14 @@ namespace SanyaaDelivery.API
                     }
                 }
             });
+            //app.UseExceptionHandler(c => c.Run(async context =>
+            //{
+            //    var exception = context.Features
+            //        .Get<IExceptionHandlerPathFeature>()
+            //        .Error;
+            //    var response = new { error = exception.Message };
+            //    await context.Response.(response);
+            //}));
             app.UseMvc();
            
         }

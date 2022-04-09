@@ -20,16 +20,16 @@ namespace SanyaaDelivery.Application.Services
             this.subscribeRepository = subscribeRepository;
         }
 
-        public Task<int> AddSubscribe(int clientId, int package, int userId)
+        public async Task<int> AddSubscribe(int clientId, int package, int userId)
         {
-            subscribeRepository.AddAsync(new CleaningSubscribersT
+            await subscribeRepository.AddAsync(new CleaningSubscribersT
             {
                 SubscribeDate = DateTime.Now,
                 Package = package,
                 ClientId = clientId,
                 SystemUserId = userId
             }) ;
-            return subscribeRepository.SaveAsync();
+            return await subscribeRepository.SaveAsync();
         }
 
         public Task<int> EditPackage(int clientId, int newPackage)

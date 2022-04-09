@@ -19,7 +19,7 @@ namespace App.Global.RestAPI
 
         static APIService()
         {
-            //System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
+            System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
         }
 
         public APIService(string baseUrl, TokenType tokenType = TokenType.None, string token = null)

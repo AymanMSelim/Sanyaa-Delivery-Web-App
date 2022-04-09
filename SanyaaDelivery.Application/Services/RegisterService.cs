@@ -81,5 +81,39 @@ namespace SanyaaDelivery.Application.Services
                 SecurityCode = account.AccountSecurityCode
             };
         }
+
+        public async Task<AccountT> RegisterClientAccount(ClientT client, ClientRegisterDto clientRegisterDto)
+        {
+            string passwordSlat = Guid.NewGuid().ToString().Replace("-", "");
+            AccountT account = new AccountT
+            {
+                AccountHashSlat = passwordSlat,
+                AccountPassword = App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(passwordSlat, clientRegisterDto.Password),
+                AccountUsername = clientRegisterDto.Phone,
+                CreationDate = DateTime.Now,
+                AccountReferenceId = client.ClientId.ToString(),
+                IsActive = false,
+                SystemUserId = Domain.GlobalSetting.CustomerAppUserId,
+                AccountSecurityCode = Guid.NewGuid().ToString().Replace("-", ""),
+                AccountTypeId = GeneralSetting.CustomerAccountTypeId,
+                MobileOtpCode = App.Global.Generator.GenerateOTPCode(4),
+                IsMobileVerfied = false,
+                IsEmailVerfied = false,
+                LastOtpCreationTime = DateTime.Now,
+                AccountRoleT = new List<AccountRoleT>
+                {
+                    new AccountRoleT
+                    {
+                        RoleId = GeneralSetting.CustomerRoleId
+                    }
+                }
+            };
+            var addAccountResult = await accountService.Add(account);
+            if (addAccountResult <= 0)
+            {
+                return null;
+            }
+            return account;
+        }
     }
 }

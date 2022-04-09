@@ -17,10 +17,10 @@ namespace SanyaaDelivery.Application.Services
         {
             this.accountTypeRepository = accountTypeRepository;
         }
-        public Task<int> Add(AccountTypeT accountType)
+        public async Task<int> Add(AccountTypeT accountType)
         {
-            accountTypeRepository.AddAsync(accountType);
-            return accountTypeRepository.SaveAsync();
+            await accountTypeRepository.AddAsync(accountType);
+            return await accountTypeRepository.SaveAsync();
         }
 
         public Task<List<AccountTypeT>> GetList()

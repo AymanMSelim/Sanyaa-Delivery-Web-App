@@ -8,19 +8,50 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Global.DTOs;
 
 namespace SanyaaDelivery.API.Controllers
 {
-    [Authorize(Roles = "Administrator,EmployeeApp")]
+    [Authorize]
     public class EmployeeController : APIBaseAuthorizeController
     {
         private readonly IEmployeeService employeeService;
         private readonly IOrderService orderService;
+        private readonly IEmployeeAppAccountService employeeAppAccountService;
 
-        public EmployeeController(IEmployeeService employeeService, IOrderService orderService)
+        public EmployeeController(IEmployeeService employeeService, IOrderService orderService, IEmployeeAppAccountService employeeAppAccountService)
         {
             this.employeeService = employeeService;
             this.orderService = orderService;
+            this.employeeAppAccountService = employeeAppAccountService;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<HttpResponseDto<EmployeeT>>> Add(EmployeeT employee)
+        {
+            var result = await employeeService.AddAsync(employee);
+            if(result > 0)
+            {
+                return Created("", HttpResponseDtoFactory<EmployeeT>.CreateSuccessResponse(employee));
+            }
+            else
+            {
+                return BadRequest(HttpResponseDtoFactory<EmployeeT>.CreateErrorResponse());
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<HttpResponseDto<EmployeeT>>> Update(EmployeeT employee)
+        {
+            var result = await employeeService.UpdateAsync(employee);
+            if (result > 0)
+            {
+                return Ok(HttpResponseDtoFactory<EmployeeT>.CreateSuccessResponse(employee));
+            }
+            else
+            {
+                return BadRequest(HttpResponseDtoFactory<EmployeeT>.CreateErrorResponse());
+            }
         }
 
         [HttpGet("GetInfo/{employeeId}")]
