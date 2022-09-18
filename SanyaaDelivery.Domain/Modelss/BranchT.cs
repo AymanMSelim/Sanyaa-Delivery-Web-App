@@ -7,6 +7,7 @@ namespace SanyaaDelivery.Domain.Models
     {
         public BranchT()
         {
+            CityT = new HashSet<CityT>();
             ClientT = new HashSet<ClientT>();
             EmployeeWorkplacesT = new HashSet<EmployeeWorkplacesT>();
             ProductT = new HashSet<ProductT>();
@@ -26,6 +27,7 @@ namespace SanyaaDelivery.Domain.Models
         public int? BranchFlatNum { get; set; }
         public string BranchDes { get; set; }
 
+        public ICollection<CityT> CityT { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
         public ICollection<EmployeeWorkplacesT> EmployeeWorkplacesT { get; set; }
         public ICollection<ProductT> ProductT { get; set; }

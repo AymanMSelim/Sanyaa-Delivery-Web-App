@@ -12,14 +12,14 @@ namespace App.Global.Logging
 
         }
 
-        public static HttpResponseDto<T> PublishExceptionReturnResponse<T>(Exception ex)
+        public static OpreationResultMessage<T> PublishExceptionReturnResponse<T>(Exception ex)
         {
-            return HttpResponseDtoFactory<T>.CreateExceptionResponse(ex);
+            return OpreationResultMessageFactory<T>.CreateExceptionResponse(ex);
         }
 
-        public static HttpResponseDto<object> PublishExceptionReturnResponse(Exception ex)
+        public static OpreationResultMessage<object> PublishExceptionReturnResponse(Exception ex)
         {
-            return HttpResponseDtoFactory<object>.CreateExceptionResponse(ex);
+            return OpreationResultMessageFactory<object>.CreateExceptionResponse(ex);
         }
     }
 }

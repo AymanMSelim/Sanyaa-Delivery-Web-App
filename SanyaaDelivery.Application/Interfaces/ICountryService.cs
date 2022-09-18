@@ -8,6 +8,10 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface ICountryService
     {
-        Task<List<CountryT>> GetList();
+        Task<List<CountryT>> GetListAsync(string countryName = null);
+        Task<CountryT> GetAsync(int countryId);
+        Task<int> DeletetAsync(int countryId);
+        Task<int> AddAsync(CountryT country);
+        Task<int> UpdateAsync(CountryT country);
     }
 }

@@ -8,6 +8,14 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface ICityService
     {
-        Task<List<CityT>> GetList(int? governorateId);
+        Task<int> AddAsync(CityT city);
+        Task<List<CityT>> GetListAsync(int? countryId = null, int? governorateId = null, string cityName = null);
+        Task<List<CityT>> GetListByBranchIdAsync(int branchId);
+        Task<CityT> GetAsync(int id, bool includeGov = false);
+        Task<CityT> GetAsync(string cityName);
+        Task<int> GetMinimumChargeAsync(int? cityId = null, int? branchId = null);
+        Task<int> DeletetAsync(int id);
+        Task<int> UpdateAsync(CityT city);
+        Task<BranchT> GetCityBranchAsync(int cityId);
     }
 }

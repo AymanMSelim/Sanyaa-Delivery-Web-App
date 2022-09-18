@@ -5,6 +5,7 @@ using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Application.Services;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data;
 using SanyaaDelivery.Infra.Data.Repositories;
 
 namespace SanyaaDelivery.Infra.IoC
@@ -19,7 +20,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<EmployeeT>, EmployeeRepository>();
             services.AddScoped<IRepository<DepartmentEmployeeT>, EmployeeDeptartmentRepository>();
             services.AddScoped<IRepository<SystemUserT>, SystemUserRepository>();
-            services.AddScoped<IRepository<CleaningSubscribersT>, SubscribeRepository>();
+            services.AddScoped<IRepository<Cleaningsubscribers>, SubscribeRepository>();
             services.AddScoped<IRepository<AccountT>, AccountRepository>();
             services.AddScoped<IRepository<AccountRoleT>, AccountRoleRepository>();
             services.AddScoped<IRepository<AccountTypeT>, AccountTypeRepository>();
@@ -37,10 +38,32 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<AddressT>, AddressRepository>();
             services.AddScoped<IRepository<ClientPhonesT>, ClientPhoneRepository>();
             services.AddScoped<IRepository<EmployeeWorkplacesT>, EmployeeWorkplaceRepository>();
+            services.AddScoped<IRepository<EmployeeSubscriptionT>, EmployeeSubscriptionRepository>();
+            services.AddScoped<IRepository<BranchT>, BranchRepository>();
+            services.AddScoped<IRepository<TranslatorT>, TranslatorRepository>();
+            services.AddScoped<IRepository<EmploymentApplicationsT>, EmployementApplicationRepository>();
+            services.AddScoped<IRepository<AppSettingT>, AppSettingRepository>();
+            services.AddScoped<IRepository<TokenT>, TokenRepository>();
+            services.AddScoped<IRepository<EmployeeTypeT>, EmployeeTypeRepository>();
+            services.AddScoped<IRepository<ServiceRatioT>, ServiceRatioRepository>();
+            services.AddScoped<IRepository<ServiceRatioDetailsT>, ServiceRatioDetailsRepository>();
+            services.AddScoped<IRepository<OpeningSoonDepartmentT>, OpeningSoonDepartmentRepository>();
+            services.AddScoped<IRepository<TransactionT>, TransactionRepository>();
+            services.AddScoped<IRepository<CartT>, CartRepository>();
+            services.AddScoped<IRepository<CartDetailsT>, CartDetailsRepository>();
+            services.AddScoped<IRepository<SubscriptionT>, SubscriptionRepository>();
+            services.AddScoped<IRepository<SubscriptionSequenceT>, SubscriptionSequenceRepository>();
+            services.AddScoped<IRepository<ClientSubscriptionT>, ClientSubscriptionRepository>();
+            services.AddScoped<IRepository<FavouriteServiceT>, FavouriteServiceRepository>();
+            services.AddScoped<IRepository<PromocodeT>, PromocodeRepository>();
+            services.AddScoped<IRepository<DayWorkingTimeT>, DayWorkingTimeRepository>();
+            services.AddScoped<IRepository<AttachmentT>, AttatchmentRepository>();
+            services.AddScoped<IRepository<FollowUpT>, FollowUpRepository>();
 
 
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IClientService, ClientService>();
-            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IRequestService, RequestService>();
             services.AddScoped<IEmployeeAppAccountService, EmployeeAppAccountService>();
             services.AddScoped<IEmployeeService, EmployeeService>();
             services.AddScoped<IEmpDeptService, EmpDeptService>();
@@ -57,11 +80,28 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IAppLandingScreenService, AppLandingScreenService>();
             services.AddScoped<IServiceService, ServiceService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
-            services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
             services.AddScoped<ICountryService, CountryService>();
             services.AddScoped<IGovernorateService, GovernorateService>();
             services.AddScoped<ICityService, CityService>();
             services.AddScoped<IRegionService, RegionService>();
+            services.AddScoped<IRuntimeDataService, RuntimeDataService>();
+            services.AddScoped<IAppSettingService, AppSettingService>();
+            services.AddScoped<IBranchService, BranchService>();
+            services.AddScoped<IDepartmentService, DepartmentService>();
+            services.AddScoped<IDeparmentSub0Service, DepartmentSub0Service>();
+            services.AddScoped<IDeparmentSub1Service, DepartmentSub1Service>();
+            services.AddScoped<IServiceRatioService, ServiceRatioService>();
+            services.AddScoped<ITransactionService, TransactionService>();
+            services.AddScoped<ICartService, CartService>();
+            services.AddScoped<ISubscriptionService, SubscriptionService>();
+            services.AddScoped<IClientSubscriptionService, ClientSubscriptionService>();
+            services.AddScoped<IFavouriteServiceService, FavouriteServiceService>();
+            services.AddScoped<IPromocodeService, PromocodeService>();
+            services.AddScoped<IHelperService, HelperService>();
+            services.AddScoped<IDayWorkingTimeService, DayWorkingTimeService>();
+            services.AddScoped<IAttachmentService, AttachmentService>();
+            services.AddSingleton<IFawryAPIService, FawryAPIService>();
+            services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
 
         }
     }

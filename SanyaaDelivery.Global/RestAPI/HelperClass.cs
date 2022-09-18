@@ -57,7 +57,7 @@ namespace App.Global.RestAPI
                     return JsonConvert.DeserializeObject<T>(responeText.Replace("\r\n", ""));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return default;
             }

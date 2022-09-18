@@ -10,7 +10,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<List<ClientT>> GetSubscribers();
 
-        Task<CleaningSubscribersT> GetInfo(int clientId);
+        Task<Cleaningsubscribers> GetInfo(int clientId);
 
         Task<int> AddSubscribe(int clientId, int package, int userId);
 

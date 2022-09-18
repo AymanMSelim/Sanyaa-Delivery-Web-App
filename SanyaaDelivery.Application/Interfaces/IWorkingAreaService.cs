@@ -18,5 +18,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<ValueWithIdDto>> GetCityByGovList(string govName, string searchValue);
         Task<List<ValueWithIdDto>> GetRegionByCityList(string cityName, string searchValue);
         Task<int> Add(WorkingAreaT workingArea);
+        Task<int> Update(WorkingAreaT workingArea);
     }
 }

@@ -8,7 +8,11 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IGovernorateService
     {
-        Task<List<GovernorateT>> GetList(int? countryId);
-
+        Task<int> AddAsync(GovernorateT governorate);
+        Task<List<GovernorateT>> GetListAsync(int? countryId, string governorateName = null);
+        Task<GovernorateT> GetAsync(int id);
+        Task<GovernorateT> GetAsync(string governorateName);
+        Task<int> DeletetAsync(int governorateId);
+        Task<int> UpdateAsync(GovernorateT governorate);
     }
 }

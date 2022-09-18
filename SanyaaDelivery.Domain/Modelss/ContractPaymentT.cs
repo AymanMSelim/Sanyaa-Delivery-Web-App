@@ -11,7 +11,6 @@ namespace SanyaaDelivery.Domain.Models
         public DateTime? CreateTime { get; set; }
         public int SystemUserId { get; set; }
 
-        public SiteContractT Contact { get; set; }
         public SystemUserT SystemUser { get; set; }
     }
 }

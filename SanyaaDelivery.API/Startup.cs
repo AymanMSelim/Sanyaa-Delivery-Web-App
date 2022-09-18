@@ -48,10 +48,10 @@ namespace SanyaaDelivery.API
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
             services.AddDbContext<SanyaaDatabaseContext>(options =>
-                options.UseMySql(
-             Configuration.GetConnectionString("sanyaaDatabaseContext")
-             ));
+                options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")));
             DependencyContainer.RegisterServices(services);
+            services.AddHttpContextAccessor();
+            services.AddScoped<CommonService>();
             services.AddCors();
             //App.Global.SMS.SMSMisrService.SetParameters(
             //    Configuration.GetConnectionString("SMSMisrUsername"),
@@ -61,7 +61,7 @@ namespace SanyaaDelivery.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Application.IGeneralSetting generalSetting)
         {
             if (env.IsDevelopment())
             {
@@ -78,7 +78,7 @@ namespace SanyaaDelivery.API
             {
                 OnPrepareResponse = (context) =>
                 {
-                    if (!context.Context.User.Identity.IsAuthenticated)
+                    if (!context.File.PhysicalPath.ToLower().Contains("public") && !context.Context.User.Identity.IsAuthenticated)
                     {
                         throw new Exception("Not authenticated");
                     }

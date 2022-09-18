@@ -128,5 +128,11 @@ namespace SanyaaDelivery.Application.Services
                               Value = d.FirstOrDefault().WorkingAreaRegion
                           }).ToListAsync();
         }
+
+        public Task<int> Update(WorkingAreaT workingArea)
+        {
+            workingAreaRepository.Update(workingArea.WorkingAreaId, workingArea);
+            return workingAreaRepository.SaveAsync();
+        }
     }
 }

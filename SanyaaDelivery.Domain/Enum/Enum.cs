@@ -10,11 +10,19 @@ namespace SanyaaDelivery.Domain.Enum
         Sucsess = 1
     }
 
+    public enum ClientPointType
+    {
+        Add = 1,
+        Withdraw = 2
+    }
+
     public enum LandingScreenItemType
     {
         Banner = 1,
         Offer = 2,
-        Department = 3
+        Department = 3,
+        Video = 4,
+        Link = 5
     }
 
     public enum AccountType
@@ -23,6 +31,11 @@ namespace SanyaaDelivery.Domain.Enum
         Employee = 2,
         Client = 3,
         
+    }
+
+    public enum AttachmentType
+    {
+        CartImage = 1,
     }
 
 }

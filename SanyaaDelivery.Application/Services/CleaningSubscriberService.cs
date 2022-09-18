@@ -13,16 +13,16 @@ namespace SanyaaDelivery.Application.Services
     public class CleaningSubscriberService : ICleaningSubscriberService
     {
 
-        private readonly IRepository<CleaningSubscribersT> subscribeRepository;
+        private readonly IRepository<Cleaningsubscribers> subscribeRepository;
 
-        public CleaningSubscriberService(IRepository<CleaningSubscribersT> subscribeRepository)
+        public CleaningSubscriberService(IRepository<Cleaningsubscribers> subscribeRepository)
         {
             this.subscribeRepository = subscribeRepository;
         }
 
         public async Task<int> AddSubscribe(int clientId, int package, int userId)
         {
-            await subscribeRepository.AddAsync(new CleaningSubscribersT
+            await subscribeRepository.AddAsync(new Cleaningsubscribers
             {
                 SubscribeDate = DateTime.Now,
                 Package = package,
@@ -40,7 +40,7 @@ namespace SanyaaDelivery.Application.Services
             return subscribeRepository.SaveAsync();
         }
 
-        public Task<CleaningSubscribersT> GetInfo(int clientId)
+        public Task<Cleaningsubscribers> GetInfo(int clientId)
         {
             return subscribeRepository.Where(s => s.ClientId == clientId).FirstOrDefaultAsync();
         }

@@ -8,6 +8,7 @@ namespace SanyaaDelivery.Domain.Models
         public AccountT()
         {
             AccountRoleT = new HashSet<AccountRoleT>();
+            TokenT = new HashSet<TokenT>();
         }
 
         public int AccountId { get; set; }
@@ -21,7 +22,12 @@ namespace SanyaaDelivery.Domain.Models
         public bool? IsMobileVerfied { get; set; }
         public string EmailOtpCode { get; set; }
         public DateTime? LastOtpCreationTime { get; set; }
+        public sbyte OtpCountWithinDay { get; set; }
         public bool? IsEmailVerfied { get; set; }
+        public bool? IsPasswordReseted { get; set; }
+        public string ResetPasswordToken { get; set; }
+        public DateTime? LastResetPasswordRequestTime { get; set; }
+        public sbyte PasswordResetCountWithinDay { get; set; }
         public bool? IsActive { get; set; }
         public DateTime CreationDate { get; set; }
         public int SystemUserId { get; set; }
@@ -29,5 +35,6 @@ namespace SanyaaDelivery.Domain.Models
         public AccountTypeT AccountType { get; set; }
         public SystemUserT SystemUser { get; set; }
         public ICollection<AccountRoleT> AccountRoleT { get; set; }
+        public ICollection<TokenT> TokenT { get; set; }
     }
 }

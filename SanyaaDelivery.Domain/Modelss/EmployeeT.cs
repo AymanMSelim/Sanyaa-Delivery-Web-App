@@ -11,10 +11,10 @@ namespace SanyaaDelivery.Domain.Models
             EmployeeWorkplacesT = new HashSet<EmployeeWorkplacesT>();
             FawryChargeT = new HashSet<FawryChargeT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
+            InsurancePaymentT = new HashSet<InsurancePaymentT>();
             MessagesT = new HashSet<MessagesT>();
             RejectRequestT = new HashSet<RejectRequestT>();
             RequestT = new HashSet<RequestT>();
-            SiteT = new HashSet<SiteT>();
             SystemUserT = new HashSet<SystemUserT>();
             TimetableT = new HashSet<TimetableT>();
         }
@@ -36,7 +36,10 @@ namespace SanyaaDelivery.Domain.Models
         public DateTime EmployeeHireDate { get; set; }
         public sbyte? EmployeePercentage { get; set; }
         public sbyte? EmployeeType { get; set; }
+        public string EmployeeImageUrl { get; set; }
+        public int? SubscriptionId { get; set; }
 
+        public EmployeeSubscriptionT Subscription { get; set; }
         public EmployeeLocation EmployeeLocation { get; set; }
         public FiredStaffT FiredStaffT { get; set; }
         public LoginT LoginT { get; set; }
@@ -44,10 +47,10 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<EmployeeWorkplacesT> EmployeeWorkplacesT { get; set; }
         public ICollection<FawryChargeT> FawryChargeT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
+        public ICollection<InsurancePaymentT> InsurancePaymentT { get; set; }
         public ICollection<MessagesT> MessagesT { get; set; }
         public ICollection<RejectRequestT> RejectRequestT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
-        public ICollection<SiteT> SiteT { get; set; }
         public ICollection<SystemUserT> SystemUserT { get; set; }
         public ICollection<TimetableT> TimetableT { get; set; }
     }

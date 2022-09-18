@@ -8,6 +8,8 @@ namespace SanyaaDelivery.Domain.Models
         public ServiceT()
         {
             CartDetailsT = new HashSet<CartDetailsT>();
+            FavouriteServiceT = new HashSet<FavouriteServiceT>();
+            RequestServicesT = new HashSet<RequestServicesT>();
         }
 
         public int ServiceId { get; set; }
@@ -25,5 +27,7 @@ namespace SanyaaDelivery.Domain.Models
 
         public DepartmentSub1T Department { get; set; }
         public ICollection<CartDetailsT> CartDetailsT { get; set; }
+        public ICollection<FavouriteServiceT> FavouriteServiceT { get; set; }
+        public ICollection<RequestServicesT> RequestServicesT { get; set; }
     }
 }

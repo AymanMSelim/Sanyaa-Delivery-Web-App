@@ -15,5 +15,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> UpdateAsync(DepartmentT department);
         Task<int> DeleteAsync(int departmentId);
         Task<int> DeleteAsync(string departmentName);
+        Task<bool> IsExistAsync(string departmentName);
     }
 }

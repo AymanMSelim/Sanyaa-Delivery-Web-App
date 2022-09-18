@@ -17,7 +17,6 @@ namespace SanyaaDelivery.Domain.Models
             RequestDelayedT = new HashSet<RequestDelayedT>();
             RequestDiscountT = new HashSet<RequestDiscountT>();
             RequestServicesT = new HashSet<RequestServicesT>();
-            SiteRequestT = new HashSet<SiteRequestT>();
         }
 
         public int RequestId { get; set; }
@@ -61,6 +60,5 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<RequestDelayedT> RequestDelayedT { get; set; }
         public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
         public ICollection<RequestServicesT> RequestServicesT { get; set; }
-        public ICollection<SiteRequestT> SiteRequestT { get; set; }
     }
 }

@@ -28,7 +28,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetInfo/{clientId}")]
-        public async Task<ActionResult<CleaningSubscribersT>> GetInfo(int clientId)
+        public async Task<ActionResult<Cleaningsubscribers>> GetInfo(int clientId)
         {
             return await subscriberService.GetInfo(clientId);
         }
@@ -43,7 +43,7 @@ namespace SanyaaDelivery.API.Controllers
             }
             else
             {
-                return BadRequest();
+                return Ok();
             }
         }
     }

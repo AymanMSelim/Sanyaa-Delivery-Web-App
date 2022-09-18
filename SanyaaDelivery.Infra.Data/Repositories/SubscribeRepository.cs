@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SanyaaDelivery.Infra.Data.Repositories
 {
-    public class SubscribeRepository : BaseRepository<CleaningSubscribersT>
+    public class SubscribeRepository : BaseRepository<Cleaningsubscribers>
     {
 
         public SubscribeRepository(SanyaaDatabaseContext dbContext) : base(dbContext)

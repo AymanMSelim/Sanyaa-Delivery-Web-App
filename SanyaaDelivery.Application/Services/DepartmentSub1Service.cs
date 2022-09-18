@@ -1,4 +1,5 @@
 ﻿using App.Global.DTOs;
+using App.Global.ExtensionMethods;
 using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
@@ -19,6 +20,13 @@ namespace SanyaaDelivery.Application.Services
         {
             this.departmentSub1Repository = departmentSub1Repository;
         }
+
+        public async Task<int> AddAsync(DepartmentSub1T departmentSub1)
+        {
+            await departmentSub1Repository.AddAsync(departmentSub1);
+            return await departmentSub1Repository.SaveAsync();
+        }
+
         public Task<List<ValueWithIdDto>> FilerAsync(string departmentName, string departmentSub0)
         {
             return departmentSub1Repository
@@ -56,6 +64,35 @@ namespace SanyaaDelivery.Application.Services
             return departmentSub1Repository
                 .Where(d => d.DepartmentName.Contains(departmentName) && d.DepartmentSub0.Contains(departmentSub0))
                 .ToListAsync();
+        }
+
+        public Task<List<DepartmentSub1T>> GetListAsync(int? mainDepartmentId, int? departmentSub0Id, string departmentSub1Name)
+        {
+            var query = departmentSub1Repository.DbSet.AsQueryable();
+            if (mainDepartmentId.HasValue)
+            {
+                query = query.Where(d => d.DepartmentSub0Navigation.DepartmentId == mainDepartmentId);
+            }
+            if (departmentSub0Id.HasValue)
+            {
+                query = query.Where(d => d.DepartmentSub0Id == departmentSub0Id);
+            }
+            if (departmentSub1Name.IsNotNull())
+            {
+                query = query.Where(d => d.DepartmentSub1.Contains(departmentSub1Name));
+            }
+            return query.ToListAsync();
+        }
+
+        public Task<bool> IsExistAsync(string departmentName)
+        {
+            return departmentSub1Repository.Where(d => d.DepartmentName.ToLower() == departmentName.ToLower()).AnyAsync();
+        }
+
+        public Task<int> UpdateAsync(DepartmentSub1T departmentSub1)
+        {
+             departmentSub1Repository.Update(departmentSub1.DepartmentId, departmentSub1);
+            return  departmentSub1Repository.SaveAsync();
         }
     }
 }

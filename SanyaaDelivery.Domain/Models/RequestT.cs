@@ -11,11 +11,12 @@ namespace SanyaaDelivery.Domain.Models
             FawryChargeRequestT = new HashSet<FawryChargeRequestT>();
             FollowUpT = new HashSet<FollowUpT>();
             PartinerPaymentRequestT = new HashSet<PartinerPaymentRequestT>();
+            RejectRequestT = new HashSet<RejectRequestT>();
             RequestCanceledT = new HashSet<RequestCanceledT>();
             RequestComplaintT = new HashSet<RequestComplaintT>();
             RequestDelayedT = new HashSet<RequestDelayedT>();
             RequestDiscountT = new HashSet<RequestDiscountT>();
-            SiteRequestT = new HashSet<SiteRequestT>();
+            RequestServicesT = new HashSet<RequestServicesT>();
         }
 
         public int RequestId { get; set; }
@@ -43,6 +44,7 @@ namespace SanyaaDelivery.Domain.Models
         public ClientT Client { get; set; }
         public DepartmentT Department { get; set; }
         public EmployeeT Employee { get; set; }
+        public RequestStatusT RequestStatusNavigation { get; set; }
         public AddressT RequestedAddress { get; set; }
         public ClientPhonesT RequestedPhone { get; set; }
         public SystemUserT SystemUser { get; set; }
@@ -52,10 +54,11 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<FawryChargeRequestT> FawryChargeRequestT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
         public ICollection<PartinerPaymentRequestT> PartinerPaymentRequestT { get; set; }
+        public ICollection<RejectRequestT> RejectRequestT { get; set; }
         public ICollection<RequestCanceledT> RequestCanceledT { get; set; }
         public ICollection<RequestComplaintT> RequestComplaintT { get; set; }
         public ICollection<RequestDelayedT> RequestDelayedT { get; set; }
         public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
-        public ICollection<SiteRequestT> SiteRequestT { get; set; }
+        public ICollection<RequestServicesT> RequestServicesT { get; set; }
     }
 }

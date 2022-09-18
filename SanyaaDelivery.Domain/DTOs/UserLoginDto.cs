@@ -24,4 +24,13 @@ namespace SanyaaDelivery.Domain.DTOs
         [Required]
         public string Password { get; set; }
     }
+
+    public class ClientLoginWithOtpDto
+    {
+        [Required]
+        public string Phone { get; set; }
+
+        [Required]
+        public string OtpCode { get; set; }
+    }
 }

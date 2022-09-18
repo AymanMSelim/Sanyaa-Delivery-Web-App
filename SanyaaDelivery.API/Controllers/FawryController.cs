@@ -1,4 +1,5 @@
-﻿using App.Global.Interfaces;
+﻿using App.Global.DTOs;
+using App.Global.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SanyaaDelivery.Application.Interfaces;
@@ -13,56 +14,37 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IFawryService fawryService;
         private readonly IConfiguration configuration;
-        private readonly IOrderService orderService;
+        private readonly IRequestService orderService;
+        private readonly IEmployeeService employeeService;
 
-        public FawryController(IFawryService fawryService, IConfiguration configuration, IOrderService orderService)
+        public FawryController(IFawryService fawryService, IConfiguration configuration,
+            IRequestService orderService, IEmployeeService employeeService)
         {
             this.fawryService = fawryService;
             this.configuration = configuration;
             this.orderService = orderService;
+            this.employeeService = employeeService;
         }
 
         [HttpGet("GenerateRefNumber/{employeeId}")]
         public async Task<ActionResult<App.Global.Models.Fawry.FawryRefNumberResponse>> GenerateRefNumber(string employeeId, bool includeAllUnPaid)
         {
-            List<Domain.Models.RequestT> requests;
-           
-            App.Global.Models.Fawry.FawryRequest fawryRequest = new App.Global.Models.Fawry.FawryRequest
+            try
             {
-                Amount = 10.12f,
-                ChargeItems = new List<App.Global.Models.Fawry.FawtyChargeItem>
+                var result = await fawryService.SendAllUnpaidRequestAsync(employeeId);  
+                if (result != null)
                 {
-                    new App.Global.Models.Fawry.FawtyChargeItem
-                    {
-                        Description = "Des",
-                        ItemId = "1",
-                        Price = 10.12f,
-                        Quantity = 1
-                    }
-                },
-                Description = "Des",
-                CustomerEmail = "ayman.mohaned5100@gmail.com",
-                CustomerMobile = "01090043513",
-                CustomerName = "Ayman Selim",
-                CustomerProfileId = 2264,
-                CurrencyCode = "EGP",
-                Language = "ar-eg",
-                MerchantCode = configuration["FawryMarchantCode"].ToString(),
-                MerchantRefNum = 66666,
-                PaymentExpiry = (long)DateTime.Now.AddDays(3).Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds,
-                PaymentMethod = App.Global.Eumns.FawryPaymentMethod.PAYATFAWRY.ToString(),
-            };
-            fawryService.SetFawryRequest(fawryRequest, configuration["FawrySecurityCode"].ToString());
-            var result = await fawryService.GetRefNumberAsync();
-            return Ok(result);
+                    return Ok(OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateSuccessResponse(result));
+                }
+                else
+                {
+                    return Ok(OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateErrorResponse());
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+            }
         }
-
-        //[HttpGet("GenerateRefNumberForRequest/{requestId}")]
-        //public async Task<ActionResult<App.Global.Models.Fawry.FawryRefNumberResponse>> GenerateRefNumberForRequest(int requestId)
-        //{
-
-        //}
-
-
     }
 }

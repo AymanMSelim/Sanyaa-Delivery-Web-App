@@ -14,13 +14,12 @@ namespace SanyaaDelivery.Infra.Data.Repositories
     {
         public DbContext DbContext { get ; set; }
         public DbSet<Entity> DbSet { get ; set; }
+        private readonly IUnitOfWork unitOfWork;
 
-        //sanyaadatabaseContext sanyaaContext;
-
-        public BaseRepository(SanyaaDatabaseContext dbContext)
+        public BaseRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork)
         {
             this.DbContext = dbContext;
-            //this.sanyaaContext = dbContext;
+            this.unitOfWork = unitOfWork;
             DbSet = dbContext.Set<Entity>();
         }
 
@@ -77,19 +76,16 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             }
         }
 
-        public async void Update(object id, Entity updatedEntity)
+        public void Update(object id, Entity updatedEntity)
         {
             try
             {
-                Entity entity = await GetAsync(id);
-                entity = updatedEntity;
-                DbContext.Entry(entity).State = EntityState.Modified;
+                DbSet.Update(updatedEntity);
             }
             catch (Exception ex)
             {
                 App.Global.Logging.LogHandler.PublishException(ex);
             }
-          
         }
 
         public IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter)
@@ -109,6 +105,10 @@ namespace SanyaaDelivery.Infra.Data.Repositories
         {
             try
             {
+                if (unitOfWork.IsTransaction)
+                {
+                    return null;
+                }
                 return DbContext.SaveChangesAsync();
             }
             catch (Exception ex)

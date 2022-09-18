@@ -1,30 +1,54 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SanyaaDelivery.Application.Interfaces;
+using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Services
 {
     public class TokenService : ITokenService
     {
         private readonly SymmetricSecurityKey _key;
-        public TokenService(IConfiguration config)
+        private readonly IRepository<TokenT> tokenRepository;
+
+        public TokenService(IConfiguration config, IRepository<TokenT> tokenRepository)
         {
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
+            this.tokenRepository = tokenRepository;
         }
-        public string CreateToken(string userId, string username, List<AccountRoleT> roles)
+
+        public async Task<int> AddAsync(TokenT token)
         {
+            await tokenRepository.AddAsync(token);
+            return await tokenRepository.SaveAsync();
+        }
+
+        public string CreateToken(AccountT account)
+        {
+            int systemUserId = 1;
+            if(account.AccountTypeId == GeneralSetting.CustomerAccountTypeId)
+            {
+                systemUserId = GeneralSetting.CustomerAppSystemUserId;
+            }
+            else if(account.AccountTypeId == GeneralSetting.SystemUserAccountTypeId)
+            {
+                systemUserId = int.Parse(account.AccountReferenceId);
+            }
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Name, username)
+                new Claim("AccountId", account.AccountId.ToString()),
+                new Claim("AccountType", account.AccountTypeId.ToString()),
+                new Claim("ReferenceId", account.AccountReferenceId),
+                new Claim("SystemUserId", systemUserId.ToString()),
+                new Claim(ClaimTypes.Name, account.AccountUsername)
             };
-            foreach (var role in roles)
+            foreach (var role in account.AccountRoleT)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role.Role.RoleName));
             }
@@ -33,7 +57,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 SigningCredentials = creds,
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddDays(1)
+                Expires = DateTime.Now.AddDays(GeneralSetting.TokenExpireInDays)
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);

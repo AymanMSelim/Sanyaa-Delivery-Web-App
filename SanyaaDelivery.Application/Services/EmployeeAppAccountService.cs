@@ -35,7 +35,13 @@ namespace SanyaaDelivery.Application.Services
 
         public DateTime LastSeenTime(string id)
         {
-            return accountRepository.GetAsync(id).Result.LastActiveTimestamp;
+            return accountRepository.GetAsync(id).Result.LastActiveTimestamp.Value;
+        }
+
+        public Task<int> Update(LoginT login)
+        {
+            accountRepository.Update(login.EmployeeId, login);
+            return accountRepository.SaveAsync();
         }
     }
 }

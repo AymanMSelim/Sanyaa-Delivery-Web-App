@@ -11,6 +11,10 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<EmployeeT> Get(string id);
 
+        Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive);
+
+        Task<List<EmployeeT>> GetFreeListAsync(int departmentId, int branchId, DateTime requestTime, bool? getActive, bool? getOnline);
+
         Task<EmployeeT> GetWithBeancesAndTimetable(string id);
 
         EmployeeDto GetCustomInfo(string id);
@@ -23,12 +27,20 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> AddDepartment(DepartmentEmployeeT departmentEmployee);
 
+        Task<List<DepartmentEmployeeT>> GetDepartmentList(string employeeId);
+
         Task<int> DeleteDepartment(int id);
 
-        Task<int> AddBranch(EmployeeWorkplacesT employeeWorkplace);
+        Task<int> AddWorkplace(EmployeeWorkplacesT employeeWorkplace);
 
-        Task<int> DeleteBranch(int id);
+        Task<List<EmployeeWorkplacesT>> GetWorkplaceList(string employeeId);
+
+        Task<int> DeleteWorkplace(int id);
 
         Task<int> UpdateAsync(EmployeeT employee);
+
+        Task<List<FollowUpT>> GetReviewListAsync(string employeeId)
+            ;
+        Task<List<FollowUpT>> GetReviewListAsync(List<string> employeeIdList);
     }
 }

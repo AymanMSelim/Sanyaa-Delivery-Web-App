@@ -24,7 +24,7 @@ namespace SanyaaDelivery.API.Controllers
             var employees = empDeptService.GetEmployees(departmentName);
             if(employees == null)
             {
-                return NotFound(new { Message = $"Can't find any employees in this department {departmentName}" });
+                return Ok(new { Message = $"Can't find any employees in this department {departmentName}" });
             }
             return Ok(employees);
         }

@@ -20,7 +20,7 @@ namespace App.Global.RestAPI
             for (int i = 0; i < MaxRetries; i++)
             {
                 response = await base.SendAsync(request, cancellationToken);
-                if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.InternalServerError)
                 {
                     return response;
                 }

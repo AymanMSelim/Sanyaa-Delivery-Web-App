@@ -2,11 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SanyaaDelivery.Application.Interfaces
 {
     public interface ITokenService
     {
-        string CreateToken(string userId, string username, List<AccountRoleT> roles);
+        string CreateToken(AccountT account);
+
+        Task<int> AddAsync(TokenT token);
     }
 }

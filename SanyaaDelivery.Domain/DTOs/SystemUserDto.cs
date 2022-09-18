@@ -10,6 +10,6 @@ namespace SanyaaDelivery.Domain.DTOs
         public string Token { get; set; }
         public object UserData { get; set; }
         public DateTime TokenExpireDate { get; set; }
-
+        public int AccountId { get; set; }
     }
 }

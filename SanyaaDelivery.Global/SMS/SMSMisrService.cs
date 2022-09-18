@@ -22,7 +22,6 @@ namespace App.Global.SMS
 
         public static Task<bool> SendSmsAsync(string languange, string mobile, string message)
         {
-            return null;
             SMSMisrService sMSMisrService = new SMSMisrService();
             return sMSMisrService.SendSms(languange, mobile, message);
         }

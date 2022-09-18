@@ -1,4 +1,5 @@
-﻿using SanyaaDelivery.Domain.DTOs;
+﻿using App.Global.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         ClientDto GetAllClients();
 
-        Task<ClientT> GetById(int id);
+        Task<ClientT> GetAsync(int id);
 
         Task<ClientT> GetByPhone(string phone);
 
@@ -19,19 +20,49 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> Add(ClientT client);
 
-        Task<int> Update(ClientT client);
+        Task<int> UpdateAsync(ClientT client);
 
-        Task<List<AddressT>> GetAddressList(int clientId);
+        Task<int> UpdateNameAsync(int clientId, string name);
+        
+        Task<int> UpdateEmailAsync(int clientId, string email);
+
+        Task<int> UpdateBranchByCityAsync(int clientId, int cityId);
+
+        Task<int> UpdateBranchByRegionAsync(int clientId, int regionId);
+
+        Task<int> UpdateBranchAsync(int clientId, int brnachId);
+
+        Task<int> AddPointAsync(int clientId, int points);
+
+        Task<int> WidthrawPointAsync(int clientId, int points);
+
+        Task<List<AddressT>> GetAddressListAsync(int clientId, bool getDeleted = false);
+        
+        Task<AddressT> GetAddress(int addressId);
 
         Task<int> AddAddress(AddressT address);
 
         Task<int> UpdateAddress(AddressT address);
 
-        Task<List<ClientPhonesT>> GetPhoneList(int clientId);
+        Task<OpreationResultMessage<AddressT>> DeleteAddress(int addressId);
+        
+        Task<int> SetDefaultAddressAsync(int addressId, int clientId);
+
+        Task<AddressT> GetDefaultAddressAsync(int clientId);
+
+        Task<int> GetDefaultCityIdAsync(int clientId);
+
+        Task<List<ClientPhonesT>> GetPhoneList(int clientId); 
+        
+        Task<ClientPhonesT> GetPhone(int phoneId);
 
         Task<int> AddPhone(ClientPhonesT phone);
 
         Task<int> UpdatePhone(ClientPhonesT phone);
+
+        Task<int> Subscripe(int subscriptionId, int clientId);
+
+        Task<int> UnSubscripe(int subscriptionId, int clientId);
 
     }
 }

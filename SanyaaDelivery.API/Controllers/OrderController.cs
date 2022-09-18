@@ -15,9 +15,9 @@ namespace SanyaaDelivery.API.Controllers
     [Authorize]
     public class OrderController : APIBaseAuthorizeController
     {
-        private readonly IOrderService orderService;
+        private readonly IRequestService orderService;
 
-        public OrderController(IOrderService orderService)
+        public OrderController(IRequestService orderService)
         {
             this.orderService = orderService;
         }
@@ -29,7 +29,7 @@ namespace SanyaaDelivery.API.Controllers
             {
                 if (request == null)
                 {
-                    return BadRequest(new { Message = "Request can't be null" });
+                    return Ok(new { Message = "Request can't be null" });
                 }
                 int affectedRecords = await orderService.Add(request);
                 if (affectedRecords > 0)
@@ -38,12 +38,12 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 else
                 {
-                    return BadRequest(new { Message = "Error happend while adding your request" });
+                    return Ok(new { Message = "Error happend while adding your request" });
                 }
             }
             catch(Exception)
             {
-                return BadRequest(new { Message = "Exception happen" });
+                return Ok(new { Message = "Exception happen" });
             }
         }
 
@@ -86,7 +86,7 @@ namespace SanyaaDelivery.API.Controllers
         public async Task<ActionResult<List<RequestT>>> GetEmployeeOrders(string employeeId, DateTime day)
         {
             var orders = await orderService.GetEmployeeOrdersList(employeeId, day);
-            if(orders == null) { return NotFound(new { Message = "No orders matched" }); };
+            if(orders == null) { return Ok(new { Message = "No orders matched" }); };
             return Ok(orders);
         }
 
@@ -94,7 +94,7 @@ namespace SanyaaDelivery.API.Controllers
         public async Task<ActionResult<List<OrderDto>>> GetEmployeeOrdersCustom(string employeeId, DateTime day)
         {
             var orders = await orderService.GetEmployeeOrdersCustomList(employeeId, day);
-            if (orders == null) { return NotFound(new { Message = "No orders matched" }); };
+            if (orders == null) { return Ok(new { Message = "No orders matched" }); };
             return Ok(orders);
         }
 

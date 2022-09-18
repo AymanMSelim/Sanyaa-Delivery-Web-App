@@ -12,8 +12,8 @@ namespace SanyaaDelivery.Domain.Models
 
         public int CountryId { get; set; }
         public string CountryName { get; set; }
-        public decimal? LocationLat { get; set; }
-        public decimal? LocationLang { get; set; }
+        public string LocationLat { get; set; }
+        public string LocationLang { get; set; }
         public string LocationUrl { get; set; }
 
         public ICollection<GovernorateT> GovernorateT { get; set; }

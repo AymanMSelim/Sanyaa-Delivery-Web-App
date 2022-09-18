@@ -16,6 +16,7 @@ namespace SanyaaDelivery.Domain.Models
         public string PwdUsr { get; set; }
         public string Code { get; set; }
         public sbyte? Active { get; set; }
+        public bool? IsDefault { get; set; }
 
         public ClientT Client { get; set; }
         public ICollection<RequestT> RequestT { get; set; }

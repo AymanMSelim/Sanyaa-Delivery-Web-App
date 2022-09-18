@@ -15,6 +15,8 @@ namespace SanyaaDelivery.Application.Interfaces
         /// <returns>Return an object of LoginT class</returns>
         Task<LoginT> Get(string id);
 
+        Task<int> Update(LoginT login);
+
         /// <summary>
         /// Get the date of last seen on mobile application
         /// </summary>

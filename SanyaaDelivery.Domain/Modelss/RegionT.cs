@@ -13,8 +13,11 @@ namespace SanyaaDelivery.Domain.Models
         public int RegionId { get; set; }
         public string RegionName { get; set; }
         public short? DeliveryPrice { get; set; }
-        public decimal? LocationLat { get; set; }
-        public decimal? LocationLang { get; set; }
+        public bool? IsDeliveryPriceActive { get; set; }
+        public short? MinimumCharge { get; set; }
+        public bool? IsMinimumChargeActive { get; set; }
+        public string LocationLat { get; set; }
+        public string LocationLang { get; set; }
         public string LocationUrl { get; set; }
         public int? CityId { get; set; }
 

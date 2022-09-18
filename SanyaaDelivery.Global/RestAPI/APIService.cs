@@ -7,7 +7,7 @@ using App.Global.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using static App.Global.Eumns;
+using static App.Global.Enums;
 
 namespace App.Global.RestAPI
 {

@@ -1,4 +1,5 @@
-﻿using SanyaaDelivery.Application.Interfaces;
+﻿using App.Global.ExtensionMethods;
+using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
@@ -28,7 +29,7 @@ namespace SanyaaDelivery.Application.Services
                 ClientName = clientRegisterDto.Name,
                 ClientEmail = clientRegisterDto.Email,
                 CurrentPhone = clientRegisterDto.Phone,
-                SystemUserId = Domain.GlobalSetting.CustomerAppUserId,
+                SystemUserId = GeneralSetting.CustomerAppSystemUserId,
                 ClientRegDate = DateTime.Now,
                 ClientPhonesT = new List<ClientPhonesT>
                 {
@@ -53,7 +54,7 @@ namespace SanyaaDelivery.Application.Services
                 CreationDate = DateTime.Now,
                 AccountReferenceId = client.ClientId.ToString(),
                 IsActive = false,
-                SystemUserId = Domain.GlobalSetting.CustomerAppUserId,
+                SystemUserId = GeneralSetting.CustomerAppSystemUserId,
                 AccountSecurityCode = Guid.NewGuid().ToString().Replace("-", ""),
                 AccountTypeId = GeneralSetting.CustomerAccountTypeId,
                 MobileOtpCode = App.Global.Generator.GenerateOTPCode(4),
@@ -84,16 +85,26 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<AccountT> RegisterClientAccount(ClientT client, ClientRegisterDto clientRegisterDto)
         {
+            string password = null;
+            bool resetPassword = false;
+            if (string.IsNullOrEmpty(clientRegisterDto.Password))
+            {
+                resetPassword = true;
+            }
+            else
+            {
+                password = clientRegisterDto.Password;
+            }
             string passwordSlat = Guid.NewGuid().ToString().Replace("-", "");
             AccountT account = new AccountT
             {
                 AccountHashSlat = passwordSlat,
-                AccountPassword = App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(passwordSlat, clientRegisterDto.Password),
+                AccountPassword = password.IsNull() ? "" : App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(passwordSlat, clientRegisterDto.Password),
                 AccountUsername = clientRegisterDto.Phone,
                 CreationDate = DateTime.Now,
                 AccountReferenceId = client.ClientId.ToString(),
                 IsActive = false,
-                SystemUserId = Domain.GlobalSetting.CustomerAppUserId,
+                SystemUserId = GeneralSetting.CustomerAppSystemUserId,
                 AccountSecurityCode = Guid.NewGuid().ToString().Replace("-", ""),
                 AccountTypeId = GeneralSetting.CustomerAccountTypeId,
                 MobileOtpCode = App.Global.Generator.GenerateOTPCode(4),
@@ -106,7 +117,8 @@ namespace SanyaaDelivery.Application.Services
                     {
                         RoleId = GeneralSetting.CustomerRoleId
                     }
-                }
+                },
+                IsPasswordReseted = resetPassword,
             };
             var addAccountResult = await accountService.Add(account);
             if (addAccountResult <= 0)

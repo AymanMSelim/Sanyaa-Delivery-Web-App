@@ -52,11 +52,17 @@ namespace SanyaaDelivery.Application.Services
             return departmentRepository.GetListAsync();
         }
 
-        public async Task<int> UpdateAsync(DepartmentT department)
+        public Task<bool> IsExistAsync(string departmentName)
         {
-            var departmentNew = await departmentRepository.Where(d => d.DepartmentId == department.DepartmentId).FirstOrDefaultAsync();
-            departmentRepository.DbContext.Entry(departmentNew).State = EntityState.Modified;
-            return await departmentRepository.SaveAsync();
+            return departmentRepository.Where(d => d.DepartmentName.ToLower() == departmentName.ToLower()).AnyAsync();
+        }
+
+        public Task<int> UpdateAsync(DepartmentT department)
+        {
+            departmentRepository.Update(department.DepartmentId, department);
+            //var departmentNew = await departmentRepository.Where(d => d.DepartmentId == department.DepartmentId).FirstOrDefaultAsync();
+            //departmentRepository.DbContext.Entry(departmentNew).State = EntityState.Modified;
+            return departmentRepository.SaveAsync();
         }
     }
 }

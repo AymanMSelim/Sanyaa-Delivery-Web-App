@@ -20,6 +20,12 @@ namespace SanyaaDelivery.Application.Services
             this.departmentSub0Repository = departmentSub0Repository;
         }
 
+        public async Task<int> AddAsync(DepartmentSub0T departmentSub0)
+        {
+            await departmentSub0Repository.AddAsync(departmentSub0);
+            return await departmentSub0Repository.SaveAsync();
+        }
+
         public Task<List<ValueWithIdDto>> FilerAsync(int departmentId)
         {
             return departmentSub0Repository.Where(d => d.DepartmentId == departmentId)
@@ -45,6 +51,17 @@ namespace SanyaaDelivery.Application.Services
         {
             return departmentSub0Repository.Where(d => d.DepartmentSub0.Contains(departmentName))
                 .ToListAsync();
+        }
+
+        public Task<bool> IsExistAsync(string departmentName)
+        {
+            return departmentSub0Repository.Where(d => d.DepartmentSub0.ToLower() == departmentName.ToLower()).AnyAsync();
+        }
+
+        public Task<int> UpdateAsync(DepartmentSub0T departmentSub0)
+        {
+            departmentSub0Repository.Update(departmentSub0.DepartmentSub0Id, departmentSub0);
+            return departmentSub0Repository.SaveAsync();
         }
 
         Task<List<ValueWithIdDto>> IDeparmentSub0Service.FilerAsync(string departmentName)
