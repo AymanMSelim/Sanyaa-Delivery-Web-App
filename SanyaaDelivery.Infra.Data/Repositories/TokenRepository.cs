@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class TokenRepository : BaseRepository<TokenT>
     {
-        public TokenRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public TokenRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

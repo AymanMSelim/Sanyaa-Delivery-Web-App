@@ -6,9 +6,9 @@ using System.Text;
 
 namespace SanyaaDelivery.Infra.Data.Repositories
 {
-    public class AppLandingScreenItemRepository : BaseRepository<AppLandingScreenItemT>
+    public class FawryChargeRepository : BaseRepository<FawryChargeT>
     {
-        public AppLandingScreenItemRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
+        public FawryChargeRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

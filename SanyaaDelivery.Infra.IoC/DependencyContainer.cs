@@ -59,6 +59,8 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<DayWorkingTimeT>, DayWorkingTimeRepository>();
             services.AddScoped<IRepository<AttachmentT>, AttatchmentRepository>();
             services.AddScoped<IRepository<FollowUpT>, FollowUpRepository>();
+            services.AddScoped<IRepository<FawryChargeT>, FawryChargeRepository>();
+            services.AddScoped<IRepository<FawryChargeRequestT>, FawryChargeRequestRepository>();
 
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -101,6 +103,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IDayWorkingTimeService, DayWorkingTimeService>();
             services.AddScoped<IAttachmentService, AttachmentService>();
             services.AddSingleton<IFawryAPIService, FawryAPIService>();
+            services.AddSingleton<IFawryChargeService, FawryChargeService>();
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
 
         }

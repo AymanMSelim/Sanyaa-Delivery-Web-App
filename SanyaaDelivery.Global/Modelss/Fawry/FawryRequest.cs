@@ -9,7 +9,7 @@ namespace App.Global.Models.Fawry
     {
         public string MerchantCode { get; set; }
         public int MerchantRefNum { get; set; }
-        public int CustomerProfileId { get; set; }
+        public string CustomerProfileId { get; set; }
         public string PaymentMethod { get; set; }
         public string CustomerName { get; set; }
         public string CustomerMobile { get; set; }

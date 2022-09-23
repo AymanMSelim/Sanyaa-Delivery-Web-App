@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class ClientRepository : BaseRepository<ClientT>
     {
-        public ClientRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public ClientRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

@@ -500,7 +500,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(OpreationResultMessageFactory<List<string>>.CreateNotFoundResponse("Cart not found"));
                 }
-                return Ok(OpreationResultMessageFactory<List<string>>.CreateSuccessResponse());
+                return Ok(OpreationResultMessageFactory<List<string>>.CreateSuccessResponse(new List<string> { "Note1", "Note2", "Note3"}));
             }
             catch (Exception ex)
             {

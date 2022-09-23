@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class AddressRepository : BaseRepository<AddressT>
     {
-        public AddressRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public AddressRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

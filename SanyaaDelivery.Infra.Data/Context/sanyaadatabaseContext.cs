@@ -1943,7 +1943,9 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("system_id")
                     .HasColumnType("int(11)");
 
-                entity.Property(e => e.ChargeAmount).HasColumnName("charge_amount");
+                entity.Property(e => e.ChargeAmount)
+                    .HasColumnName("charge_amount")
+                    .HasColumnType("decimal(10, 2)");
 
                 entity.Property(e => e.ChargeExpireDate)
                     .HasColumnName("charge_expire_date")

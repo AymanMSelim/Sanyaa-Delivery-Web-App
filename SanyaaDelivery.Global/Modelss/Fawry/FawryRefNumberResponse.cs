@@ -14,7 +14,7 @@ namespace App.Global.Models.Fawry
         public float PaymentAmount { get; set; }
         public float FawryFees { get; set; }
         public FawryPaymentMethod PaymentMethod { get; set; }
-        public FawryOrderStatus OrderStatus { get; set; }
+        public FawryRequestStatus OrderStatus { get; set; }
         public long PaymentTime { get; set; }
         public string CustomerMobile { get; set; }
         public string CustomerEmail { get; set; }

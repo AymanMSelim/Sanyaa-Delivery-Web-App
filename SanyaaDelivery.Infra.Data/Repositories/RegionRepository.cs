@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class RegionRepository : BaseRepository<RegionT>
     {
-        public RegionRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public RegionRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

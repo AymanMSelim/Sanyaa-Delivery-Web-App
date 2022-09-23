@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class DayWorkingTimeRepository : BaseRepository<DayWorkingTimeT>
     {
-        public DayWorkingTimeRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public DayWorkingTimeRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

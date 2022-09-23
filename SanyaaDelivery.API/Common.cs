@@ -92,13 +92,13 @@ namespace SanyaaDelivery.API
             }
         }
 
-        public int? GetSystemUserId()
+        public int GetSystemUserId()
         {
             var identity = context.HttpContext.User.Identity as ClaimsIdentity;
             var claimValue = App.Global.JWT.TokenHelper.GetClaimValue(identity, "SystemUserId");
             if (string.IsNullOrEmpty(claimValue))
             {
-                return null;
+                return 1;
             }
             return int.Parse(claimValue);
         }

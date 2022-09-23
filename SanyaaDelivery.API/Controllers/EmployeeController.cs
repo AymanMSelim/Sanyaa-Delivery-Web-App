@@ -324,6 +324,7 @@ namespace SanyaaDelivery.API.Controllers
                     Id = d.EmployeeId,
                     Name = d.EmployeeName,
                     Image = d.EmployeeImageUrl,
+                    Rate = new Random().Next(5),
                     IsFavourite = false,
                 }).ToList();
                 employeeList.ForEach(d => d.EmployeeWorkplacesT = null);

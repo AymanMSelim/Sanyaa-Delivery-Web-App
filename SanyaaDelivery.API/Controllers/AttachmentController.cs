@@ -88,5 +88,20 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, OpreationResultMessageFactory<AttachmentT>.CreateExceptionResponse(ex));
             }
         }
+
+        [HttpGet]
+        public async Task<ActionResult<OpreationResultMessage<List<AttachmentT>>>> GetCartAttachmentList(int? clientId)
+        {
+            try
+            {
+                var cart = await commonService.GetClientCartAsync(clientId);
+                var attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cart.CartId.ToString());
+                return Ok(OpreationResultMessageFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, OpreationResultMessageFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
+            }
+        }
     }
 }

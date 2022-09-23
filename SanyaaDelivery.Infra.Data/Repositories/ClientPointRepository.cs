@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class ClientPointRepository : BaseRepository<ClientPointT>
     {
-        public ClientPointRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public ClientPointRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

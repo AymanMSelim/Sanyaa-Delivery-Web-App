@@ -75,7 +75,8 @@ namespace SanyaaDelivery.Application.Services
                     {
                         CityId = d.CityId,
                         CityName = d.CityName,
-                        GovernorateId = d.GovernorateId
+                        GovernorateId = d.GovernorateId,
+                        BranchId = d.BranchId
                     }).ToListAsync(),
                     ClientLightList = await clientRepository.DbSet.Select(d => new Domain.LightModels.ClientLight
                     {

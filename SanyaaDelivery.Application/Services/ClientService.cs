@@ -89,6 +89,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<OpreationResultMessage<AddressT>> DeleteAddress(int addressId)
         {
+            unitOfWork.StartTransaction();
             var address = await GetAddress(addressId);
             if (address.IsNull())
             {
@@ -105,6 +106,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 await SelectDefaultAddressAutoAsync(address.ClientId);
             }
+            await unitOfWork.CommitAsync();
             return OpreationResultMessageFactory<AddressT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully); ;
         }
 
@@ -201,6 +203,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> UpdateBranchByCityAsync(int clientId, int cityId)
         {
+            unitOfWork.StartTransaction();
             var city = await cityService.GetAsync(cityId, true);
             var client = await GetAsync(clientId);
             if (city.IsNull() || client.IsNull())
@@ -221,7 +224,8 @@ namespace SanyaaDelivery.Application.Services
                 };
                 await AddAddress(address);
             }
-            return await UpdateAsync(client);
+            await UpdateAsync(client);
+            return await unitOfWork.CommitAsync();
         }
 
         public async Task<int> UpdateBranchAsync(int clientId, int brnachId)
@@ -237,6 +241,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> SetDefaultAddressAsync(int addressId, int clientId)
         {
+            unitOfWork.StartTransaction();
             var addressList = await GetAddressListAsync(clientId);
             if (addressList.IsEmpty())
             {
@@ -255,7 +260,7 @@ namespace SanyaaDelivery.Application.Services
                 }
                 await UpdateAddress(address);
             }
-            return 1;
+            return await unitOfWork.CommitAsync();
         }
 
         public async Task<int> SelectDefaultAddressAutoAsync(int clientId, List<AddressT> addressList = null)
@@ -328,7 +333,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 return -1;
             }
-            var city = await cityService.GetAsync(region.CityId.Value, true);
+            CityT city = await cityService.GetAsync(region.CityId.Value, true);
             var client = await GetAsync(clientId);
             if (city.IsNull() || client.IsNull())
             {

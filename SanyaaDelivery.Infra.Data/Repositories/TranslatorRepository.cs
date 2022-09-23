@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class TranslatorRepository : BaseRepository<TranslatorT>
     {
-        public TranslatorRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public TranslatorRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

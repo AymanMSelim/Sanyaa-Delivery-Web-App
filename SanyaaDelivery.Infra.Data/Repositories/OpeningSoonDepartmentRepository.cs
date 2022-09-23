@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class OpeningSoonDepartmentRepository : BaseRepository<OpeningSoonDepartmentT>
     {
-        public OpeningSoonDepartmentRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public OpeningSoonDepartmentRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

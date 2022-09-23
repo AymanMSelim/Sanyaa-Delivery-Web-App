@@ -3,6 +3,7 @@ using App.Global.Models.Fawry;
 using Microsoft.Extensions.Configuration;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,16 +14,21 @@ namespace SanyaaDelivery.Application.Services
 {
     public class FawryService : IFawryService
     {
+        private readonly IUnitOfWork unitOfWork;
         private readonly IRequestService requestService;
         private readonly IEmployeeService employeeService;
         private readonly IConfiguration configuration;
+        private readonly IFawryChargeService fawryChargeService;
         private readonly IFawryAPIService fawryAPIService;
 
-        public FawryService(IRequestService requestService, IEmployeeService employeeService, IConfiguration configuration, IFawryAPIService fawryAPIService)
+        public FawryService(IUnitOfWork unitOfWork, IRequestService requestService, IEmployeeService employeeService, IConfiguration configuration, 
+            IFawryAPIService fawryAPIService, IFawryChargeService fawryChargeService)
         {
+            this.unitOfWork = unitOfWork;
             this.requestService = requestService;
             this.employeeService = employeeService;
             this.configuration = configuration;
+            this.fawryChargeService = fawryChargeService;
             this.fawryAPIService = fawryAPIService;
         }
         public List<App.Global.Models.Fawry.FawryChargeItem> ConvertRequestToChargeItem(List<RequestT> requestList)
@@ -46,7 +52,8 @@ namespace SanyaaDelivery.Application.Services
                 CustomerEmail = "ayman.mohaned5100@gmail.com",
                 CustomerMobile = employee.EmployeePhone,
                 CustomerName = employee.EmployeeName,
-                CustomerProfileId = Convert.ToInt32(employee.EmployeeId),
+                //CustomerProfileId = Convert.ToInt32(employee.EmployeeId),
+                CustomerProfileId = employee.EmployeeId,
                 MerchantCode = configuration["FawryMarchantCode"].ToString(),
                 CurrencyCode = "EGP",
                 Language = "ar-eg",
@@ -59,12 +66,40 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<FawryRefNumberResponse> SendAllUnpaidRequestAsync(string employeeId)
         {
+            unitOfWork.StartTransaction();
             var employee = await employeeService.Get(employeeId);
             var requestList = await requestService.GetUnPaidAsync(employeeId);
             var chargeItem = ConvertRequestToChargeItem(requestList);
+           
             var fawryRequest = PrepareFawryRequest(chargeItem, employee);
+            var fawryCharge = new FawryChargeT
+            {
+                ChargeAmount = fawryRequest.Amount,
+                ChargeExpireDate = DateTime.Now.AddDays(3),
+                ChargeStatus = App.Global.Enums.FawryRequestStatus.NEW.ToString(),
+                EmployeeId = employeeId,
+                FawryChargeRequestT = requestList.Select(d => new FawryChargeRequestT
+                {
+                    RequestId = d.RequestId
+                }).ToList(),
+                RecordTimestamp = DateTime.Now,
+                IsConfirmed = false
+            };
+            var affectedRows = await fawryChargeService.AddAsync(fawryCharge);
+            if(affectedRows <= 0)
+            {
+                return null;
+            }
+            fawryRequest.MerchantRefNum = fawryCharge.SystemId;
             fawryAPIService.SetFawryRequest(fawryRequest, configuration["FawrySecurityCode"].ToString());
             var result = await fawryAPIService.GetRefNumberAsync();
+            if(result != null && !string.IsNullOrEmpty(result.ReferenceNumber))
+            {
+                fawryCharge.FawryRefNumber = long.Parse(result.ReferenceNumber);
+                fawryCharge.IsConfirmed = true;
+                await fawryChargeService.UpdateAsync(fawryCharge);
+                await unitOfWork.CommitAsync();
+            }
             return result;
         }
 

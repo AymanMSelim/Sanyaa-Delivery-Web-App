@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class FavouriteServiceRepository : BaseRepository<FavouriteServiceT>
     {
-        public FavouriteServiceRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public FavouriteServiceRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

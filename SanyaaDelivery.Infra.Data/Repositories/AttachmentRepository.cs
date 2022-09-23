@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class AttatchmentRepository : BaseRepository<AttachmentT>
     {
-        public AttatchmentRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public AttatchmentRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

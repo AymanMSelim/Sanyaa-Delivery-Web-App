@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class SubscriptionRepository : BaseRepository<SubscriptionT>
     {
-        public SubscriptionRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public SubscriptionRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

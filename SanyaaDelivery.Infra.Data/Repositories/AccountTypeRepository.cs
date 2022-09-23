@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class AccountTypeRepository : BaseRepository<AccountTypeT>
     {
-        public AccountTypeRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public AccountTypeRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

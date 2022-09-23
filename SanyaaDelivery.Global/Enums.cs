@@ -16,7 +16,7 @@ namespace App.Global
         {
             PAYATFAWRY
         }
-        public enum FawryOrderStatus
+        public enum FawryRequestStatus
         {
             NEW,
             PAID,

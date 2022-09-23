@@ -241,7 +241,7 @@ namespace SanyaaDelivery.Application.Services
             if (ignoreRequestWithValidFawryRequest)
             {
                 query = query
-                    .Where(d => d.FawryChargeRequestT.Any(t => t.Charge.ChargeStatus == App.Global.Enums.FawryOrderStatus.UNPAID.ToString()));
+                    .Where(d => d.FawryChargeRequestT.Any(t => t.Charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.UNPAID.ToString()));
             }
             query = query.Include(d => d.RequestStagesT);
             return query.ToListAsync();

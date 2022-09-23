@@ -101,20 +101,20 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             }
         }
 
-        public Task<int> SaveAsync()
+        public async Task<int> SaveAsync()
         {
             try
             {
                 if (unitOfWork.IsTransaction)
                 {
-                    return null;
+                    return 0;
                 }
-                return DbContext.SaveChangesAsync();
+                return await DbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
                 App.Global.Logging.LogHandler.PublishException(ex);
-                return null;
+                return 0;
             }
         }
     }

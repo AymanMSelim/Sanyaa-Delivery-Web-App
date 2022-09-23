@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class WorkingAreaRepository : BaseRepository<WorkingAreaT>
     {
-        public WorkingAreaRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public WorkingAreaRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

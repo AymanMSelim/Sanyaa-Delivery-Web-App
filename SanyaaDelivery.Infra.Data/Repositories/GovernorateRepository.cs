@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class GovernorateRepository : BaseRepository<GovernorateT>
     {
-        public GovernorateRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public GovernorateRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

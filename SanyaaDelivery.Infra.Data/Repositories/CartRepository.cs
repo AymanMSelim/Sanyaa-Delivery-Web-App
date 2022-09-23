@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class CartRepository : BaseRepository<CartT>
     {
-        public CartRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public CartRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

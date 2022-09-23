@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class AppSettingRepository : BaseRepository<AppSettingT>
     {
-        public AppSettingRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public AppSettingRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }

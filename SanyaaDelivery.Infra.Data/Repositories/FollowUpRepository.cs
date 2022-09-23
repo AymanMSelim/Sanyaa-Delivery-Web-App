@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 {
     public class FollowUpRepository : BaseRepository<FollowUpT>
     {
-        public FollowUpRepository(SanyaaDatabaseContext dbContext) : base(dbContext)
+        public FollowUpRepository(SanyaaDatabaseContext dbContext, IUnitOfWork unitOfWork) : base(dbContext, unitOfWork)
         {
 
         }
