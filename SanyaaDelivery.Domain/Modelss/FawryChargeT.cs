@@ -13,7 +13,7 @@ namespace SanyaaDelivery.Domain.Models
         public int SystemId { get; set; }
         public long? FawryRefNumber { get; set; }
         public string ChargeStatus { get; set; }
-        public double? ChargeAmount { get; set; }
+        public decimal? ChargeAmount { get; set; }
         public DateTime? ChargeExpireDate { get; set; }
         public string EmployeeId { get; set; }
         public DateTime? RecordTimestamp { get; set; }

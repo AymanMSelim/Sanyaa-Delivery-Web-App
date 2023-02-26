@@ -25,5 +25,10 @@ namespace SanyaaDelivery.Domain.OtherModels
         public  List<EmployeeTypeT> EmployeeTypeList { get; set; }
         public  List<ServiceRatioT> ServiceRatioList { get; set; }
         public  List<SystemUserLight> SystemUserLightList { get; set; }
+        public  List<PromocodeLight> PromocodeLightList { get; set; }
+        public  List<SubscriptionLight> SubsctiptionLighttList { get; set; }
+        public  List<SiteLight> SiteLighttList { get; set; }
+        public  List<EmployeeDepartmentLight> EmployeeDepartmentLightList { get; set; }
+        public  List<EmployeeWorkplaceLight> EmployeeWorkplaceLightList { get; set; }
     }
 }

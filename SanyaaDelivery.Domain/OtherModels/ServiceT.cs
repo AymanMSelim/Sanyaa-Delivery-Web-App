@@ -9,6 +9,6 @@ namespace SanyaaDelivery.Domain.Models
         public int CartQuantity { get; set; }
         public bool IsFavourite { get; set; }
         public bool HasDiscount { get; set; }
-        public short NetServiceCost { get; set; }
+        public decimal NetServiceCost { get; set; }
     }
 }

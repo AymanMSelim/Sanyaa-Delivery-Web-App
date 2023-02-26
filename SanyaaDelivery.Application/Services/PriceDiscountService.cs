@@ -29,7 +29,7 @@ namespace SanyaaDelivery.Application.Services
         {
             var summary = new ServicesPriceDiscountSummary();
             int discount = 0;
-            int totalPrice;
+            decimal totalPrice;
             foreach (var item in serviceList)
             {
                 discount += Convert.ToInt32(item.Service.NoDiscount) * (Convert.ToInt32(item.Service.ServiceDiscount) / 100) * Convert.ToInt32(item.ServiceQuantity / item.Service.DiscountServiceCount) * Convert.ToInt32(item.ServiceQuantity);

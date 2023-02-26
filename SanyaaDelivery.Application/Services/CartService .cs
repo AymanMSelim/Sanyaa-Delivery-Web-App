@@ -5,6 +5,7 @@ using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,12 +23,16 @@ namespace SanyaaDelivery.Application.Services
         private readonly ICityService cityService;
         private readonly IClientService clientService;
         private readonly IServiceRatioService serviceRatioService;
-        private readonly IClientSubscriptionService clientSubscriptionService;
         private readonly IAttachmentService attachmentService;
+        private readonly IEmployeeService employeeService;
+        private readonly ISubscriptionRequestService subscriptionRequestService;
+        private readonly IRepository<ServiceT> serviceRepository;
+        private readonly IUnitOfWork unitOfWork;
 
         public CartService(IRepository<CartT> cartRepo, IRepository<CartDetailsT> cartDetailsRepo, IPromocodeService promocodeService,
-            ICityService cityService, IClientService clientService, IServiceRatioService serviceRatioService,
-            IClientSubscriptionService clientSubscriptionService, IAttachmentService attachmentService)
+            ICityService cityService, IClientService clientService, IServiceRatioService serviceRatioService, IAttachmentService attachmentService,
+            IEmployeeService employeeService, ISubscriptionRequestService subscriptionRequestService, IRepository<ServiceT> serviceRepository,
+            IUnitOfWork unitOfWork)
         {
             this.cartRepo = cartRepo;
             this.cartDetailsRepo = cartDetailsRepo;
@@ -35,8 +40,11 @@ namespace SanyaaDelivery.Application.Services
             this.cityService = cityService;
             this.clientService = clientService;
             this.serviceRatioService = serviceRatioService;
-            this.clientSubscriptionService = clientSubscriptionService;
             this.attachmentService = attachmentService;
+            this.employeeService = employeeService;
+            this.subscriptionRequestService = subscriptionRequestService;
+            this.serviceRepository = serviceRepository;
+            this.unitOfWork = unitOfWork;
         }
 
         public async Task<int> AddAsync(CartT cart)
@@ -53,7 +61,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<CartT> AddOrReturnExistAsync(int clientId, int departmentId, bool isViaApp)
         {
-            var cart = await cartRepo.DbSet.Where(d => d.ClientId == clientId && d.IsViaApp == isViaApp)
+            var cart = await cartRepo.DbSet.Where(d => d.ClientId == clientId && d.IsViaApp == isViaApp && d.HaveRequest == false)
                 .Include(d => d.CartDetailsT)
                 .FirstOrDefaultAsync();
             if (cart.IsNotNull())
@@ -72,62 +80,109 @@ namespace SanyaaDelivery.Application.Services
             return cart;
         }
 
-        public async Task<CartDetailsT> AddUpdateServiceAsync(int cartId, int serviceId, int quantity)
+        public async Task<Result<CartDetailsT>> AddUpdateServiceAsync(int clientId, bool isViaApp, int serviceId, int quantity)
         {
+            var service = await serviceRepository.Where(d => d.ServiceId == serviceId)
+                .Include(d => d.Department.DepartmentSub0Navigation.Department).FirstOrDefaultAsync();
+            if (service.IsNull())
+            {
+                return ResultFactory<CartDetailsT>.CreateNotFoundResponse("Service not found");
+            }
+            var cart = await AddOrReturnExistAsync(clientId, service.Department.DepartmentSub0Navigation.Department.DepartmentId, isViaApp);
+            if (cart.IsNull())
+            {
+                return ResultFactory<CartDetailsT>.CreateErrorResponseMessage("No cart found");
+            }
+            return await AddUpdateServiceAsync(cart.CartId, serviceId, quantity);
+        }
+
+        public async Task<Result<CartDetailsT>> AddUpdateServiceAsync(int cartId, int serviceId, int quantity)
+        {
+            var service = await serviceRepository.Where(d => d.ServiceId == serviceId)
+                .Include(d => d.Department.DepartmentSub0Navigation.Department).FirstOrDefaultAsync();
+            if (service.IsNull())
+            {
+                return ResultFactory<CartDetailsT>.CreateNotFoundResponse("Service not found");
+            }
             var cart = await GetAsync(cartId, true);
+            if (cart.IsNull())
+            {
+                return ResultFactory<CartDetailsT>.CreateErrorResponseMessage("No cart found");
+            }
+            if (service.Department.DepartmentSub0Navigation.Department.DepartmentId != cart.DepartmentId)
+            {
+                if (cart.CartDetailsT.HasItem())
+                {
+                    return ResultFactory<CartDetailsT>.CreateErrorResponseMessage("Department mismatched", App.Global.Enums.ResultStatusCode.Mismatched, App.Global.Enums.ResultAleartType.FailedDialog);
+                }
+                else
+                {
+                    cart.DepartmentId = service.Department.DepartmentSub0Navigation.Department.DepartmentId;
+                    await UpdateAsync(cart);
+                }
+            }
+            if (cart.DepartmentId == GeneralSetting.CleaningDepartmentId)
+            {
+                if (cart.CartDetailsT.HasItem() && cart.CartDetailsT.FirstOrDefault().ServiceQuantity >= 1)
+                {
+                    return ResultFactory<CartDetailsT>.CreateErrorResponseMessage("Can't add more than cleaning service to the cart", App.Global.Enums.ResultStatusCode.Failed, App.Global.Enums.ResultAleartType.FailedDialog);
+                }
+            }
             CartDetailsT cartService = cart.CartDetailsT.FirstOrDefault(d => d.ServiceId == serviceId);
             if (cartService.IsNull())
             {
                 cartService = new CartDetailsT
                 {
-                    CartId = cartId,
+                    CartId = cart.CartId,
                     ServiceId = serviceId,
                     ServiceQuantity = quantity > 0 ? quantity : 1,
                     CreationTime = DateTime.Now
                 };
                 await AddDetailsAsync(cartService);
-                return cartService;
+                return ResultFactory<CartDetailsT>.CreateSuccessResponse(cartService, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully, "Added to cart", App.Global.Enums.ResultAleartType.SuccessToast);
             }
             if (quantity == 0)
             {
                 await DeletetDetailsAsync(cartService.CartDetailsId);
-                return null;
+                return ResultFactory<CartDetailsT>.CreateSuccessResponse(cartService, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully, "Removed from cart", App.Global.Enums.ResultAleartType.SuccessToast);
             }
             else
             {
                 cartService.ServiceQuantity = quantity;
                 cartService.CreationTime = DateTime.Now;
                 await UpdateDetailsAsync(cartService);
-                return cartService;
+                return ResultFactory<CartDetailsT>.CreateSuccessResponse(cartService, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully, "Cart updated", App.Global.Enums.ResultAleartType.SuccessToast);
             }
         }
 
-        public async Task<OpreationResultMessage<PromocodeT>> ApplyPromocodeAsync(int cartId, string code)
+
+        public async Task<Result<PromocodeT>> ApplyPromocodeAsync(int cartId, string code)
         {
             var promocode = await promocodeService.GetAsync(code, true, false);
             if (promocode.IsNull())
             {
-                return OpreationResultMessageFactory<PromocodeT>.CreateErrorResponse(null, OpreationResultStatusCode.NotFound, "Promocode not found");
+                return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.NotFound, "Promocode not found");
             }
             var cart = await GetAsync(cartId, true, true, true);
             var defaultAddress = await clientService.GetDefaultAddressAsync(cart.ClientId);
             if (defaultAddress.IsNull() || defaultAddress.CityId.IsNull())
             {
-                return OpreationResultMessageFactory<PromocodeT>.CreateErrorResponse(null, OpreationResultStatusCode.IncompleteClientData, "Client address not complete");
+                return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.IncompleteClientData, "Client address not complete");
             }
             if (promocode.PromocodeDepartmentT.Any(d => d.DepartmentId == cart.DepartmentId) && promocode.PromocodeCityT.Any(d => d.CityId == defaultAddress.CityId))
             {
                 if(promocode.MinimumCharge > cart.CartDetailsT.Sum(d => d.ServiceQuantity * d.Service.ServiceCost))
                 {
-                    return OpreationResultMessageFactory<PromocodeT>.CreateErrorResponse(null, OpreationResultStatusCode.NotAvailable, $"Request amount must be more than {promocode.MinimumCharge} to use this promocode");
+                    return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.NotAvailable, $"Request amount must be more than {promocode.MinimumCharge} to use this promocode");
                 }
                 cart.PromocodeId = promocode.PromocodeId;
+                cart.UsePoint = false;
                 await UpdateAsync(cart);
-                return OpreationResultMessageFactory<PromocodeT>.CreateSuccessResponse();
+                return ResultFactory<PromocodeT>.CreateSuccessResponse();
             }
             else
             {
-                return OpreationResultMessageFactory<PromocodeT>.CreateErrorResponse(null, OpreationResultStatusCode.NotAvailable, "Promocode not avaliable for this request");
+                return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.NotAvailable, "Promocode not avaliable for this request");
             }
         }
 
@@ -146,11 +201,25 @@ namespace SanyaaDelivery.Application.Services
                 cart.UsePoint = false;
             }
             cart.UsePoint = !cart.UsePoint;
+            if (cart.UsePoint)
+            {
+                var customCart = await GetCartForAppAsync(cartId);
+                if(customCart.MinimumCharge > customCart.TotalPrice)
+                {
+                    cart.UsePoint = false;
+                }
+                cart.PromocodeId = null;
+            }
             return await UpdateAsync(cart);
         }
 
-        public async Task<int> DeletetAsync(int id)
+        public async Task<int> DeleteAsync(int id)
         {
+            var cartDelails = await GetDetailsListAsync(id);
+            foreach (var item in cartDelails)
+            {
+                await cartDetailsRepo.DeleteAsync(item.CartDetailsId);
+            }
             await cartRepo.DeleteAsync(id);
             return await cartRepo.SaveAsync();
         }
@@ -189,9 +258,9 @@ namespace SanyaaDelivery.Application.Services
             return query.FirstOrDefaultAsync();
         }
 
-        public Task<CartT> GetByClientIdAsync(int clientId, bool? isViaApp = false, bool includeDetails = false, bool includeService = false)
+        public Task<CartT> GetCurrentByClientIdAsync(int clientId, bool? isViaApp = false, bool includeDetails = false, bool includeService = false)
         {
-            var query = cartRepo.DbSet.Where(d => d.ClientId == clientId);
+            var query = cartRepo.DbSet.Where(d => d.ClientId == clientId && d.HaveRequest == false);
             if (isViaApp.HasValue)
             {
                 query = query.Where(d => d.IsViaApp == isViaApp);
@@ -211,107 +280,94 @@ namespace SanyaaDelivery.Application.Services
             return query.FirstOrDefaultAsync();
         }
 
-        public async Task<CartDto> GetCartForAppAsync(int cartId, int? cityId = null)
+        public async Task<CartDto> GetCartForAppAsync(int cartId, int? cityId = null, int? clientSubscriptionId = null, DateTime? requestTime = null, RequestT request = null)
         {
-
+            ClientT client;
             CartDto cartDto = new CartDto();
             var cart = await GetAsync(cartId, true, true, true);
             if (cart.IsNull())
             {
                 return null;
             }
-            var client = await clientService.GetAsync(cart.ClientId);
+            client = await clientService.GetAsync(cart.ClientId, true, true);
+            if (client.IsNull())
+            {
+                return null;
+            }
             cartDto.CartId = cartId;
             cartDto.ClientId = cart.ClientId;
             cartDto.UsePoints = cart.UsePoint;
             cartDto.Note = cart.Note;
             cartDto.DepartmentId = cart.DepartmentId;
-            var clientSubscriptionList = await clientSubscriptionService.GetListAsync(cartDto.ClientId, cartDto.DepartmentId, true);
-            if (clientSubscriptionList.HasItem())
+            cartDto.DepartmentName = cart.Department.DepartmentName;
+            cartDto.DepartmentTerms = cart.Department.Terms;
+            if(request != null)
             {
-                var firstSubscription = clientSubscriptionList.FirstOrDefault();
-                cartDto.SubscriptionId = firstSubscription.SubscriptionId;
-                if (firstSubscription.Subscription.IsNotNull() && firstSubscription.Subscription.SubscriptionSequenceT.HasItem())
-                {
-                    int requestNo = 1;
-                    var sequence = requestNo % firstSubscription.Subscription.SubscriptionSequenceT.Count();
-                    cartDto.SubscriptionDiscountPercentage = firstSubscription.Subscription.SubscriptionSequenceT.ToList()[sequence].DiscountPercentage;
-                }
+                cartDto.HaveRequest = true;
+                cartDto.Request = request;
             }
+            cartDto.EmployeeDepartmentPercentage = await employeeService.GetEmployeePrecentageAsync(cartDto.EmployeeId, cartDto.DepartmentId);
             if (cityId.IsNull())
             {
                 cityId = await clientService.GetDefaultCityIdAsync(cart.ClientId);
             }
             cartDto.CityId = cityId.Value;
             var city = await cityService.GetAsync(cityId.Value);
+            cartDto.MinimumCharge = GeneralSetting.MinimumCharge;
+            cartDto.DeliveryPrice = GeneralSetting.DeliveryPrice;
             if (city.IsNotNull())
             {
                 if (city.MinimumCharge.HasValue)
                 {
                     cartDto.MinimumCharge = city.MinimumCharge.Value;
                 }
-                else
-                {
-                    cartDto.MinimumCharge = GeneralSetting.MinimumCharge;
-                }
                 if (city.DeliveryPrice.HasValue)
                 {
-                    cartDto.DeliveryPrice = GeneralSetting.DeliveryPrice;
-                }
-                else
-                {
-                    cartDto.DeliveryPrice = GeneralSetting.DeliveryPrice;
+                    cartDto.DeliveryPrice = city.DeliveryPrice.Value;
                 }
             }
-            else
+            if (cart.Department.MaximumDiscountPercentage.HasValue)
             {
-                cartDto.MinimumCharge = GeneralSetting.MinimumCharge;
-                cartDto.DeliveryPrice = GeneralSetting.DeliveryPrice;
+                cartDto.MaxDiscountPercentage = cart.Department.MaximumDiscountPercentage.Value;
             }
-            cartDto.MaxDiscountPercentage = cart.Department.MaximumDiscountPercentage.Value;
             cartDto.TotalPoints = client.ClientPoints.HasValue ? client.ClientPoints.Value : 0;
             cartDto.PointsPerEGP = GeneralSetting.PointsPerEGP;
             cartDto.PromocodeCompanyDiscountPercentage = GeneralSetting.PromocodeCompanyDiscountPercentage;
-            var serviceRatioList = await serviceRatioService.GetListAsync(cartDto.CityId, cartDto.DepartmentId, true);
-            if (serviceRatioList.IsEmpty())
+            cartDto.ServiceRatio = await serviceRatioService.GetRatioAsync(cartDto.CityId, cartDto.DepartmentId);
+            if (clientSubscriptionId.HasValue)
             {
-                cartDto.ServiceRatio = 1;
-            }
-            else
-            {
-                var ratio = serviceRatioList.LastOrDefault().Ratio;
-                if (ratio.IsNull() || ratio == 0)
+                cartDto.ClientSubscriptionId = clientSubscriptionId.Value;
+                if(requestTime == null)
                 {
-                    cartDto.ServiceRatio = 1;
+                    requestTime = DateTime.Now;
                 }
-                else
-                {
-                    cartDto.ServiceRatio = 1 + (ratio.Value / 100);
-                }
+                var sequence = await subscriptionRequestService.GetNextSequenceAsync(clientSubscriptionId.Value, requestTime.Value);
+                cartDto.SubscriptionDiscountPercentage = sequence.DiscountPercentage;
+                cartDto.SubscriptionDiscountCompanyPercentage = sequence.CompanyDiscountPercentage;
             }
+            cartDto.PointsCompanyDiscountPercentage = GeneralSetting.PointsCompanyDiscountPercentage;
             if (cart.CartDetailsT.HasItem())
             {
                 cartDto.SetServiceDetails(cart.CartDetailsT.OrderBy(d => d.CartDetailsId).ToList());
-                if (cart.PromocodeId.HasValue)
-                {
-                    var promocode = await promocodeService.GetAsync(cart.PromocodeId.Value, true, true);
-                    if (promocode.PromocodeDepartmentT.Any(d => d.DepartmentId == cartDto.DepartmentId) && promocode.PromocodeCityT.Any(d => d.CityId == cartDto.CityId))
-                    {
-                        cartDto.CalculatePromocodeDiscount(promocode);
-                    }
-                }
                 cartDto.SetTax(0);
                 cartDto.CalculateDepartmentDiscount(0);
-                cartDto.CalculateSubscriptionDiscount(0);
+                cartDto.CalculateSubscriptionDiscount();
                 cartDto.CalculateAppliedDiscount();
                 cartDto.CalculateUsedPoints();
                 cartDto.CheckMinimumCharge();
                 cartDto.SetDeliveryPrice();
                 cartDto.CalculateCompanyEmployeeDiscount();
+                if (cart.PromocodeId.HasValue)
+                {
+                    var promocode = await promocodeService.GetAsync(cart.PromocodeId.Value, true);
+                    cartDto.CalculatePromocodeDiscount(promocode);
+                }
             }
             cartDto.RoundDecimal();
             cartDto.SetDescription();
             cartDto.CalcualteDiscountDetails();
+            cartDto.CalcualteInvoicetDetails();
+            cartDto.CalculateAmountPercentage();
             cartDto.AttachmentList = await attachmentService.GetListAsync(1, cart.CartId.ToString());
             return cartDto;
         }
@@ -326,9 +382,9 @@ namespace SanyaaDelivery.Application.Services
             return cartDetailsRepo.DbSet.Where(d => d.CartId == cartId).ToListAsync();
         }
 
-        public Task<List<CartDetailsT>> GetDetailsListByClientIdAsync(int clientId)
+        public Task<List<CartDetailsT>> GetDetailsListByClientIdAsync(int clientId, bool haveRequest = false)
         {
-            return cartDetailsRepo.DbSet.Where(d => d.Cart.ClientId == clientId).ToListAsync();
+            return cartDetailsRepo.DbSet.Where(d => d.Cart.ClientId == clientId && d.Cart.HaveRequest == false).ToListAsync();
         }
 
         public Task<List<CartT>> GetListAsync(DateTime? startDate = null, DateTime? endDate = null, bool? isViaApp = false)

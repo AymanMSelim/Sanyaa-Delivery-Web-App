@@ -34,16 +34,16 @@ namespace SanyaaDelivery.API.Controllers
                 var result = await fawryService.SendAllUnpaidRequestAsync(employeeId);  
                 if (result != null)
                 {
-                    return Ok(OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateSuccessResponse(result));
+                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateSuccessResponse(result));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateErrorResponse());
+                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
             }
         }
     }

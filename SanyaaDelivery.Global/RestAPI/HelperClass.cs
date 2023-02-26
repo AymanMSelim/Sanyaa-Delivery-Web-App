@@ -59,7 +59,7 @@ namespace App.Global.RestAPI
             }
             catch (Exception ex)
             {
-                return default;
+                throw;
             }
 
         }

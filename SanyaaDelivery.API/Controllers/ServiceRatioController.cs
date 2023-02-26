@@ -20,185 +20,185 @@ namespace SanyaaDelivery.API.Controllers
         }
         #region ServiceRatio
         [HttpGet("Get/{serviceRatioId}")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioT>>> Get(int serviceRatioId)
+        public async Task<ActionResult<Result<ServiceRatioT>>> Get(int serviceRatioId)
         {
             try
             {
                 var serviceRatio = await serviceRatioService.GetAsync(serviceRatioId);
-                return base.Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                return base.Ok(ResultFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioT>>> Add(ServiceRatioT serviceRatio)
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<ServiceRatioT>>> Add(ServiceRatioT serviceRatio)
         {
             try
             {
                 var affectedRows = await serviceRatioService.AddAsync(serviceRatio);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioT>>> Update(ServiceRatioT serviceRatio)
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<ServiceRatioT>>> Update(ServiceRatioT serviceRatio)
         {
             try
             {
                 var affectedRows = await serviceRatioService.UpdateAsync(serviceRatio);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.OpreationResultStatusCode.RecordUpdatedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioT>.CreateSuccessResponse(serviceRatio, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("Delete/{serviceRatioId}")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioT>>> Delete(int serviceRatioId)
+        public async Task<ActionResult<Result<ServiceRatioT>>> Delete(int serviceRatioId)
         {
             try
             {
                 var affectedRows = await serviceRatioService.DeletetAsync(serviceRatioId);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetList")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceRatioT>>>> GetList(string description = null)
+        public async Task<ActionResult<Result<List<ServiceRatioT>>>> GetList(string description = null)
         {
             try
             {
                 var list = await serviceRatioService.GetListAsync(description);
-                return Ok(OpreationResultMessageFactory<List<ServiceRatioT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceRatioT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioT>.CreateExceptionResponse(ex));
             }
         }
         #endregion
 
         #region ServiceRatioDetails
         [HttpGet("GetDetail/{serviceRatioDetailsId}")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioDetailsT>>> GetDetail(int serviceRatioDetailsId)
+        public async Task<ActionResult<Result<ServiceRatioDetailsT>>> GetDetail(int serviceRatioDetailsId)
         {
             try
             {
                 var serviceRatioDetails = await serviceRatioService.GetDetailsAsync(serviceRatioDetailsId);
-                return base.Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                return base.Ok(ResultFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioDetailsT>>> AddDetail(ServiceRatioDetailsT serviceRatioDetails)
+        [HttpPost("AddDetail")]
+        public async Task<ActionResult<Result<ServiceRatioDetailsT>>> AddDetail(ServiceRatioDetailsT serviceRatioDetails)
         {
             try
             {
                 var affectedRows = await serviceRatioService.AddDetailAsync(serviceRatioDetails);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioDetailsT>>> UpdateDetail(ServiceRatioDetailsT serviceRatioDetails)
+        [HttpPost("UpdateDetail")]
+        public async Task<ActionResult<Result<ServiceRatioDetailsT>>> UpdateDetail(ServiceRatioDetailsT serviceRatioDetails)
         {
             try
             {
                 var affectedRows = await serviceRatioService.UpdateDetailAsync(serviceRatioDetails);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.OpreationResultStatusCode.RecordUpdatedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateSuccessResponse(serviceRatioDetails, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("DeleteDetail/{serviceRatioDetailsId}")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceRatioDetailsT>>> DeleteDetail(int serviceRatioDetailsId)
+        public async Task<ActionResult<Result<ServiceRatioDetailsT>>> DeleteDetail(int serviceRatioDetailsId)
         {
             try
             {
                 var affectedRows = await serviceRatioService.DeletetDetailAsync(serviceRatioDetailsId);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateErrorResponse());
+                    return Ok(ResultFactory<ServiceRatioDetailsT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
             }
         }
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceRatioDetailsT>>>> GetDetailsList(int? serviceRatioId = null)
+        [HttpGet("GetDetailsList")]
+        public async Task<ActionResult<Result<List<ServiceRatioDetailsT>>>> GetDetailsList(int? serviceRatioId = null)
         {
             try
             {
                 var list = await serviceRatioService.GetDetailsListAsync(serviceRatioId);
-                return Ok(OpreationResultMessageFactory<List<ServiceRatioDetailsT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceRatioDetailsT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<ServiceRatioDetailsT>.CreateExceptionResponse(ex));
             }
         }
         #endregion

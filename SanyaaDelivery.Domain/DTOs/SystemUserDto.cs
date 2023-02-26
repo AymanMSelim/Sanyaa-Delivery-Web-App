@@ -11,5 +11,6 @@ namespace SanyaaDelivery.Domain.DTOs
         public object UserData { get; set; }
         public DateTime TokenExpireDate { get; set; }
         public int AccountId { get; set; }
+        public string  FCMToken { get; set; }
     }
 }

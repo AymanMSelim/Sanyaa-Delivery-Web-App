@@ -116,5 +116,13 @@ namespace SanyaaDelivery.Application.Services
             account.AccountPassword = App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(account.AccountHashSlat, newPassword);
             return Update(account);
         }
+
+        public async Task<int> DeleteSoft(int id)
+        {
+            var account = await accountRepository.GetAsync(id);
+            account.IsDeleted = true;
+            accountRepository.Update(id, account);
+            return await accountRepository.SaveAsync();
+        }
     }
 }

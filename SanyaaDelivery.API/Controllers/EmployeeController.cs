@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using App.Global.DTOs;
 using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.OtherModels;
+using AutoMapper;
+using SanyaaDelivery.Application;
 
 namespace SanyaaDelivery.API.Controllers
 {
@@ -22,101 +24,110 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IEmployeeAppAccountService employeeAppAccountService;
         private readonly CommonService commonService;
         private readonly ICityService cityService;
+        private readonly IFavouriteEmployeeService favouriteEmployeeService;
+        private readonly IClientSubscriptionService clientSubscriptionService;
+        private readonly IEmployeeRequestService employeeRequestService;
+        private readonly IMapper mapper;
 
         public EmployeeController(IEmployeeService employeeService, IRequestService orderService, 
-            IEmployeeAppAccountService employeeAppAccountService, CommonService commonService, ICityService cityService)
+            IEmployeeAppAccountService employeeAppAccountService, CommonService commonService, ICityService cityService, 
+            IFavouriteEmployeeService favouriteEmployeeService, IClientSubscriptionService clientSubscriptionService, IEmployeeRequestService employeeRequestService, IMapper mapper)
         {
             this.employeeService = employeeService;
             this.orderService = orderService;
             this.employeeAppAccountService = employeeAppAccountService;
             this.commonService = commonService;
             this.cityService = cityService;
+            this.favouriteEmployeeService = favouriteEmployeeService;
+            this.clientSubscriptionService = clientSubscriptionService;
+            this.employeeRequestService = employeeRequestService;
+            this.mapper = mapper;
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<EmployeeT>>> Add(EmployeeT employee)
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<EmployeeT>>> Add(EmployeeT employee)
         {
             try
             {
                 if(employee == null)
                 {
-                    return Ok(OpreationResultMessageFactory<EmployeeT>.CreateModelNotValidResponse("Employee can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<EmployeeT>.CreateModelNotValidResponse("Employee can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var result = await employeeService.AddAsync(employee);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<EmployeeT>.CreateSuccessResponse(employee));
+                    return Ok(ResultFactory<EmployeeT>.CreateSuccessResponse(employee));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<EmployeeT>.CreateErrorResponse());
+                    return Ok(ResultFactory<EmployeeT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<EmployeeT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<EmployeeT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<EmployeeWorkplacesT>>> AddWorkplace(EmployeeWorkplacesT employeeWorkplace)
+        [HttpPost("AddWorkplace")]
+        public async Task<ActionResult<Result<EmployeeWorkplacesT>>> AddWorkplace(EmployeeWorkplacesT employeeWorkplace)
         {
             try
             {
                 if (employeeWorkplace == null)
                 {
-                    return BadRequest(OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateModelNotValidResponse("EmployeeWorkplace can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return BadRequest(ResultFactory<EmployeeWorkplacesT>.CreateModelNotValidResponse("EmployeeWorkplace can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var result = await employeeService.AddWorkplace(employeeWorkplace);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateSuccessResponse(employeeWorkplace));
+                    return Ok(ResultFactory<EmployeeWorkplacesT>.CreateSuccessResponse(employeeWorkplace));
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<EmployeeWorkplacesT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<EmployeeWorkplacesT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("DeleteWorkplace/{employeeWorkplaceId}")]
-        public async Task<ActionResult<OpreationResultMessage<EmployeeWorkplacesT>>> DeleteWorkplace(int employeeWorkplaceId)
+        public async Task<ActionResult<Result<EmployeeWorkplacesT>>> DeleteWorkplace(int employeeWorkplaceId)
         {
             try
             {
                 var result = await employeeService.DeleteWorkplace(employeeWorkplaceId);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateSuccessResponse());
+                    return Ok(ResultFactory<EmployeeWorkplacesT>.CreateSuccessResponse());
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<EmployeeWorkplacesT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<EmployeeWorkplacesT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<EmployeeWorkplacesT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetWorkplaceList/{employeeId}")]
-        public async Task<ActionResult<OpreationResultMessage<List<EmployeeWorkplacesT>>>> GetWorkplaceList(string employeeId)
+        public async Task<ActionResult<Result<List<EmployeeWorkplacesT>>>> GetWorkplaceList(string employeeId)
         {
             try
             {
                 if (string.IsNullOrEmpty(employeeId))
                 {
-                    return BadRequest(OpreationResultMessageFactory<List<EmployeeWorkplacesT>>.CreateModelNotValidResponse("EmployeeId can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return BadRequest(ResultFactory<List<EmployeeWorkplacesT>>.CreateModelNotValidResponse("EmployeeId can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var employeeWorkspaceList = await employeeService.GetWorkplaceList(employeeId);
                 if (employeeWorkspaceList.HasItem())
                 {
-                    return Ok(OpreationResultMessageFactory<List<EmployeeWorkplacesT>>.CreateSuccessResponse(employeeWorkspaceList));
+                    return Ok(ResultFactory<List<EmployeeWorkplacesT>>.CreateSuccessResponse(employeeWorkspaceList));
                 }
                 else
                 {
@@ -125,69 +136,69 @@ namespace SanyaaDelivery.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<List<EmployeeWorkplacesT>>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<List<EmployeeWorkplacesT>>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentEmployeeT>>> AddDepartment(DepartmentEmployeeT departmentEmployee)
+        [HttpPost("AddDepartment")]
+        public async Task<ActionResult<Result<DepartmentEmployeeT>>> AddDepartment(DepartmentEmployeeT departmentEmployee)
         {
             try
             {
                 if (departmentEmployee == null)
                 {
-                    return BadRequest(OpreationResultMessageFactory<DepartmentEmployeeT>.CreateModelNotValidResponse("DepartmentEmployee can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return BadRequest(ResultFactory<DepartmentEmployeeT>.CreateModelNotValidResponse("DepartmentEmployee can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var result = await employeeService.AddDepartment(departmentEmployee);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentEmployeeT>.CreateSuccessResponse(departmentEmployee));
+                    return Ok(ResultFactory<DepartmentEmployeeT>.CreateSuccessResponse(departmentEmployee));
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<DepartmentEmployeeT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<DepartmentEmployeeT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<DepartmentEmployeeT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<DepartmentEmployeeT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("DeleteDepartment/{departmentEmployeeId}")]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentEmployeeT>>> DeleteDepartment(int departmentEmployeeId)
+        public async Task<ActionResult<Result<DepartmentEmployeeT>>> DeleteDepartment(int departmentEmployeeId)
         {
             try
             {
                 var result = await employeeService.DeleteDepartment(departmentEmployeeId);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentEmployeeT>.CreateSuccessResponse());
+                    return Ok(ResultFactory<DepartmentEmployeeT>.CreateSuccessResponse());
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<DepartmentEmployeeT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<DepartmentEmployeeT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<DepartmentEmployeeT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<DepartmentEmployeeT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetDepartmentList/{employeeId}")]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentEmployeeT>>>> GetDepartmentList(string employeeId)
+        public async Task<ActionResult<Result<List<DepartmentEmployeeT>>>> GetDepartmentList(string employeeId)
         {
             try
             {
                 if (string.IsNullOrEmpty(employeeId))
                 {
-                    return BadRequest(OpreationResultMessageFactory<List<DepartmentEmployeeT>>.CreateModelNotValidResponse("EmployeeId can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return BadRequest(ResultFactory<List<DepartmentEmployeeT>>.CreateModelNotValidResponse("EmployeeId can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var departmentList = await employeeService.GetDepartmentList(employeeId);
                 if (departmentList.HasItem())
                 {
-                    return Ok(OpreationResultMessageFactory<List<DepartmentEmployeeT>>.CreateSuccessResponse(departmentList));
+                    return Ok(ResultFactory<List<DepartmentEmployeeT>>.CreateSuccessResponse(departmentList));
                 }
                 else
                 {
@@ -196,28 +207,28 @@ namespace SanyaaDelivery.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<List<DepartmentEmployeeT>>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<List<DepartmentEmployeeT>>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<EmployeeT>>> Update(EmployeeT employee)
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<EmployeeT>>> Update(EmployeeT employee)
         {
             var result = await employeeService.UpdateAsync(employee);
             if (result > 0)
             {
-                return Ok(OpreationResultMessageFactory<EmployeeT>.CreateSuccessResponse(employee));
+                return Ok(ResultFactory<EmployeeT>.CreateSuccessResponse(employee));
             }
             else
             {
-                return Ok(OpreationResultMessageFactory<EmployeeT>.CreateErrorResponse());
+                return Ok(ResultFactory<EmployeeT>.CreateErrorResponse());
             }
         }
 
         [HttpGet("GetInfo/{employeeId}")]
         public async Task<ActionResult<EmployeeT>> GetInfo(string employeeId)
         {
-            var employee = await employeeService.Get(employeeId);
+            var employee = await employeeService.GetAsync(employeeId);
             //employee.EmployeeWorkplacesT = employee.EmployeeWorkplacesT;
             if(employee == null)
             {
@@ -227,22 +238,19 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{employeeId}")]
-        public async Task<ActionResult<OpreationResultMessage<EmployeeT>>> Get(string employeeId)
+        public async Task<ActionResult<Result<EmployeeT>>> Get(string employeeId, bool includeWorkplace = false, bool includeDepartment = false,
+            bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false, bool includeReview = false)
         {
             try
             {
-                var employee = await employeeService.Get(employeeId);
-                if (employee == null)
-                {
-                    return NoContent();
-                }
-                return Ok(OpreationResultMessageFactory<EmployeeT>.CreateSuccessResponse(employee));
+                var employee = await employeeService.GetAsync(employeeId, includeWorkplace, includeDepartment,
+                    includeLocation, includeLogin, includeSubscription, includeReview, includeReview);
+                return Ok(ResultFactory<EmployeeT>.CreateSuccessResponse(employee));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<EmployeeT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<EmployeeT>.CreateExceptionResponse(ex));
             }
-           
         }
 
         [HttpGet("GetCleanerInfo")]
@@ -292,9 +300,33 @@ namespace SanyaaDelivery.API.Controllers
             return employeeDayStatusDto;
         }
 
+        [HttpGet("GetAppReviewList/{employeeId?}")]
+        public async Task<ActionResult<Result<AppEmployeeDto>>> GetAppReviewList(string employeeId)
+        {
+            try
+            {
+                var clientId = commonService.GetClientId();
+                var employee = await employeeService.GetAsync(employeeId, includeReview: true, includeReviewClient: true, includeFavourite: true, includeWorkplace: true);
+                var employeeDto = mapper.Map<AppEmployeeDto>(employee);
+                var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, includeSubscription: true);
+                if (clientSubscriptionList.HasItem())
+                {
+                    if (clientSubscriptionList.Any(d => d.Subscription.DepartmentId == employeeDto.DepartmentId))
+                    {
+                        employeeDto.ShowCalendar = true;
+                    }
+                }
+                return Ok(ResultFactory<AppEmployeeDto>.CreateSuccessResponse(employeeDto));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppEmployeeDto>.CreateExceptionResponse(ex));
+            }
+        }
 
-        [HttpGet]
-        public async Task<ActionResult<List<AppEmployeeDto>>> GetAppList(DateTime selectedDate, int? clientId = null,  int? departmentId = null, int? cityId = null, int? branchId = null)
+        [HttpGet("GetAppList")]
+        public async Task<ActionResult<List<AppEmployeeDto>>> GetAppList(DateTime selectedDate, int? clientId = null,  int? departmentId = null,
+            int? cityId = null, int? branchId = null, bool getAll = false, bool isNewSubscription = false)
         {
             BranchT currentBranch;
             CartT cart;
@@ -315,26 +347,89 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 if (departmentId.IsNull())
                 {
-                     cart = await commonService.GetClientCartAsync(clientId);
+                     cart = await commonService.GetCurrentClientCartAsync(clientId);
                      departmentId = cart.DepartmentId;
                 }
-                var employeeList = await employeeService.GetListAsync(departmentId, branchId, true);
-                var list = employeeList.Select(d => new AppEmployeeDto
+                var employeeList = await employeeRequestService.GetFreeEmployeeListByBranch(selectedDate, departmentId.Value, branchId.Value, true, true, true);
+                //employeeService.GetListAsync(departmentId, branchId, true, true, true, true);
+                var mapList = mapper.Map<List<AppEmployeeDto>>(employeeList);
+                mapList.ForEach(d => d.EmployeeReviews = null);
+                if (isNewSubscription == false)
                 {
-                    Id = d.EmployeeId,
-                    Name = d.EmployeeName,
-                    Image = d.EmployeeImageUrl,
-                    Rate = new Random().Next(5),
-                    IsFavourite = false,
-                }).ToList();
-                employeeList.ForEach(d => d.EmployeeWorkplacesT = null);
-                employeeList.ForEach(d => d.LoginT = null);
-                employeeList.ForEach(d => d.DepartmentEmployeeT = null);
-                return Ok(OpreationResultMessageFactory<List<AppEmployeeDto>>.CreateSuccessResponse(list));
+                    if (departmentId.Value == GeneralSetting.CleaningDepartmentId)
+                    {
+                        var subscriptionList = await clientSubscriptionService.GetListAsync(clientId, departmentId);
+                        if (subscriptionList.HasItem())
+                        {
+                            mapList.ForEach(d => d.ShowCalendar = true);
+                        }
+                    }
+                }
+                if (mapList.IsEmpty())
+                {
+                    return Ok(ResultFactory<List<AppEmployeeDto>>.CreateErrorResponseMessageFD("No any technicial available at this time please select another time"));
+                }
+                else
+                {
+                    return Ok(ResultFactory<List<AppEmployeeDto>>.CreateSuccessResponse(mapList));
+                }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<List<AppEmployeeDto>>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<List<AppEmployeeDto>>.CreateExceptionResponse(ex));
+            }
+        }
+        
+        [HttpGet("GetFavouriteList")]
+        public async Task<ActionResult<List<AppEmployeeDto>>> GetFavouriteList(int? clientId = null)
+        {
+            try
+            {
+                List<AppEmployeeDto> mapList = null;
+                clientId = commonService.GetClientId(clientId);
+                var list = await favouriteEmployeeService.GetListAsync(clientId.Value, true);
+                if (list.HasItem())
+                {
+                    var employeeList = list.Select(d => d.Employee).ToList();
+                    mapList = mapper.Map<List<AppEmployeeDto>>(employeeList);
+                    mapList.ForEach(d => d.EmployeeReviews = null);
+                    var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, includeSubscription: true);
+                    if (clientSubscriptionList.HasItem())
+                    {
+                        foreach (var item in mapList)
+                        {
+                            if(clientSubscriptionList.Any(d => d.Subscription.DepartmentId == item.DepartmentId))
+                            {
+                                item.ShowCalendar = true;
+                            }
+                        }
+                    }
+                }
+                return Ok(ResultFactory<List<AppEmployeeDto>>.CreateSuccessResponse(mapList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<AppEmployeeDto>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("FavouriteSwitch")]
+        public async Task<ActionResult<FavouriteEmployeeT>> FavouriteSwitch(string employeeId, int? clientId = null)
+        {
+            try
+            {
+                clientId = commonService.GetClientId(clientId);
+                var client = await commonService.GetClient(clientId);
+                if (client.IsGuest)
+                {
+                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateRequireRegisterResponse());
+                }
+                int affectedRows = await favouriteEmployeeService.FavouriteSwitch(clientId.Value, employeeId);
+                return Ok(ResultFactory<List<AppEmployeeDto>>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<AppEmployeeDto>>.CreateExceptionResponse(ex));
             }
         }
     }

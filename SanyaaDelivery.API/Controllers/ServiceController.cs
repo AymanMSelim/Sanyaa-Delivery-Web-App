@@ -25,12 +25,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetById/{serviceId}")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceT>>> GetById(int serviceId)
+        public async Task<ActionResult<Result<ServiceT>>> GetById(int serviceId)
         {
             try
             {
                 var service = await serviceService.GetAsync(serviceId);
-                return Ok(OpreationResultMessageFactory<ServiceT>.CreateSuccessResponse(service));
+                return Ok(ResultFactory<ServiceT>.CreateSuccessResponse(service));
 
             }
             catch (Exception ex)
@@ -40,12 +40,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetByName/{serviceName}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetByName(string serviceName)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetByName(string serviceName)
         {
             try
             {
                 var serviceList = await serviceService.GetAsync(serviceName);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(serviceList));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(serviceList));
 
             }
             catch (Exception ex)
@@ -55,18 +55,18 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("Add")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceT>>> Add(ServiceT service)
+        public async Task<ActionResult<Result<ServiceT>>> Add(ServiceT service)
         {
             try
             {
                 int affectedRecord = await serviceService.AddAsync(service);
                 if (affectedRecord > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceT>.CreateSuccessResponse(service, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<ServiceT>.CreateSuccessResponse(service, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<ServiceT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<ServiceT>.CreateErrorResponse());
                 }
 
             }
@@ -77,18 +77,18 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("Update")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceT>>> Update(ServiceT service)
+        public async Task<ActionResult<Result<ServiceT>>> Update(ServiceT service)
         {
             try
             {
                 int affectedRecord = await serviceService.UpdateAsync(service);
                 if (affectedRecord > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceT>.CreateSuccessResponse(service, App.Global.Enums.OpreationResultStatusCode.RecordUpdatedSuccessfully));
+                    return Ok(ResultFactory<ServiceT>.CreateSuccessResponse(service, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully));
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<ServiceT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<ServiceT>.CreateErrorResponse());
                 }
 
             }
@@ -99,18 +99,18 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("Delete")]
-        public async Task<ActionResult<OpreationResultMessage<ServiceT>>> Delete(int serviceId)
+        public async Task<ActionResult<Result<ServiceT>>> Delete(int serviceId)
         {
             try
             {
                 var affectedRecord = await serviceService.DeleteAsync(serviceId);
                 if (affectedRecord > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<ServiceT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                    return Ok(ResultFactory<ServiceT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
                 }
                 else
                 {
-                    return BadRequest(OpreationResultMessageFactory<ServiceT>.CreateErrorResponse());
+                    return BadRequest(ResultFactory<ServiceT>.CreateErrorResponse());
                 }
 
             }
@@ -121,12 +121,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetListByDepartmentSub1Id/{departmentSub1Id}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetListByDepartmentSub1Id(int departmentSub1Id)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetListByDepartmentSub1Id(int departmentSub1Id)
         {
             try
             {
                 var list = await serviceService.GetListByDepartmentSub1Async(departmentSub1Id);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -136,12 +136,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetListByDepartmentSub0Id/{departmentSub0Id}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetListByDepartmentSub0Id(int departmentSub0Id)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetListByDepartmentSub0Id(int departmentSub0Id)
         {
             try
             {
                 var list = await serviceService.GetListByDeparmentSub0Async(departmentSub0Id);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -150,12 +150,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetListByMainDepartmentId/{mainDepartmentId}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetListByMainDepartmentId(int mainDepartmentId)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetListByMainDepartmentId(int mainDepartmentId)
         {
             try
             {
                 var list = await serviceService.GetListByMainDeparmentAsync(mainDepartmentId);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -164,12 +164,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetOfferListByDepartmentSub1Id/{departmentSub1Id}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetOfferListByDepartmentSub1Id(int departmentSub1Id)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetOfferListByDepartmentSub1Id(int departmentSub1Id)
         {
             try
             {
                 var list = await serviceService.GetOfferListByDepartmentSub1Async(departmentSub1Id);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -178,12 +178,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetOfferListByDepartmentSub0Id/{departmentSub0Id}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetOfferListByDepartmentSub0Id(int departmentSub0Id)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetOfferListByDepartmentSub0Id(int departmentSub0Id)
         {
             try
             {
                 var list = await serviceService.GetOfferListByDeparmentSub0Async(departmentSub0Id);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -193,12 +193,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetOfferListByMainDeparment/{mainDepartmentId}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceT>>>> GetOfferListByMainDeparment(int mainDepartmentId)
+        public async Task<ActionResult<Result<List<ServiceT>>>> GetOfferListByMainDeparment(int mainDepartmentId)
         {
             try
             {
                 var list = await serviceService.GetOfferListByMainDeparmentAsync(mainDepartmentId);
-                return Ok(OpreationResultMessageFactory<List<ServiceT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<ServiceT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -206,29 +206,34 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<FavouriteServiceT>>> FavouriteSwitch(int serviceId, int? clientId = null)
+        [HttpPost("FavouriteSwitch")]
+        public async Task<ActionResult<Result<FavouriteServiceT>>> FavouriteSwitch(int serviceId, int? clientId = null)
         {
             try
             {
                 clientId = commonService.GetClientId();
                 if (clientId.IsNull())
                 {
-                    return Ok(OpreationResultMessageFactory<FavouriteServiceT>.CreateErrorResponseMessage("Client id is null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<FavouriteServiceT>.CreateErrorResponseMessage("Client id is null", App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                var client = await commonService.GetClient(clientId);
+                if (client.IsGuest)
+                {
+                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateRequireRegisterResponse());
                 }
                 var service = await serviceService.GetAsync(serviceId);
                 if (service.IsNull())
                 {
-                    return Ok(OpreationResultMessageFactory<FavouriteServiceT>.CreateNotFoundResponse("Service is not found"));
+                    return Ok(ResultFactory<FavouriteServiceT>.CreateNotFoundResponse("Service is not found"));
                 }
                 var affectedRow = await favouriteService.FavouriteSwitch(clientId.Value, serviceId);
                 if(affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<FavouriteServiceT>.CreateSuccessResponse());
+                    return Ok(ResultFactory<FavouriteServiceT>.CreateSuccessResponse());
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<FavouriteServiceT>.CreateErrorResponse());
+                    return Ok(ResultFactory<FavouriteServiceT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -238,14 +243,14 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetFavouriteList/{clientId?}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceCustom>>>> GetFavouriteList(int? clientId = null)
+        public async Task<ActionResult<Result<List<ServiceCustom>>>> GetFavouriteList(int? clientId = null)
         {
             try
             {
                 clientId = commonService.GetClientId();
                 if (clientId.IsNull())
                 {
-                    return Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateErrorResponseMessage("Client id is null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponseMessage("Client id is null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
                 var list = await favouriteService.GetListAsync(clientId.Value, true);
                 if (list.HasItem())
@@ -253,9 +258,9 @@ namespace SanyaaDelivery.API.Controllers
                     var serviceList = list.Select(d => d.Service).ToList();
                     serviceList.ForEach(d => d.FavouriteServiceT = null);
                     var favCustomServiceList = await serviceService.ConvertServiceToCustomMultiDepartment(serviceList, clientId.Value);
-                    return Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateSuccessResponse(favCustomServiceList));
+                    return Ok(ResultFactory<List<ServiceCustom>>.CreateSuccessResponse(favCustomServiceList));
                 }
-                return Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateSuccessResponse(null));
+                return Ok(ResultFactory<List<ServiceCustom>>.CreateSuccessResponse(null));
             }
             catch (Exception ex)
             {
@@ -263,8 +268,9 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<ServiceCustom>>>> GetServiceList(int? clientId = null, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, string source = null)
+        [HttpGet("GetServiceList")]
+        public async Task<ActionResult<Result<List<ServiceCustom>>>> GetServiceList(int? clientId = null, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, 
+            bool? getOffer = null, string searchValue = null, int? requestId = null)
         {
             try
             {
@@ -274,14 +280,14 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 if (clientId.IsNull())
                 {
-                    return Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.OpreationResultStatusCode.InvalidData, "Client id is null"));
+                    return Ok(ResultFactory<List<ServiceCustom>>.ReturnClientError());
                 }
-                if (mainDepartmentId.IsNull() && departmentSub0Id.IsNull() && departmentSub1Id.IsNull())
+                if (mainDepartmentId.IsNull() && departmentSub0Id.IsNull() && departmentSub1Id.IsNull() && string.IsNullOrEmpty(searchValue))
                 {
-                    return  Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.OpreationResultStatusCode.InvalidData, "All parameters is null"));
+                    return  Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.InvalidData, "All parameters is null"));
                 }
-                var list = await serviceService.GetCustomServiceList(clientId.Value, mainDepartmentId, departmentSub0Id, departmentSub1Id, getOffer);
-                return Ok(OpreationResultMessageFactory<List<ServiceCustom>>.CreateSuccessResponse(list));
+                var list = await serviceService.GetCustomServiceList(clientId.Value, mainDepartmentId, departmentSub0Id, departmentSub1Id, getOffer, requestId, searchValue);
+                return Ok(ResultFactory<List<ServiceCustom>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {

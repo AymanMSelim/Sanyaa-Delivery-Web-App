@@ -24,19 +24,19 @@ namespace SanyaaDelivery.API.Controllers
             this.deparmentSub1Service = deparmentSub1Service;
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentT>>> AddMainDepartment(DepartmentT department)
+        [HttpPost("AddMainDepartment")]
+        public async Task<ActionResult<Result<DepartmentT>>> AddMainDepartment(DepartmentT department)
         {
             try
             {
                 var affectedRow = await departmentService.AddAsync(department);
                 if(affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentT>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentT>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentT>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -45,19 +45,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentSub0T>>> AddDepartmentSub0(DepartmentSub0T department)
+        [HttpPost("AddDepartmentSub0")]
+        public async Task<ActionResult<Result<DepartmentSub0T>>> AddDepartmentSub0(DepartmentSub0T department)
         {
             try
             {
                 var affectedRow = await deparmentSub0Service.AddAsync(department);
                 if (affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub0T>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentSub0T>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub0T>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentSub0T>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -66,19 +66,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentSub1T>>> AddDepartmentSub1(DepartmentSub1T department)
+        [HttpPost("AddDepartmentSub1")]
+        public async Task<ActionResult<Result<DepartmentSub1T>>> AddDepartmentSub1(DepartmentSub1T department)
         {
             try
             {
                 var affectedRow = await deparmentSub1Service.AddAsync(department);
                 if (affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub1T>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentSub1T>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub1T>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentSub1T>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -87,19 +87,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentT>>> UpdateMainDepartment(DepartmentT department)
+        [HttpPost("UpdateMainDepartment")]
+        public async Task<ActionResult<Result<DepartmentT>>> UpdateMainDepartment(DepartmentT department)
         {
             try
             {
                 var affectedRow = await departmentService.UpdateAsync(department);
                 if (affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentT>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentT>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentT>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -108,19 +108,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentSub0T>>> UpdateDepartmentSub0(DepartmentSub0T department)
+        [HttpPost("UpdateDepartmentSub0")]
+        public async Task<ActionResult<Result<DepartmentSub0T>>> UpdateDepartmentSub0(DepartmentSub0T department)
         {
             try
             {
                 var affectedRow = await deparmentSub0Service.UpdateAsync(department);
                 if (affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub0T>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentSub0T>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub0T>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentSub0T>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -129,19 +129,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<DepartmentSub1T>>> UpdateDepartmentSub1(DepartmentSub1T department)
+        [HttpPost("UpdateDepartmentSub1")]
+        public async Task<ActionResult<Result<DepartmentSub1T>>> UpdateDepartmentSub1(DepartmentSub1T department)
         {
             try
             {
                 var affectedRow = await deparmentSub1Service.UpdateAsync(department);
                 if (affectedRow > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub1T>.CreateSuccessResponse(department));
+                    return Ok(ResultFactory<DepartmentSub1T>.CreateSuccessResponse(department));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<DepartmentSub1T>.CreateErrorResponse());
+                    return Ok(ResultFactory<DepartmentSub1T>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -151,7 +151,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetMainDepartmentList/{departmentName?}")]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentT>>>> GetMainDepartmentList(string departmentName = null)
+        public async Task<ActionResult<Result<List<DepartmentT>>>> GetMainDepartmentList(string departmentName = null)
         {
             try
             {
@@ -160,7 +160,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     list = list.Where(d => d.DepartmentName.Contains(departmentName)).ToList();
                 }
-                return Ok(OpreationResultMessageFactory<List<DepartmentT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<DepartmentT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -168,21 +168,13 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentSub0T>>>> GetDepartmentSub0List(int? departmentId = null, string departmentSub0Name = null)
+        [HttpGet("GetDepartmentSub0List")]
+        public async Task<ActionResult<Result<List<DepartmentSub0T>>>> GetDepartmentSub0List(int? departmentId = null, string departmentSub0Name = null)
         {
             try
             {
-                var list = await deparmentSub0Service.GetListAsync();
-                if (departmentId.HasValue)
-                {
-                    list = list.Where(d => d.DepartmentId == departmentId).ToList();
-                }
-                if (departmentSub0Name.IsNotNull())
-                {
-                    list = list.Where(d => d.DepartmentSub0.Contains(departmentSub0Name)).ToList();
-                }
-                return Ok(OpreationResultMessageFactory<List<DepartmentSub0T>>.CreateSuccessResponse(list));
+                var list = await deparmentSub0Service.GetListAsync(departmentId, departmentSub0Name);
+                return Ok(ResultFactory<List<DepartmentSub0T>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
@@ -190,13 +182,13 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentSub1T>>>> GetDepartmentSub1List(int? mainDepartmentId = null, int? departmentSub0Id = null, string departmentSub1Name = null)
+        [HttpGet("GetDepartmentSub1List")]
+        public async Task<ActionResult<Result<List<DepartmentSub1T>>>> GetDepartmentSub1List(int? mainDepartmentId = null, int? departmentSub0Id = null, string departmentSub1Name = null)
         {
             try
             {
                 var list = await deparmentSub1Service.GetListAsync(mainDepartmentId, departmentSub0Id, departmentSub1Name);
-                return Ok(OpreationResultMessageFactory<List<DepartmentSub1T>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<DepartmentSub1T>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {

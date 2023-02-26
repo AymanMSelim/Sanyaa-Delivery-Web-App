@@ -10,6 +10,7 @@ namespace SanyaaDelivery.Application.Interfaces
     public interface IDayWorkingTimeService
     {
          Task<List<DayWorkingTimeT>> GetListAsync();
-         Task<List<ReservationAvailableTimeDto>> GetReservationAvailableTimes(int departmentId, DateTime selectedDate);
+         Task<List<ReservationAvailableTimeDto>> GetReservationAvailableTimesForCart(int departmentId, DateTime selectedDate);
+         List<ReservationAvailableTimeDto> GetTimeListForNewSubscription(int departmentId);
     }
 }

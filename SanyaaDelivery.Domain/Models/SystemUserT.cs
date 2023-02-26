@@ -12,8 +12,6 @@ namespace SanyaaDelivery.Domain.Models
             Cleaningsubscribers = new HashSet<Cleaningsubscribers>();
             ClientSubscriptionT = new HashSet<ClientSubscriptionT>();
             ClientT = new HashSet<ClientT>();
-            ContractPaymentT = new HashSet<ContractPaymentT>();
-            CouponT = new HashSet<CouponT>();
             FollowUpT = new HashSet<FollowUpT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
             InsurancePaymentT = new HashSet<InsurancePaymentT>();
@@ -25,7 +23,11 @@ namespace SanyaaDelivery.Domain.Models
             RequestDelayedT = new HashSet<RequestDelayedT>();
             RequestDiscountT = new HashSet<RequestDiscountT>();
             RequestT = new HashSet<RequestT>();
+            SiteContractTModificationSystemUser = new HashSet<SiteContractT>();
+            SiteContractTSystemUser = new HashSet<SiteContractT>();
+            SiteT = new HashSet<SiteT>();
             TransactionT = new HashSet<TransactionT>();
+            VacationT = new HashSet<VacationT>();
         }
 
         public int SystemUserId { get; set; }
@@ -42,8 +44,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<Cleaningsubscribers> Cleaningsubscribers { get; set; }
         public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
-        public ICollection<ContractPaymentT> ContractPaymentT { get; set; }
-        public ICollection<CouponT> CouponT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public ICollection<InsurancePaymentT> InsurancePaymentT { get; set; }
@@ -55,6 +55,10 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<RequestDelayedT> RequestDelayedT { get; set; }
         public ICollection<RequestDiscountT> RequestDiscountT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
+        public ICollection<SiteContractT> SiteContractTModificationSystemUser { get; set; }
+        public ICollection<SiteContractT> SiteContractTSystemUser { get; set; }
+        public ICollection<SiteT> SiteT { get; set; }
         public ICollection<TransactionT> TransactionT { get; set; }
+        public ICollection<VacationT> VacationT { get; set; }
     }
 }

@@ -19,6 +19,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using SanyaaDelivery.API.ActionsFilter;
 using Microsoft.AspNetCore.Diagnostics;
+using SanyaaDelivery.Application.Interfaces;
+using AutoMapper;
 
 namespace SanyaaDelivery.API
 {
@@ -48,11 +50,23 @@ namespace SanyaaDelivery.API
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
             services.AddDbContext<SanyaaDatabaseContext>(options =>
-                options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")));
+                options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")).EnableSensitiveDataLogging(true).UseLoggerFactory(new LoggerFactory().AddConsole()));
             DependencyContainer.RegisterServices(services);
             services.AddHttpContextAccessor();
             services.AddScoped<CommonService>();
             services.AddCors();
+            services.AddSwaggerGen(c => c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
+            {
+                Version = "v1",
+                Title = "Sanyaa API",
+                Description = "List of Api's.",
+                Contact = new Swashbuckle.AspNetCore.Swagger.Contact
+                {
+                    Name = "Test site",
+                    Email = string.Empty
+                },
+            }
+            ));
             //App.Global.SMS.SMSMisrService.SetParameters(
             //    Configuration.GetConnectionString("SMSMisrUsername"),
             //    Configuration.GetConnectionString("SMSMisrPassword"),
@@ -61,7 +75,7 @@ namespace SanyaaDelivery.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Application.IGeneralSetting generalSetting)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Application.IGeneralSetting generalSetting, ITranslationService translationService)
         {
             if (env.IsDevelopment())
             {
@@ -93,7 +107,20 @@ namespace SanyaaDelivery.API
             //    await context.Response.(response);
             //}));
             app.UseMvc();
-           
+            app.UseSwagger();
+            app.UseSwaggerUI(c => {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
+            });
+            if(App.Global.Translation.Translator.TranslationList == null)
+            {
+                App.Global.Translation.Translator.TranslationList = translationService.GetList().Select(d => new App.Global.Translation.Translation
+                {
+                    Key = d.Key,
+                    LangId = d.LangId,
+                    Value = d.Value
+                }).ToList();
+            }
+            //App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json");
         }
     }
 }

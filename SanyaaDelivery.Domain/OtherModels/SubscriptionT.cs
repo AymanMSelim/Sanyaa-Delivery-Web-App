@@ -15,7 +15,6 @@ namespace SanyaaDelivery.Domain.Models
             IsActive = subscription.IsActive;
             Department = subscription.Department;
             ClientSubscriptionT = subscription.ClientSubscriptionT;
-            SubscriptionSequenceT = subscription.SubscriptionSequenceT;
             if(Department != null)
             {
                 DepartmentName = Department.DepartmentName;

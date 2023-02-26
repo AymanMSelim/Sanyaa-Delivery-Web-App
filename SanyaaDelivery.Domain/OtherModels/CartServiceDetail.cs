@@ -15,5 +15,7 @@ namespace SanyaaDelivery.Domain.OtherModels
         public decimal TotalDiscount { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal TotalNetPrice { get; set; }
+        public decimal MaterialCost { get; set; }
+        public decimal TotalMaterialCost { get; set; }
     }
 }

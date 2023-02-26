@@ -67,7 +67,7 @@ namespace SanyaaDelivery.Application.Services
         public async Task<FawryRefNumberResponse> SendAllUnpaidRequestAsync(string employeeId)
         {
             unitOfWork.StartTransaction();
-            var employee = await employeeService.Get(employeeId);
+            var employee = await employeeService.GetAsync(employeeId);
             var requestList = await requestService.GetUnPaidAsync(employeeId);
             var chargeItem = ConvertRequestToChargeItem(requestList);
            

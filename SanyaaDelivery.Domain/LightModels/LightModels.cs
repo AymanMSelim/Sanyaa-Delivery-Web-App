@@ -91,15 +91,32 @@ namespace SanyaaDelivery.Domain.LightModels
 
     public class EmployeeDepartmentLight
     {
-        public int ClientDepartmentId { get; set; }
         public string EmployeeId { get; set; }
         public int DepartmentId { get; set; }
     }
 
     public class EmployeeWorkplaceLight
     {
-        public int EmployeeWorkplaceId { get; set; }
         public string EmployeeId { get; set; }
         public int BranchId { get; set; }
     }
+
+    public class SubscriptionLight
+    {
+        public int SubscriptionId { get; set; }
+        public string SubscriptionName { get; set; }
+    }
+    public class PromocodeLight
+    {
+        public int PromocodeId { get; set; }
+        public string Promocode { get; set; }
+    }
+
+    public class SiteLight
+    {
+        public int SiteId { get; set; }
+        public string SiteName { get; set; }
+    }
+
+
 }

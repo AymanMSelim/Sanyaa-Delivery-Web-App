@@ -13,13 +13,15 @@ namespace SanyaaDelivery.Domain.DTOs
         public int ClientId { get; set; }
         public string Note { get; set; }
         public bool IsPromoCodeApplied { get; set; }
+        public int? PromoCodeId { get; set; }
         public string PromoCode { get; set; }
         public decimal PromoCodeDiscount { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal ServiceDiscount { get; set; }
         public decimal DepartmentDiscount { get; set; }
-        public int SubscriptionId { get; set; }
+        public int ClientSubscriptionId { get; set; }
         public decimal SubscriptionDiscountPercentage { get; set; }
+        public decimal SubscriptionDiscountCompanyPercentage { get; set; }
         public decimal SubscriptionDiscount { get; set; }
         public decimal MaxDiscountPercentage { get; set; }
         public string MaxDiscountPercentageDescription { get; set; }
@@ -39,6 +41,8 @@ namespace SanyaaDelivery.Domain.DTOs
         public decimal ServiceRatio { get; set; }
         public int CityId { get; set; }
         public int DepartmentId { get; set; }
+        public string DepartmentName { get; set; }
+        public string DepartmentTerms { get; set; }
         public decimal PromocodeCompanyDiscountPercentage { get; set; }
         public decimal CompanyDiscount { get; set; }
         public decimal EmployeeDiscount { get; set; }
@@ -49,15 +53,23 @@ namespace SanyaaDelivery.Domain.DTOs
         public string EmployeeId { get; set; }
         public int PhoneId { get; set; }
         public decimal PointsCompanyDiscountPercentage { get; set; }
+        public decimal EmployeeDepartmentPercentage { get; set; }
+        public decimal EmployeePercentageAmount { get; set; }
+        public decimal CompanyePercentageAmount { get; set; }
+        public string Address { get; set; }
         public List<CartServiceDetail> CartServiceDetails { get; set; }
         public List<RequestDiscountT> RequestDiscounts { get; set; }
         public List<AttachmentT> AttachmentList { get; set; }
 
-        public Dictionary<string, decimal> DiscountDetails { get; set; }
+        public Dictionary<string, string> DiscountDetails { get; set; }
+        public Dictionary<string, string> InvoiceDetails { get; set; }
 
+        public RequestT Request { get; set; }
+        public bool HaveRequest { get; set; }
         public CartDto()
         {
             RequestDiscounts = new List<RequestDiscountT>();
+            InvoiceDetails = new Dictionary<string, string>();
         }
         public void SetServiceDetails(List<CartDetailsT> cartDetailList)
         {
@@ -72,6 +84,8 @@ namespace SanyaaDelivery.Domain.DTOs
                     ServiceId = item.ServiceId,
                     Service = item.Service,
                     ServiceQuantity = item.ServiceQuantity,
+                    MaterialCost = (decimal)item.Service.MaterialCost,
+                    TotalMaterialCost = (decimal)(item.ServiceQuantity * item.Service.ServiceCost)
                 };
                 CartServiceDetails.Add(cartService);
             }
@@ -118,7 +132,10 @@ namespace SanyaaDelivery.Domain.DTOs
         
         public void SetDeliveryPrice()
         {
-            NetPrice += DeliveryPrice;
+            if (NetPrice > 0)
+            {
+                NetPrice += DeliveryPrice;
+            }
         }
         public void SetTax(int taxPercentage)
         {
@@ -132,42 +149,59 @@ namespace SanyaaDelivery.Domain.DTOs
             NetPrice -= DepartmentDiscount;
         }  
         
-        public void CalculateSubscriptionDiscount(int subscriptionDiscountPercentage)
+        public void CalculateSubscriptionDiscount()
         {
-            SubscriptionDiscount = (subscriptionDiscountPercentage / 100) * NetPrice;
+            SubscriptionDiscount = (SubscriptionDiscountPercentage / 100) * NetPrice;
             NetPrice -= SubscriptionDiscount;
+            AddToCompanyDiscount((SubscriptionDiscount * (SubscriptionDiscountCompanyPercentage / 100)));
+            AddToEmployeeDiscount(SubscriptionDiscount * (1 - (SubscriptionDiscountCompanyPercentage / 100)));
         }
 
         public void CalculatePromocodeDiscount(PromocodeT promocode)
         {
-            if(promocode == null)
+
+            if ((promocode.PromocodeDepartmentT.Any(d => d.DepartmentId == DepartmentId) && promocode.PromocodeCityT.Any(d => d.CityId == CityId)) || HaveRequest)
             {
-                IsPromoCodeApplied = false;
-                PromoCode = null;
-                PromoCodeDiscount = 0;
-                return;
+                if (promocode == null)
+                {
+                    IsPromoCodeApplied = false;
+                    PromoCode = null;
+                    PromoCodeDiscount = 0;
+                    return;
+                }
+                if (promocode.MinimumCharge > TotalPrice)
+                {
+                    return;
+                }
+                IsPromoCodeApplied = true;
+                PromoCode = promocode.Promocode;
+                PromoCodeId = promocode.PromocodeId;
+                if (promocode.Type == (int)Enum.PromocodeType.Value) //value
+                {
+                    PromoCodeDiscount = promocode.Value;
+                }
+                else
+                {
+                    PromoCodeDiscount = ((decimal)promocode.Value / 100) * NetPrice;
+                }
+                AddToCompanyDiscount(promocode.CompanyDiscountPercentage / 100 * PromoCodeDiscount);
+                AddToEmployeeDiscount((100 - promocode.CompanyDiscountPercentage) / 100 * PromoCodeDiscount);
+                NetPrice -= PromoCodeDiscount;
+                if (PromoCodeDiscount > 0)
+                {
+                    RequestDiscounts.Add(RequestDiscountT.ReturnPromocodeDiscount(PromoCodeDiscount, promocode.CompanyDiscountPercentage));
+                }
             }
-            if(promocode.MinimumCharge > TotalPrice)
-            {
-                return;
-            }
-            IsPromoCodeApplied = true;
-            PromoCode = promocode.Promocode;
-            if(promocode.Type == 1) //value
-            {
-                PromoCodeDiscount = promocode.Value;
-            }
-            else
-            {
-                PromoCodeDiscount = (promocode.Value / 100) * NetPrice;
-            }
-            CompanyDiscount += promocode.CompanyDiscountPercentage / 100 * PromoCodeDiscount;
-            EmployeeDiscount += (100 - promocode.CompanyDiscountPercentage) / 100 * PromoCodeDiscount;
-            NetPrice -= PromoCodeDiscount;
-            if (PromoCodeDiscount > 0)
-            {
-                RequestDiscounts.Add(RequestDiscountT.ReturnPromocodeDiscount(PromoCodeDiscount, promocode.CompanyDiscountPercentage));
-            }
+        }
+
+        private void AddToCompanyDiscount(decimal value)
+        {
+            CompanyDiscount += value;
+        }
+
+        private void AddToEmployeeDiscount(decimal value)
+        {
+            EmployeeDiscount += value;
         }
 
         public void CalculateAppliedDiscount()
@@ -192,6 +226,10 @@ namespace SanyaaDelivery.Domain.DTOs
 
         public void CalculateUsedPoints()
         {
+            if (HaveRequest)
+            {
+                TotalPoints += Request.UsedPoints;
+            }
             var maxDiscount = TotalPrice * MaxDiscountPercentage / 100;
             if (ApplliedDiscount < maxDiscount)
             {
@@ -230,9 +268,9 @@ namespace SanyaaDelivery.Domain.DTOs
         public void CalculateCompanyEmployeeDiscount()
         {
             var totalDiscount = EmployeeDiscount + CompanyDiscount;
-            if(ApplliedDiscount != totalDiscount)
+            if(ApplliedDiscount < totalDiscount)
             {
-                 var percentage = ApplliedDiscount / totalDiscount;
+                var percentage = ApplliedDiscount / totalDiscount;
                 EmployeeDiscount = percentage * EmployeeDiscount;
                 CompanyDiscount = percentage * CompanyDiscount;
             }
@@ -250,7 +288,7 @@ namespace SanyaaDelivery.Domain.DTOs
 
         public void SetDescription()
         {
-            PointDescription = $"رصيد نقاطك : {TotalPoints} نقطة = {TotalPoints / PointsPerEGP}ج";
+            PointDescription = $"رصيد نقاطك : {TotalPoints - UsedPoints} نقطة = {(TotalPoints - UsedPoints) / PointsPerEGP}ج";
             GainPointsDescription = $"ستحصل على {GainPoints} نقطه بعد استكمال الطلب";
             MinimumChargeDescription = $"الحد الأدنى للطلب {MinimumCharge}ج";
             MaxDiscountPercentageDescription = $"الحد الأقصى للخصم المطبق {MaxDiscountPercentage}% من قيمة الطلب";
@@ -258,14 +296,46 @@ namespace SanyaaDelivery.Domain.DTOs
 
         public void CalcualteDiscountDetails()
         {
-            DiscountDetails = new Dictionary<string, decimal>();
+            DiscountDetails = new Dictionary<string, string>();
+            DiscountDetails.Add("قيمة الطلب", "+ " + TotalPrice.ToString("0.00"));
+            if (NetPrice > 0)
+            {
+                DiscountDetails.Add("تكلفة الانتقالات", "+ " + DeliveryPrice.ToString("0.00"));
+            }
+            else
+            {
+                DiscountDetails.Add("تكلفة الانتقالات", "0.00");
+            }
             foreach (var item in RequestDiscounts)
             {
-                DiscountDetails.Add(item.Description, Math.Round(item.DiscountValue, 2));
+                DiscountDetails.Add(item.Description, Math.Round(item.DiscountValue, 2).ToString("0.00"));
             }
-            DiscountDetails.Add("إجمالى الخصم", Math.Round(RequestDiscounts.Sum(d => d.DiscountValue), 2));
-            DiscountDetails.Add($"أقصى نسبة خصم ({MaxDiscountPercentage}%)", Math.Round(TotalPrice * MaxDiscountPercentage /100, 2));
-            DiscountDetails.Add("الخصم المطبق", ApplliedDiscount);
+            DiscountDetails.Add("إجمالى الخصم", Math.Round(RequestDiscounts.Sum(d => d.DiscountValue), 2).ToString("0.00"));
+            DiscountDetails.Add($"أقصى خصم ({MaxDiscountPercentage}%)", Math.Round(TotalPrice * MaxDiscountPercentage /100, 2).ToString("0.00"));
+            DiscountDetails.Add("الخصم المطبق", "- " + ApplliedDiscount.ToString("0.00"));
+            DiscountDetails.Add("المبلغ المطلوب", NetPrice.ToString("0.00"));
+        }
+        public void CalcualteInvoicetDetails()
+        {
+            InvoiceDetails.Add("الاجمالى", (TotalPrice - ServiceDiscount).ToString("0.00"));
+            if(NetPrice > 0)
+            {
+                InvoiceDetails.Add("انتقالات", "+ " + DeliveryPrice.ToString("0.00"));
+            }
+            else
+            {
+                InvoiceDetails.Add("انتقالات", "0.00");
+            }
+            InvoiceDetails.Add("النقاط", UsedPointsAmountInEGP.ToString("0.00"));
+            InvoiceDetails.Add("بروموكود", PromoCodeDiscount.ToString("0.00"));
+            InvoiceDetails.Add("المبلغ المطلوب", NetPrice.ToString("0.00"));
+        }
+
+        public void CalculateAmountPercentage()
+        {
+            var finalAmount = TotalPrice - MaterialCost;
+            EmployeePercentageAmount = finalAmount * (EmployeeDepartmentPercentage / 100)  + MaterialCost + DeliveryPrice - EmployeeDiscount;
+            CompanyePercentageAmount = finalAmount * (1 - (EmployeeDepartmentPercentage / 100)) - CompanyDiscount;
         }
     }
 }

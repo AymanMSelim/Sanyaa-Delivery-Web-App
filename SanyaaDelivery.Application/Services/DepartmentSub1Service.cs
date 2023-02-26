@@ -81,6 +81,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.DepartmentSub1.Contains(departmentSub1Name));
             }
+            query = query.OrderByDescending(d => d.ServiceT.Count);
             return query.ToListAsync();
         }
 

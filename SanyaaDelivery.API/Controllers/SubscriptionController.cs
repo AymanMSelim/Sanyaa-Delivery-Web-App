@@ -8,58 +8,242 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using App.Global.ExtensionMethods;
+using SanyaaDelivery.Domain.DTOs;
+using AutoMapper;
+
 namespace SanyaaDelivery.API.Controllers
 {
-   
+
     public class SubscriptionController : APIBaseAuthorizeController
     {
         private readonly ISubscriptionService subscriptionService;
-        private readonly IAppLandingScreenService appLandingScreenService;
         private readonly IClientSubscriptionService clientSubscriptionService;
         private readonly CommonService commonService;
+        private readonly IDayWorkingTimeService dayWorkingTimeService;
+        private readonly IMapper mapper;
 
-        public SubscriptionController(ISubscriptionService subscriptionService, IAppLandingScreenService appLandingScreenService, IClientSubscriptionService clientSubscriptionService, CommonService commonService)
+        public SubscriptionController(ISubscriptionService subscriptionService,
+            IClientSubscriptionService clientSubscriptionService, CommonService commonService,
+            IDayWorkingTimeService dayWorkingTimeService, IMapper mapper)
         {
             this.subscriptionService = subscriptionService;
-            this.appLandingScreenService = appLandingScreenService;
             this.clientSubscriptionService = clientSubscriptionService;
             this.commonService = commonService;
+            this.dayWorkingTimeService = dayWorkingTimeService;
+            this.mapper = mapper;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentSubscription>>>> GetList(int? itemId = null, int? departmentId = null)
+        [HttpPost("Subscripe")]
+        public async Task<ActionResult<Result<ClientSubscriptionT>>> Subscripe(ClientSubscriptionT clientSubscription)
         {
-            List<int> departmentIdList = null;
             try
             {
-                if (itemId.HasValue)
+                var clientId = commonService.GetClientId(clientSubscription.ClientId);
+                if (clientId.IsNull())
                 {
-                    var itemList = await appLandingScreenService.GetDetailsItemListAsync(itemId.Value);
-                    if (itemList.IsEmpty())
-                    {
-                        return Ok(OpreationResultMessageFactory<List<DepartmentSubscription>>.CreateSuccessResponse(null));
-                    }
-                    departmentIdList = itemList
-                   .Select(d => d.DepartmentId).ToList();
+                    return Ok(ResultFactory<ClientSubscriptionT>.ReturnClientError());
                 }
-                else if(departmentId.HasValue)
+                var client = await commonService.GetClient(clientSubscription.ClientId);
+                if (client.IsGuest)
                 {
-                    departmentIdList = new List<int> { departmentId.Value };
+                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateRequireRegisterResponse());
                 }
-                var subscriptionList = await subscriptionService.GetListAsync(departmentIdList, true, true);
-                List<DepartmentSubscription> departmentSubscriptionList = subscriptionList.Select(d => new DepartmentSubscription(d)).ToList();
-                departmentSubscriptionList.ForEach(d => d.Department = null);
-                return Ok(OpreationResultMessageFactory<List<DepartmentSubscription>>.CreateSuccessResponse(departmentSubscriptionList));
+                clientSubscription.SystemUserId = commonService.GetSystemUserId();
+                clientSubscription.ClientId = clientId.Value;
+                var result = await clientSubscriptionService.AddAsync(clientSubscription);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<DepartmentSubscription>>(ex));
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientSubscriptionT>(ex));
             }
         }
 
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<DepartmentSubscription>>>> GetSubcriptionList(int? clientId = null, int? departmentId = null)
+        [HttpPost("AddSubscription")]
+        public async Task<ActionResult<Result<SubscriptionT>>> AddSubscription(SubscriptionT subscription)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.AddAsync(subscription);
+                return Ok(ResultFactory<SubscriptionT>.CreateAffectedRowsResult(affectedRows, data: subscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionT>(ex));
+            }
+        }
+
+        [HttpPost("UpdateSubscription")]
+        public async Task<ActionResult<Result<SubscriptionT>>> UpdateSubscription(SubscriptionT subscription)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.UpdateAsync(subscription);
+                return Ok(ResultFactory<SubscriptionT>.CreateAffectedRowsResult(affectedRows, data: subscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionT>(ex));
+            }
+        }
+
+        [HttpGet("GetSubscription/{subscriptionId}")]
+        public async Task<ActionResult<Result<SubscriptionT>>> GetSubscription(int subscriptionId)
+        {
+            try
+            {
+                var subscription = await subscriptionService.GetAsync(subscriptionId);
+                return Ok(ResultFactory<SubscriptionT>.CreateSuccessResponse(subscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionT>(ex));
+            }
+        }
+
+        [HttpPost("DeleteSubscription/{subscriptionId}")]
+        public async Task<ActionResult<Result<SubscriptionT>>> DeleteSubscription(int subscriptionId)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.DeletetAsync(subscriptionId);
+                return Ok(ResultFactory<SubscriptionT>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionT>(ex));
+            }
+        }
+
+        [HttpPost("AddSubscriptionService")]
+        public async Task<ActionResult<Result<SubscriptionServiceT>>> AddSubscriptionService(SubscriptionServiceT subscriptionServiceT)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.AddSubscriptionServiceAsync(subscriptionServiceT);
+                return Ok(ResultFactory<SubscriptionServiceT>.CreateAffectedRowsResult(affectedRows, data: subscriptionServiceT));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionServiceT>(ex));
+            }
+        }
+
+        [HttpPost("UpdateSubscriptionService")]
+        public async Task<ActionResult<Result<SubscriptionServiceT>>> UpdateSubscriptionService(SubscriptionServiceT subscriptionServiceT)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.UpdateSubscriptionServiceAsync(subscriptionServiceT);
+                return Ok(ResultFactory<SubscriptionServiceT>.CreateAffectedRowsResult(affectedRows, data: subscriptionServiceT));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionServiceT>(ex));
+            }
+        }
+
+        [HttpGet("GetSubscriptionService/{subscriptionServiceId}")]
+        public async Task<ActionResult<Result<SubscriptionServiceT>>> GetSubscriptionService(int subscriptionServiceId)
+        {
+            try
+            {
+                var subscriptionServiceT = await subscriptionService.GetSubscriptionServiceAsync(subscriptionServiceId);
+                return Ok(ResultFactory<SubscriptionServiceT>.CreateSuccessResponse(subscriptionServiceT));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionServiceT>(ex));
+            }
+        }
+
+        [HttpPost("DeleteSubscriptionService/{subscriptionServiceId}")]
+        public async Task<ActionResult<Result<SubscriptionServiceT>>> DeleteSubscriptionService(int subscriptionServiceId)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.DeletetSubscriptionServiceAsync(subscriptionServiceId);
+                return Ok(ResultFactory<SubscriptionServiceT>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionServiceT>(ex));
+            }
+        }
+
+        [HttpPost("AddSequence")]
+        public async Task<ActionResult<Result<SubscriptionSequenceT>>> AddSequence(SubscriptionSequenceT subscriptionSequence)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.AddSequenceAsync(subscriptionSequence);
+                return Ok(ResultFactory<SubscriptionSequenceT>.CreateAffectedRowsResult(affectedRows, data: subscriptionSequence));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionSequenceT>(ex));
+            }
+        }
+
+        [HttpPost("UpdateSequence")]
+        public async Task<ActionResult<Result<SubscriptionSequenceT>>> UpdateSequence(SubscriptionSequenceT subscriptionSequence)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.UpdateSequenceAsync(subscriptionSequence);
+                return Ok(ResultFactory<SubscriptionSequenceT>.CreateAffectedRowsResult(affectedRows, data: subscriptionSequence));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionSequenceT>(ex));
+            }
+        }
+
+        [HttpGet("GetSequence/{sequenceId}")]
+        public async Task<ActionResult<Result<SubscriptionSequenceT>>> GetSequence(int sequenceId)
+        {
+            try
+            {
+                var subscription = await subscriptionService.GetSequenceAsync(sequenceId);
+                return Ok(ResultFactory<SubscriptionSequenceT>.CreateSuccessResponse(subscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionSequenceT>(ex));
+            }
+        }
+
+        [HttpPost("DeleteSequence/{sequenceId}")]
+        public async Task<ActionResult<Result<SubscriptionSequenceT>>> DeleteSequence(int sequenceId)
+        {
+            try
+            {
+                var affectedRows = await subscriptionService.DeletetSequenceAsync(sequenceId);
+                return Ok(ResultFactory<SubscriptionSequenceT>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<SubscriptionSequenceT>(ex));
+            }
+        }
+
+        [HttpPost("UnSubscripe")]
+        public async Task<ActionResult<Result<ClientSubscriptionT>>> UnSubscripe(int clientSubscriptionId)
+        {
+            try
+            {
+                var affectedRow = await clientSubscriptionService.UnSubscripe(clientSubscriptionId, commonService.GetSystemUserId());
+                return Ok(ResultFactory<ClientSubscriptionT>.CreateAffectedRowsResult(affectedRow));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientSubscriptionT>(ex));
+            }
+        }
+
+        [HttpGet("GetClientSubcriptionList")]
+        public async Task<ActionResult<Result<List<ClientSubscriptionDto>>>> GetClientSubcriptionList(int? clientId = null, int? departmentId = null)
         {
             try
             {
@@ -69,19 +253,111 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 if (clientId.IsNull())
                 {
-                    return Ok(OpreationResultMessageFactory<ClientSubscriptionT>.CreateErrorResponseMessage("ClientId can't be null", App.Global.Enums.OpreationResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<ClientSubscriptionT>.CreateErrorResponseMessage("ClientId can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
-                var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, departmentId, true, true);
-                var subscriptionList = clientSubscriptionList.Select(d => d.Subscription).ToList();
-                List<DepartmentSubscription> departmentSubscriptionList = subscriptionList.Select(d => new DepartmentSubscription(d)).ToList();
-                departmentSubscriptionList.ForEach(d => d.Department = null);
-                return Ok(OpreationResultMessageFactory<List<DepartmentSubscription>>.CreateSuccessResponse(departmentSubscriptionList));
+                var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, departmentId, true, true, true, true, true, true);
+                var mapList = mapper.Map<List<ClientSubscriptionDto>>(clientSubscriptionList);
+                foreach (var item in mapList)
+                {
+                    item.ShowCalenderButton = true;
+                    item.ShowDetailsButton = false;
+                    item.ShowEmployeeCalenderButton = true;
+                    item.ShowFavouriteEmployeeButton = true;
+                }
+                return Ok(ResultFactory<List<ClientSubscriptionDto>>.CreateSuccessResponse(mapList));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<DepartmentSubscription>>(ex));
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ClientSubscriptionDto>>(ex));
             }
         }
+
+        [HttpGet("GetSubscriptionList/{departmentId?}")]
+        public async Task<ActionResult<Result<List<SubscriptionDto>>>> GetSubscriptionList(int? departmentId = null)
+        {
+            try
+            {
+                List<string> s = new List<string>();
+                var subscriptionList = await subscriptionService.GetListAsync(departmentId, true, true);
+                var mapList = mapper.Map<List<SubscriptionDto>>(subscriptionList);
+                foreach (var item in mapList)
+                {
+                    item.Specification = item.Description.Split(";").ToList();
+                }
+                return Ok(ResultFactory<List<SubscriptionDto>>.CreateSuccessResponse(mapList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<SubscriptionDto>>(ex));
+            }
+        }
+
+        [HttpGet("GetSubscriptionListByService/{serviceId}")]
+        public async Task<ActionResult<Result<List<SubscriptionDto>>>> GetSubscriptionListByService(int serviceId)
+        {
+            try
+            {
+                List<string> s = new List<string>();
+                s.Add("جدولة المواعيد بنفسك");
+                s.Add("تحكم كامل فى زياراتك");
+                var subscriptionList = await subscriptionService.GetListByServiceAsync(serviceId, true, true, true);
+                var mapList = mapper.Map<List<SubscriptionDto>>(subscriptionList);
+                foreach (var item in mapList)
+                {
+                    item.Specification = s;
+                    s.Insert(0, item.DepartmentName);
+                }
+                return Ok(ResultFactory<List<SubscriptionDto>>.CreateSuccessResponse(mapList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<SubscriptionDto>>(ex));
+            }
+        }
+
+        [HttpGet("GetSubscriptionServiceList/{subscriptionId}")]
+        public async Task<ActionResult<Result<List<SubscriptionServiceDto>>>> GetSubscriptionServiceList(int subscriptionId)
+        {
+            try
+            {
+                var subscriptionServiceList = await subscriptionService.GetSubscriptionServiceListAsync(subscriptionId, null, true);
+                var mapList = mapper.Map<List<SubscriptionServiceDto>>(subscriptionServiceList);
+                return Ok(ResultFactory<List<SubscriptionServiceDto>>.CreateSuccessResponse(mapList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<SubscriptionServiceDto>>(ex));
+            }
+        }
+
+        [HttpGet("GetInfo/{subscriptionServiceId}")]
+        public async Task<ActionResult<Result<string>>> GetInfo(int subscriptionServiceId)
+        {
+            try
+            {
+                var subscriptionS = await subscriptionService.GetSubscriptionServiceAsync(subscriptionServiceId, true);
+                return Ok(ResultFactory<string>.CreateSuccessResponse(subscriptionS.Subscription.Condition));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<string>(ex));
+            }
+        }
+
+        [HttpGet("GetTimeList/{departmentId}")]
+        public ActionResult<Result<List<ReservationAvailableTimeDto>>> GetTimeList(int departmentId)
+        {
+            try
+            {
+                var list = dayWorkingTimeService.GetTimeListForNewSubscription(departmentId);
+                return Ok(ResultFactory<List<ReservationAvailableTimeDto>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<ReservationAvailableTimeDto>>.CreateExceptionResponse(ex));
+            }
+        }
+
 
     }
 }

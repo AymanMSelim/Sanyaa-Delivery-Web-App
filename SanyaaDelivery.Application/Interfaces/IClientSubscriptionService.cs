@@ -1,4 +1,5 @@
-﻿using SanyaaDelivery.Domain.Models;
+﻿using App.Global.DTOs;
+using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,10 +9,13 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IClientSubscriptionService
     {
-        Task<int> AddAsync(ClientSubscriptionT clientSubscription);
-        Task<List<ClientSubscriptionT>> GetListAsync(int? clientId = null, int? departmentId = null, bool includeSubscription = false, bool includeDepartment = false);
+        Task<Result<ClientSubscriptionT>> AddAsync(ClientSubscriptionT clientSubscription);
+        Task<List<ClientSubscriptionT>> GetListAsync(int? clientId = null, int? departmentId = null, 
+            bool includeSubscription = false, bool includeDepartment = false, bool includeSubscriptionService = false, 
+            bool includeService = false, bool includeAddress = false, bool includePhone = false);
         Task<ClientSubscriptionT> GetAsync(int id, bool includeSubscription = false);
         Task<int> DeletetAsync(int id);
+        Task<int> UnSubscripe(int id, int systemUserId);
         Task<int> UpdateAsync(ClientSubscriptionT clientSubscription);
     }
 }

@@ -21,22 +21,17 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<ClientT> clientRepository;
         private readonly IRepository<AddressT> addressRepository;
         private readonly IRepository<ClientPhonesT> phoneRepository;
-        private readonly IClientSubscriptionService clientSubscriptionService;
-        private readonly ISubscriptionService subscriptionService;
         private readonly ICityService cityService;
         private readonly IRegionService regionService;
 
         public ClientService(IUnitOfWork unitOfWork, IRepository<ClientT> clientRepository, 
             IRepository<AddressT> addressRepository, IRepository<ClientPhonesT> phoneRepository,
-            IClientSubscriptionService clientSubscriptionService, ISubscriptionService subscriptionService,
             ICityService cityService, IRegionService regionService)
         {
             this.unitOfWork = unitOfWork;
             this.clientRepository = clientRepository;
             this.addressRepository = addressRepository;
             this.phoneRepository = phoneRepository;
-            this.clientSubscriptionService = clientSubscriptionService;
-            this.subscriptionService = subscriptionService;
             this.cityService = cityService;
             this.regionService = regionService;
         }
@@ -46,9 +41,18 @@ namespace SanyaaDelivery.Application.Services
             return null;
         }
 
-        public Task<ClientT> GetAsync(int id)
+        public Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false)
         {
-            return clientRepository.GetAsync(id);
+            var query = clientRepository.Where(d => d.ClientId == id);
+            if (includeAddress)
+            {
+                query = query.Include(d => d.AddressT);
+            }
+            if (includePhone)
+            {
+                query = query.Include(d => d.ClientPhonesT);
+            }
+            return query.FirstOrDefaultAsync();
         }
 
         public Task<List<ClientT>> GetByName(string name)
@@ -87,27 +91,27 @@ namespace SanyaaDelivery.Application.Services
             return addressRepository.SaveAsync();
         }
 
-        public async Task<OpreationResultMessage<AddressT>> DeleteAddress(int addressId)
+        public async Task<Result<AddressT>> DeleteAddress(int addressId)
         {
             unitOfWork.StartTransaction();
             var address = await GetAddress(addressId);
             if (address.IsNull())
             {
-                return OpreationResultMessageFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.OpreationResultStatusCode.NotFound, "AddressNotFound");
+                return ResultFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NotFound, "AddressNotFound");
             }
-            var addressList = await GetAddressListAsync(address.ClientId);
+            var addressList = await GetAddressListAsync(address.ClientId.Value);
             if (addressList.Count == 1)
             {
-                return OpreationResultMessageFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.OpreationResultStatusCode.DeleteFailed, "OneAddressFound");
+                return ResultFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.DeleteFailed, "OneAddressFound");
             }
             address.IsDeleted = true;
             await UpdateAddress(address);
             if (address.IsDefault)
             {
-                await SelectDefaultAddressAutoAsync(address.ClientId);
+                await SelectDefaultAddressAutoAsync(address.ClientId.Value);
             }
             await unitOfWork.CommitAsync();
-            return OpreationResultMessageFactory<AddressT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully); ;
+            return ResultFactory<AddressT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully); ;
         }
 
         public async Task<int> AddPhone(ClientPhonesT phone)
@@ -122,21 +126,38 @@ namespace SanyaaDelivery.Application.Services
             return phoneRepository.SaveAsync();
         }
 
-        public Task<List<AddressT>> GetAddressListAsync(int clientId, bool getDeleted = false)
+        public Task<List<AddressT>> GetAddressListAsync(int clientId, bool? excludeDeleted = true)
         {
-            if (getDeleted)
+            var query = addressRepository.Where(d => d.ClientId == clientId);
+            if (excludeDeleted.HasValue)
             {
-                return addressRepository.Where(d => d.ClientId == clientId).ToListAsync();
+                if (excludeDeleted.Value)
+                {
+                    query = query.Where(d => d.IsDeleted == false);
+                }
+                else
+                {
+                    query = query.Where(d => d.IsDeleted);
+                }
             }
-            else
-            {
-                return addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false).ToListAsync();
-            }
+            return query.ToListAsync();
         }
 
-        public Task<List<ClientPhonesT>> GetPhoneList(int clientId)
+        public Task<List<ClientPhonesT>> GetPhoneListAsync(int clientId, bool? getDeleted = false)
         {
-            return phoneRepository.Where(d => d.ClientId == clientId).ToListAsync();
+            var query = phoneRepository.Where(d => d.ClientId == clientId);
+            if (getDeleted.HasValue)
+            {
+                if (getDeleted.Value)
+                {
+                    query = query.Where(d => d.IsDeleted);
+                }
+                else
+                {
+                    query = query.Where(d => d.IsDeleted == false);
+                }
+            }
+            return query.ToListAsync();
         }
 
         public Task<AddressT> GetAddress(int addressId)
@@ -151,31 +172,31 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> Subscripe(int subscriptionId, int clientId)
         {
-            var subscription = await subscriptionService.GetAsync(subscriptionId);
-            var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, null, true);
-            var sameDepartmentSubscription = clientSubscriptionList.Where(d => d.Subscription.DepartmentId == subscription.DepartmentId).FirstOrDefault();
-            if (sameDepartmentSubscription.IsNotNull())
-            {
-                _ = await clientSubscriptionService.DeletetAsync(sameDepartmentSubscription.ClientSubscriptionId);
-            }
-            return await clientSubscriptionService.AddAsync(new ClientSubscriptionT
-            {
-                ClientId = clientId,
-                SubscriptionId = subscriptionId,
-                CreationTime = DateTime.Now,
-                SystemUserId = 500
-            });
-
+            //var subscription = await subscriptionservice.getasync(subscriptionid);
+            //var clientsubscriptionlist = await clientsubscriptionservice.getlistasync(clientid, null, true);
+            //var samedepartmentsubscription = clientsubscriptionlist.where(d => d.subscription.departmentid == subscription.departmentid).firstordefault();
+            //if (samedepartmentsubscription.isnotnull())
+            //{
+            //    _ = await clientsubscriptionservice.deletetasync(samedepartmentsubscription.clientsubscriptionid);
+            //}
+            //return await clientsubscriptionservice.addasync(new clientsubscriptiont
+            //{
+            //    clientid = clientid,
+            //    subscriptionid = subscriptionid,
+            //    creationtime = datetime.now,
+            //    systemuserid = 500
+            //});
+            return default;
         }
 
         public async Task<int> UnSubscripe(int subscriptionId, int clientId)
         {
-            var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId);
-            var subscription = clientSubscriptionList.Where(d => d.SubscriptionId == subscriptionId).FirstOrDefault();
-            if (subscription.IsNotNull())
-            {
-                return await clientSubscriptionService.DeletetAsync(subscription.ClientSubscriptionId);
-            }
+            //var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId);
+            //var subscription = clientSubscriptionList.Where(d => d.SubscriptionId == subscriptionId).FirstOrDefault();
+            //if (subscription.IsNotNull())
+            //{
+            //    return await clientSubscriptionService.DeletetAsync(subscription.ClientSubscriptionId);
+            //}
             return 0;
         }
 
@@ -193,12 +214,8 @@ namespace SanyaaDelivery.Application.Services
         public async Task<int> WidthrawPointAsync(int clientId, int points)
         {
             var client = await GetAsync(clientId);
-            if (client.IsNotNull())
-            {
-                client.ClientPoints -= points;
-                return await UpdateAsync(client);
-            }
-            return 1;
+            client.ClientPoints -= points;
+            return await UpdateAsync(client);
         }
 
         public async Task<int> UpdateBranchByCityAsync(int clientId, int cityId)
@@ -272,7 +289,7 @@ namespace SanyaaDelivery.Application.Services
             }
             if (addressList.IsEmpty())
             {
-                return ((int)App.Global.Enums.OpreationResultStatusCode.NotFound);
+                return ((int)App.Global.Enums.ResultStatusCode.NotFound);
             }
             address = addressList.OrderBy(d => d.AddressId).LastOrDefault();
             address.IsDefault = true;
@@ -308,6 +325,38 @@ namespace SanyaaDelivery.Application.Services
             else
             {
                 return defaultAddress;
+            }
+        }
+
+        public async Task<ClientPhonesT> GetDefaultPhoneAsync(int clientId)
+        {
+            ClientPhonesT defaultPhone = null;
+            var phoneList = await GetPhoneListAsync(clientId);
+            if (phoneList.IsEmpty())
+            {
+                return null;
+            }
+            if (phoneList.Count == 1)
+            {
+                defaultPhone = phoneList.FirstOrDefault();
+                if (defaultPhone.IsDefault == false)
+                {
+                    defaultPhone.IsDefault = true;
+                    await UpdatePhone(defaultPhone);
+                }
+                return defaultPhone;
+            }
+            defaultPhone = phoneList.FirstOrDefault(d => d.IsDefault);
+            if (defaultPhone.IsNull())
+            {
+                var firstPhone = phoneList.OrderBy(d => d.ClientPhoneId).FirstOrDefault();
+                firstPhone.IsDefault = true;
+                await UpdatePhone(firstPhone);
+                return firstPhone;
+            }
+            else
+            {
+                return defaultPhone;
             }
         }
 
@@ -367,6 +416,41 @@ namespace SanyaaDelivery.Application.Services
                 return defaultAddress.CityId.Value;
             }
             return GeneralSetting.DefaultCityId;
+        }
+
+        public Task<List<ClientT>> GetListAsync(string searchValue)
+        {
+            return clientRepository
+                .Where(d => d.ClientName.Contains(searchValue) ||
+                d.ClientEmail.Contains(searchValue) ||
+                d.ClientPhonesT.Any(p => p.ClientPhone.Contains(searchValue))).ToListAsync();
+        }
+
+        public async Task<Result<ClientPhonesT>> DeletePhone(int phoneId)
+        {
+            unitOfWork.StartTransaction();
+            var phone = await GetPhone(phoneId);
+            if (phone.IsNull())
+            {
+                return ResultFactory<ClientPhonesT>.CreateNotFoundResponse();
+            }
+            var clientPhoneList = await GetPhoneListAsync(phone.ClientId.Value);
+            if(clientPhoneList.Count == 1)
+            {
+                return ResultFactory<ClientPhonesT>.CreateErrorResponseMessageFD("Can't remove this single phone, please add another phone number and try again");
+            }
+            phone.IsDeleted = true;
+            clientPhoneList.RemoveAll(d => d.ClientPhoneId == phoneId);
+            if (phone.IsDefault)
+            {
+                phone.IsDefault = false;
+            }
+            var defaultPhone = clientPhoneList.FirstOrDefault();
+            defaultPhone.IsDefault = true;
+            await UpdatePhone(phone);
+            await UpdatePhone(defaultPhone);
+            var affectedRow = await unitOfWork.CommitAsync();
+            return ResultFactory<ClientPhonesT>.CreateAffectedRowsResult(affectedRow);
         }
     }
 }

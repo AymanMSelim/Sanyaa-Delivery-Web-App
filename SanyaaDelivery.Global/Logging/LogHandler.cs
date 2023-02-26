@@ -12,14 +12,14 @@ namespace App.Global.Logging
 
         }
 
-        public static OpreationResultMessage<T> PublishExceptionReturnResponse<T>(Exception ex)
+        public static Result<T> PublishExceptionReturnResponse<T>(Exception ex)
         {
-            return OpreationResultMessageFactory<T>.CreateExceptionResponse(ex);
+            return ResultFactory<T>.CreateExceptionResponse(ex);
         }
 
-        public static OpreationResultMessage<object> PublishExceptionReturnResponse(Exception ex)
+        public static Result<object> PublishExceptionReturnResponse(Exception ex)
         {
-            return OpreationResultMessageFactory<object>.CreateExceptionResponse(ex);
+            return ResultFactory<object>.CreateExceptionResponse(ex);
         }
     }
 }

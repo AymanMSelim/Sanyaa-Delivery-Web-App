@@ -25,18 +25,18 @@ namespace SanyaaDelivery.API.Controllers
             this.commonService = commonService;
             this.attachmentService = attachmentService;
         }
-		[HttpPost]
-		public async Task<ActionResult<OpreationResultMessage<AttachmentT>>> AttachImageToCart(int? clientId = null)
+		[HttpPost("AttachImageToCart")]
+		public async Task<ActionResult<Result<AttachmentT>>> AttachImageToCart(int? clientId = null)
 		{
             try
             {
                 List<IFormFile> fileList = Request.Form.Files.ToList();
                 if (fileList == null || fileList.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<AttachmentT>.CreateNotFoundResponse("No files found"));
+                    return Ok(ResultFactory<AttachmentT>.CreateNotFoundResponse("No files found"));
                 }
                 clientId = commonService.GetClientId(clientId);
-                var cart = await commonService.GetClientCartAsync(clientId);
+                var cart = await commonService.GetCurrentClientCartAsync(clientId);
                 var folderPath = $@"{hostEnvironment.WebRootPath}\Attachment\{Domain.Enum.AttachmentType.CartImage.ToString()}\{cart.CartId}";
                 if (Directory.Exists(folderPath) == false)
                 {
@@ -60,17 +60,17 @@ namespace SanyaaDelivery.API.Controllers
                         });
                     }
                 }
-                return Ok(OpreationResultMessageFactory<AttachmentT>.CreateSuccessResponse(null));
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<AttachmentT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
             }
            
 		}
 
         [HttpPost("Delete/{attachmentId}")]
-        public async Task<ActionResult<OpreationResultMessage<AttachmentT>>> Delete(int attachmentId)
+        public async Task<ActionResult<Result<AttachmentT>>> Delete(int attachmentId)
         {
             try
             {
@@ -81,26 +81,26 @@ namespace SanyaaDelivery.API.Controllers
                     System.IO.File.Delete($@"{hostEnvironment.WebRootPath}\Attachment\{type}\{attachment.ReferenceId}\{attachment.FileName}");
                 }
                 await attachmentService.DeleteAsync(attachmentId);
-                return Ok(OpreationResultMessageFactory<AttachmentT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<AttachmentT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<AttachmentT>>>> GetCartAttachmentList(int? clientId)
+        [HttpGet("GetCartAttachmentList")]
+        public async Task<ActionResult<Result<List<AttachmentT>>>> GetCartAttachmentList(int? clientId)
         {
             try
             {
-                var cart = await commonService.GetClientCartAsync(clientId);
+                var cart = await commonService.GetCurrentClientCartAsync(clientId);
                 var attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cart.CartId.ToString());
-                return Ok(OpreationResultMessageFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
             }
         }
     }

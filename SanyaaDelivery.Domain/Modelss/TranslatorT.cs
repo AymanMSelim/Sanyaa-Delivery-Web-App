@@ -10,5 +10,6 @@ namespace SanyaaDelivery.Domain.Models
         public string Value { get; set; }
         public sbyte? ReferenceType { get; set; }
         public string ReferenceId { get; set; }
+        public int LangId { get; set; }
     }
 }

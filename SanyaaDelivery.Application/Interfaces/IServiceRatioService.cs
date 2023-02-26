@@ -12,6 +12,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> AddDetailAsync(ServiceRatioDetailsT serviceRatioDetail);
         Task<List<ServiceRatioT>> GetListAsync(string descrition);
         Task<List<ServiceRatioT>> GetListAsync(int? cityId = null, int? departmentId = null, bool getDetails = false, bool ? isActive = null);
+        Task<decimal> GetRatioAsync(int? cityId = null, int? departmentId = null);
         Task<List<ServiceRatioT>> GetListByClientIdAsync(int clientId);
         Task<List<ServiceRatioDetailsT>> GetDetailsListAsync(int? serviceRatioId = null);
         Task<ServiceRatioT> GetAsync(int id);

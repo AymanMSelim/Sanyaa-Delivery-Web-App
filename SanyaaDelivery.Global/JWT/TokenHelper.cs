@@ -7,9 +7,14 @@ namespace App.Global.JWT
 {
     public class TokenHelper
     {
-        public static string GetAccountId(ClaimsIdentity identity)
+        public static int? GetAccountId(ClaimsIdentity identity)
         {
-            return GetClaimValue(identity, "AccountId");
+            var value = GetClaimValue(identity, "AccountId");
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+            return int.Parse(value);
         }
 
         public static int? GetAccountType(ClaimsIdentity identity)
@@ -46,8 +51,6 @@ namespace App.Global.JWT
         {
             if (identity != null)
             {
-                //IEnumerable<Claim> claims = identity.Claims;
-                // or
                 var claimValue = identity.FindFirst(claimName);
                 if (claimValue.IsNotNull())
                 {

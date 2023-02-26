@@ -6,11 +6,11 @@ namespace SanyaaDelivery.Domain.OtherModels
 {
     public class ServicesPriceDiscountSummary
     {
-        public int ServiceRatio { get; set; }
-        public int TotalPrice { get; set; }
-        public int TotalRatioPrice { get; set; }
-        public int TotalDiscount { get; set; }
-        public int NetPrice { get; set; }
+        public decimal ServiceRatio { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal TotalRatioPrice { get; set; }
+        public decimal TotalDiscount { get; set; }
+        public decimal NetPrice { get; set; }
         public int TotalPoints { get; set; }
     }
 }

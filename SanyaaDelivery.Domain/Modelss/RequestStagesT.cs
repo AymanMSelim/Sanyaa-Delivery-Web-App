@@ -10,8 +10,8 @@ namespace SanyaaDelivery.Domain.Models
         public DateTime? ReceiveTimestamp { get; set; }
         public DateTime? AcceptTimestamp { get; set; }
         public DateTime? FinishTimestamp { get; set; }
-        public float? Cost { get; set; }
-        public sbyte? PaymentFlag { get; set; }
+        public decimal? Cost { get; set; }
+        public bool? PaymentFlag { get; set; }
 
         public RequestT Request { get; set; }
     }

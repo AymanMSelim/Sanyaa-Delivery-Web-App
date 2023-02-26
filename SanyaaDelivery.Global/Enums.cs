@@ -24,8 +24,20 @@ namespace App.Global
             EXPIRED,
             PROCESSED
         }
-        public enum OpreationResultStatusCode
+
+        public enum ResultAleartType
         {
+            None = 0,
+            SuccessToast = 1,
+            FailedToast = 2,
+            SuccessDialog = 3,
+            FailedDialog = 4,
+            RegistrationRequired = 5
+        }
+
+        public enum ResultStatusCode
+        {
+            False = -24,
             DeleteFailed = -22,
             NotAvailable = -21,
             IncompleteClientData = -20,
@@ -55,6 +67,9 @@ namespace App.Global
             RecordUpdatedSuccessfully = 4,
             RecordDeletedSuccessfully = 5,
             ClientRegisterdSuccessfully = 6,
+            Allowed = 7,
+            True = 8,
+            NotAllowed = 9,
         }
 
         public enum TransactionType

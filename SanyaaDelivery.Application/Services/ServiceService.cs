@@ -18,16 +18,20 @@ namespace SanyaaDelivery.Application.Services
         private readonly ICartService cartService;
         private readonly IServiceRatioService serviceRatioService;
         private readonly IClientService clientService;
+        private readonly IRepository<RequestServicesT> requestServiceRepository;
+        private readonly IGeneralSetting generalSetting;
 
         public ServiceService(IRepository<ServiceT> serviceRepository, IRepository<FavouriteServiceT> favouriteServiceRepository, 
             ICartService cartService, IServiceRatioService serviceRatioService, 
-            IClientService clientService)
+            IClientService clientService, IRepository<RequestServicesT> requestServiceRepository,  IGeneralSetting generalSetting)
         {
             this.serviceRepository = serviceRepository;
             this.favouriteServiceRepository = favouriteServiceRepository;
             this.cartService = cartService;
             this.serviceRatioService = serviceRatioService;
             this.clientService = clientService;
+            this.requestServiceRepository = requestServiceRepository;
+            this.generalSetting = generalSetting;
         }
         public async Task<int> AddAsync(ServiceT service)
         {
@@ -120,12 +124,19 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<List<ServiceCustom>> ConvertServiceToCustom(List<ServiceT> serviceList, int clientId)
+        private class MiniService
+        {
+            public int ServiceId { get; set; }
+            public int ServiceQuantity { get; set; }
+        }
+
+        public async Task<List<ServiceCustom>> ConvertServiceToCustom(List<ServiceT> serviceList, int clientId, int? requestId = null)
         {
 
             int departmentId;
             int cityId;
-            decimal ratio = 1;
+            decimal ratio;
+            List<MiniService> inServiceList = null;
             if (serviceList.IsNull() || serviceList.Count == 0)
             {
                 return new List<ServiceCustom>();
@@ -135,21 +146,37 @@ namespace SanyaaDelivery.Application.Services
             cityId = await clientService.GetDefaultCityIdAsync(clientId);
             var serviceIdList = serviceList.Select(d => d.ServiceId).ToList();
             var favouriteServiceList = await favouriteServiceRepository.Where(d => d.ClientId == clientId && serviceIdList.Contains(d.ServiceId)).ToListAsync();
-            var inCartServiceList = await cartService.GetDetailsListByClientIdAsync(clientId);
-            var ratioList = await serviceRatioService.GetListAsync(cityId, departmentId, true);
-            if (ratioList.HasItem())
+            if (requestId.HasValue)
             {
-                ratio = 1 + (ratioList.FirstOrDefault().Ratio.Value / 100);
+                inServiceList = await requestServiceRepository.Where(d => d.RequestId == requestId.Value).Select(d => new MiniService
+                {
+                    ServiceId = d.ServiceId,
+                    ServiceQuantity = d.RequestServicesQuantity
+                }).ToListAsync();
             }
+            else
+            {
+                var cart = await cartService.GetCurrentByClientIdAsync(clientId, generalSetting.CurrentIsViaApp, true);
+                if (cart.IsNotNull())
+                {
+                    inServiceList = cart.CartDetailsT.Select(d => new MiniService
+                    {
+                        ServiceId = d.ServiceId,
+                        ServiceQuantity  = d.ServiceQuantity.Value
+                    }).ToList();
+                }
+            }
+            
+            ratio = await serviceRatioService.GetRatioAsync(cityId, departmentId);
             if (favouriteServiceList.IsNull())
             {
                 favouriteServiceList = new List<FavouriteServiceT>();
             }
-            if (inCartServiceList.IsNull())
+            if (inServiceList.IsNull())
             {
-                inCartServiceList = new List<CartDetailsT>();
+                inServiceList = new List<MiniService>();
             }
-            serviceList.ForEach(d => d.ServiceCost = (short)((decimal)d.ServiceCost * ratio));
+            serviceList.ForEach(d => d.ServiceCost *= ratio);
             return serviceList.Select(d => new ServiceCustom
             {
                 ServiceId = d.ServiceId,
@@ -157,8 +184,8 @@ namespace SanyaaDelivery.Application.Services
                 DepartmentId = d.DepartmentId,
                 DiscountServiceCount = d.DiscountServiceCount,
                 IsFavourite = favouriteServiceList.Any(f => f.ServiceId == d.ServiceId),
-                IsInCart = inCartServiceList.Any(c => c.ServiceId == d.ServiceId),
-                CartQuantity = inCartServiceList.Any(c => c.ServiceId == d.ServiceId) ? inCartServiceList.FirstOrDefault(c => c.ServiceId == d.ServiceId).ServiceQuantity.Value : 0,
+                IsInCart = inServiceList.Any(c => c.ServiceId == d.ServiceId),
+                CartQuantity = inServiceList.Any(c => c.ServiceId == d.ServiceId) ? inServiceList.FirstOrDefault(c => c.ServiceId == d.ServiceId).ServiceQuantity : 0,
                 MaterialCost = d.MaterialCost,
                 NoDiscount = d.NoDiscount,
                 ServiceCost = d.ServiceCost,
@@ -174,7 +201,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<List<ServiceCustom>> ConvertServiceToCustomMultiDepartment(List<ServiceT> serviceList, int clientId)
         {
-
+            List<CartDetailsT> inCartServiceList = null;
             if (serviceList.IsNull() || serviceList.Count == 0)
             {
                 return new List<ServiceCustom>();
@@ -183,7 +210,11 @@ namespace SanyaaDelivery.Application.Services
             var ratioList = await serviceRatioService.GetListAsync(cityId, null, true, true);
             var serviceIdList = serviceList.Select(d => d.ServiceId).ToList();
             var favouriteServiceList = await favouriteServiceRepository.Where(d => d.ClientId == clientId && serviceIdList.Contains(d.ServiceId)).ToListAsync();
-            var inCartServiceList = await cartService.GetDetailsListByClientIdAsync(clientId);
+            var cart = await cartService.GetCurrentByClientIdAsync(clientId, generalSetting.CurrentIsViaApp, true);
+            if (cart.IsNotNull())
+            {
+                inCartServiceList = cart.CartDetailsT.ToList();
+            }
             await GetServiceMainDepartmentAsync(serviceIdList);
             if (favouriteServiceList.IsNull())
             {
@@ -198,7 +229,11 @@ namespace SanyaaDelivery.Application.Services
                 var departmentRatio = ratioList.Where(d => d.ServiceRatioDetailsT.Any(t => t.DepartmentId == item.Department.DepartmentSub0Navigation.DepartmentId)).FirstOrDefault();
                 if (departmentRatio.IsNotNull())
                 {
-                    item.ServiceCost = (short)(item.ServiceCost + (short)((departmentRatio.Ratio / 100) * (decimal)item.ServiceCost));
+                    if (departmentRatio.Ratio.IsNotNull())
+                    {
+                        departmentRatio.Ratio = 1;
+                    }
+                    item.ServiceCost = (item.ServiceCost + (departmentRatio.Ratio.Value * item.ServiceCost));
                 }
             }
             return serviceList.Select(d => new ServiceCustom
@@ -224,7 +259,7 @@ namespace SanyaaDelivery.Application.Services
         }
 
 
-        private short GetNetServiceCost(ServiceT service)
+        private decimal GetNetServiceCost(ServiceT service)
         {
             if((service.NoDiscount.HasValue && service.NoDiscount.Value) || service.ServiceDiscount.HasValue == false || service.ServiceDiscount <= 0)
             {
@@ -237,7 +272,7 @@ namespace SanyaaDelivery.Application.Services
             return (short)((decimal)service.ServiceCost - ((decimal)service.ServiceDiscount.Value / 100 * (decimal)service.ServiceCost));
 
         }
-        public Task<List<ServiceT>> GetServiceList(int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null)
+        public Task<List<ServiceT>> GetServiceList(int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, string searchValue = null)
         {
             var query = serviceRepository.DbSet.AsQueryable();
             if (mainDepartmentId.HasValue)
@@ -256,14 +291,18 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.NoDiscount == false && d.ServiceDiscount > 0);
             }
+            if(string.IsNullOrEmpty(searchValue) is false)
+            {
+                query = query.Where(d => d.ServiceName.Contains(searchValue));
+            }
             return query.ToListAsync();
         }
 
 
-        public async Task<List<ServiceCustom>> GetCustomServiceList(int clientId, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null)
+        public async Task<List<ServiceCustom>> GetCustomServiceList(int clientId, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, int? requestId = null, string searchValue = null)
         {
-            var serviceList = await GetServiceList(mainDepartmentId, departmentSub0Id, departmentSub1Id, getOffer);
-            return await ConvertServiceToCustom(serviceList, clientId);
+            var serviceList = await GetServiceList(mainDepartmentId, departmentSub0Id, departmentSub1Id, getOffer, searchValue);
+            return await ConvertServiceToCustom(serviceList, clientId, requestId);
         }
 
         public Task<List<ServiceT>> GetServiceMainDepartmentAsync(List<int> serviceIdList)

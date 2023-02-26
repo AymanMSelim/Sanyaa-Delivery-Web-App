@@ -7,9 +7,10 @@ namespace SanyaaDelivery.Domain.Models
     {
         public int RequestDiscountId { get; set; }
         public int RequestId { get; set; }
-        public sbyte? DiscountTypeId { get; set; }
+        public sbyte DiscountTypeId { get; set; }
         public string Description { get; set; }
-        public int DiscountValue { get; set; }
+        public decimal DiscountValue { get; set; }
+        public decimal CompanyPercentage { get; set; }
         public DateTime CreationTime { get; set; }
         public int SystemUserId { get; set; }
 

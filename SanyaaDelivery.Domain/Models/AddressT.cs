@@ -7,11 +7,12 @@ namespace SanyaaDelivery.Domain.Models
     {
         public AddressT()
         {
+            ClientSubscriptionT = new HashSet<ClientSubscriptionT>();
             RequestT = new HashSet<RequestT>();
         }
 
         public int AddressId { get; set; }
-        public int ClientId { get; set; }
+        public int? ClientId { get; set; }
         public int? GovernorateId { get; set; }
         public int? CityId { get; set; }
         public int? RegionId { get; set; }
@@ -28,10 +29,11 @@ namespace SanyaaDelivery.Domain.Models
         public bool IsDefault { get; set; }
         public bool IsDeleted { get; set; }
 
-        public GovernorateT Governorate { get; set; }
         public CityT City { get; set; }
         public ClientT Client { get; set; }
+        public GovernorateT Governorate { get; set; }
         public RegionT Region { get; set; }
+        public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace SanyaaDelivery.API.ActionsFilter
         {
             var exception = context.Exception;
             App.Global.Logging.LogHandler.PublishException(exception);
-            var response = OpreationResultMessageFactory<string>.CreateExceptionResponse(exception);
+            var response = ResultFactory<string>.CreateExceptionResponse(exception);
             context.Result = new ContentResult
             {
                 Content = App.Global.Serialization.Json.Serialize(response),

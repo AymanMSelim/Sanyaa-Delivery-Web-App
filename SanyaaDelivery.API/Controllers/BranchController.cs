@@ -18,19 +18,19 @@ namespace SanyaaDelivery.API.Controllers
         {
             this.branchService = branchService;
         }
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<BranchT>>> Add(BranchT branch)
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<BranchT>>> Add(BranchT branch)
         {
             try
             {
                 var affectedResult = await branchService.AddAsync(branch);
                 if(affectedResult > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<BranchT>.CreateSuccessResponse(branch));
+                    return Ok(ResultFactory<BranchT>.CreateSuccessResponse(branch));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<BranchT>.CreateErrorResponse());
+                    return Ok(ResultFactory<BranchT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -39,19 +39,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<BranchT>>> Update(BranchT branch)
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<BranchT>>> Update(BranchT branch)
         {
             try
             {
                 var affectedResult = await branchService.UpdateAsync(branch);
                 if (affectedResult > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<BranchT>.CreateSuccessResponse(branch));
+                    return Ok(ResultFactory<BranchT>.CreateSuccessResponse(branch));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<BranchT>.CreateErrorResponse());
+                    return Ok(ResultFactory<BranchT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
@@ -61,12 +61,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{branchId}")]
-        public async Task<ActionResult<OpreationResultMessage<BranchT>>> Get(int branchId)
+        public async Task<ActionResult<Result<BranchT>>> Get(int branchId)
         {
             try
             {
                 var branch = await branchService.GetAsync(branchId);
-                return Ok(OpreationResultMessageFactory<BranchT>.CreateSuccessResponse(branch));
+                return Ok(ResultFactory<BranchT>.CreateSuccessResponse(branch));
             }
             catch (Exception ex)
             {
@@ -74,13 +74,13 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<BranchT>>>> GetList()
+        [HttpGet("GetList")]
+        public async Task<ActionResult<Result<List<BranchT>>>> GetList()
         {
             try
             {
                 var branchList = await branchService.GetListAsync();
-                return Ok(OpreationResultMessageFactory<List<BranchT>>.CreateSuccessResponse(branchList));
+                return Ok(ResultFactory<List<BranchT>>.CreateSuccessResponse(branchList));
             }
             catch (Exception ex)
             {

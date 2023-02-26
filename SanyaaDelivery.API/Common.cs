@@ -18,12 +18,16 @@ namespace SanyaaDelivery.API
         private readonly IClientService clientService;
         private readonly ICityService cityService;
 
-        public CommonService(IHttpContextAccessor context, ICartService cartService, IClientService clientService, ICityService cityService)
+        public CommonService(IHttpContextAccessor context, ICartService cartService, IClientService clientService, ICityService cityService, IGeneralSetting generalSetting)
         {
             this.context = context;
             this.cartService = cartService;
             this.clientService = clientService;
             this.cityService = cityService;
+            if (context.HttpContext.User.Identity.IsAuthenticated)
+            {
+                generalSetting.CurrentIsViaApp = IsViaApp();
+            }
         }
         public int? GetClientId(int? clientId = null)
         {
@@ -36,6 +40,21 @@ namespace SanyaaDelivery.API
             else
             {
                 return clientId;
+            }
+        }
+
+        public int? GetAccountId()
+        {
+            int? accountId = null;
+            if (IsViaApp())
+            {
+                var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+                accountId = App.Global.JWT.TokenHelper.GetAccountId(identity);
+                return accountId;
+            }
+            else
+            {
+                return accountId;
             }
         }
 
@@ -63,6 +82,16 @@ namespace SanyaaDelivery.API
             return null;
         }
 
+        public async Task<ClientPhonesT> GetDefaultPhone(int? clientId = null)
+        {
+            clientId = GetClientId(clientId);
+            if (clientId.HasValue)
+            {
+                return await clientService.GetDefaultPhoneAsync(clientId.Value);
+            }
+            return null;
+        }
+
         public async Task<BranchT> GetCurrentAddressBranch(int? clientId = null)
         {
             clientId = GetClientId(clientId);
@@ -75,7 +104,7 @@ namespace SanyaaDelivery.API
             return null;
         }
 
-        public Task<Domain.Models.CartT> GetClientCartAsync(int? clientId = null, bool includeDetails = false)
+        public Task<Domain.Models.CartT> GetCurrentClientCartAsync(int? clientId = null, bool includeDetails = false)
         {
             bool isViaApp = IsViaApp();
             if (isViaApp)
@@ -84,7 +113,7 @@ namespace SanyaaDelivery.API
             }
             if (clientId.HasValue)
             {
-                return cartService.GetByClientIdAsync(clientId.Value, isViaApp, includeDetails);
+                return cartService.GetCurrentByClientIdAsync(clientId.Value, isViaApp, includeDetails);
             }
             else
             {

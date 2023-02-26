@@ -12,7 +12,9 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         ClientDto GetAllClients();
 
-        Task<ClientT> GetAsync(int id);
+        Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false);
+
+        Task<List<ClientT>> GetListAsync(string searchValue);
 
         Task<ClientT> GetByPhone(string phone);
 
@@ -36,7 +38,7 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> WidthrawPointAsync(int clientId, int points);
 
-        Task<List<AddressT>> GetAddressListAsync(int clientId, bool getDeleted = false);
+        Task<List<AddressT>> GetAddressListAsync(int clientId, bool? excludeDeleted = true);
         
         Task<AddressT> GetAddress(int addressId);
 
@@ -44,21 +46,24 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> UpdateAddress(AddressT address);
 
-        Task<OpreationResultMessage<AddressT>> DeleteAddress(int addressId);
+        Task<Result<AddressT>> DeleteAddress(int addressId);
         
         Task<int> SetDefaultAddressAsync(int addressId, int clientId);
 
         Task<AddressT> GetDefaultAddressAsync(int clientId);
+        Task<ClientPhonesT> GetDefaultPhoneAsync(int clientId);
 
         Task<int> GetDefaultCityIdAsync(int clientId);
 
-        Task<List<ClientPhonesT>> GetPhoneList(int clientId); 
+        Task<List<ClientPhonesT>> GetPhoneListAsync(int clientId, bool? getDeleted = false); 
         
         Task<ClientPhonesT> GetPhone(int phoneId);
 
         Task<int> AddPhone(ClientPhonesT phone);
 
         Task<int> UpdatePhone(ClientPhonesT phone);
+
+        Task<Result<ClientPhonesT>> DeletePhone(int phoneId);
 
         Task<int> Subscripe(int subscriptionId, int clientId);
 

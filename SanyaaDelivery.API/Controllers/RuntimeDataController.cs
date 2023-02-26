@@ -19,25 +19,25 @@ namespace SanyaaDelivery.API.Controllers
         {
             this.runtimeDataService = runtimeDataService;
         }
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<RuntimeData>>> Get()
+        [HttpGet("Get")]
+        public async Task<ActionResult<Result<RuntimeData>>> Get()
         {
             try
             {
                 var data = await runtimeDataService.Get();
                 if (data != null)
                 {
-                    return Ok(OpreationResultMessageFactory<RuntimeData>.CreateSuccessResponse(data));
+                    return Ok(ResultFactory<RuntimeData>.CreateSuccessResponse(data));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<RuntimeData>.CreateErrorResponse());
+                    return Ok(ResultFactory<RuntimeData>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
 
-                return StatusCode(500, OpreationResultMessageFactory<RuntimeData>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<RuntimeData>.CreateExceptionResponse(ex));
             }
           
         }

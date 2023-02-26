@@ -7,10 +7,8 @@ namespace SanyaaDelivery.Domain.DTOs
 {
     public class UserLoginDto
     {
-        [Required]
         public string Username { get; set; }
 
-        [Required]
         public string Password { get; set; }
 
         public int? AccountType { get; set; }
@@ -18,19 +16,15 @@ namespace SanyaaDelivery.Domain.DTOs
 
     public class ClientLoginDto
     {
-        [Required]
         public string Username { get; set; }
 
-        [Required]
         public string Password { get; set; }
     }
 
     public class ClientLoginWithOtpDto
     {
-        [Required]
         public string Phone { get; set; }
 
-        [Required]
         public string OtpCode { get; set; }
     }
 }

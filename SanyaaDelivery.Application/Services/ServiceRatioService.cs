@@ -122,6 +122,27 @@ namespace SanyaaDelivery.Application.Services
             return null;
         }
 
+        public async Task<decimal> GetRatioAsync(int? cityId = null, int? departmentId = null)
+        {
+            var serviceRatioList = await GetListAsync(cityId, departmentId, true);
+            if (serviceRatioList.IsEmpty())
+            {
+                return 1;
+            }
+            else
+            {
+                var ratio = serviceRatioList.LastOrDefault().Ratio;
+                if (ratio.IsNull() || ratio == 0)
+                {
+                    return  1;
+                }
+                else
+                {
+                    return 1 + (ratio.Value / 100);
+                }
+            }
+        }
+
         public Task<int> UpdateAsync(ServiceRatioT serviceRatio)
         {
             serviceRatioRepository.Update(serviceRatio.ServiceRatioId, serviceRatio);

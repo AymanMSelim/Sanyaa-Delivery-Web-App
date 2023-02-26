@@ -1,12 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="App\ModelsPartial\**" />
+    <Compile Remove="Modelsss\**" />
     <Compile Remove="Modelss\**" />
+    <EmbeddedResource Remove="App\ModelsPartial\**" />
+    <EmbeddedResource Remove="Modelsss\**" />
     <EmbeddedResource Remove="Modelss\**" />
+    <None Remove="App\ModelsPartial\**" />
+    <None Remove="Modelsss\**" />
     <None Remove="Modelss\**" />
   </ItemGroup>
 
@@ -17,6 +23,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="App\" />
   </ItemGroup>
 
 </Project>

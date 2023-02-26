@@ -21,7 +21,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{employeeId}")]
-        public async Task<ActionResult<OpreationResultMessage<LoginT>>> Get(string employeeId)
+        public async Task<ActionResult<Result<LoginT>>> Get(string employeeId)
         {
             try
             {
@@ -30,32 +30,32 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return NoContent();
                 }
-                return Ok(OpreationResultMessageFactory<LoginT>.CreateSuccessResponse(login));
+                return Ok(ResultFactory<LoginT>.CreateSuccessResponse(login));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<LoginT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<LoginT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<LoginT>>> Update(LoginT login)
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<LoginT>>> Update(LoginT login)
         {
             try
             {
                 var result = await appAccountService.Update(login);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<LoginT>.CreateSuccessResponse(login));
+                    return Ok(ResultFactory<LoginT>.CreateSuccessResponse(login));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<LoginT>.CreateErrorResponse());
+                    return Ok(ResultFactory<LoginT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<LoginT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<LoginT>.CreateExceptionResponse(ex));
             }
         }
 
@@ -73,7 +73,7 @@ namespace SanyaaDelivery.API.Controllers
                 EmployeeId = employeeId,
                 LastActive = account.LastActiveTimestamp.Value,
                 IsActive = account.LastActiveTimestamp > DateTime.Now.AddMinutes(-3),
-                IsEnabled = account.LoginAccountState != 0,
+                IsEnabled = account.LoginAccountState.Value,
                 Message = account.LoginAccountDeactiveMessage
             });
         }

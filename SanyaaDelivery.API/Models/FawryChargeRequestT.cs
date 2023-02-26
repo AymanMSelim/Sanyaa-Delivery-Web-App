@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace SanyaaDelivery.API.Models
+{
+    public partial class FawryChargeRequestT
+    {
+        public int ChargeId { get; set; }
+        public int RequestId { get; set; }
+
+        public FawryChargeT Charge { get; set; }
+        public RequestT Request { get; set; }
+    }
+}

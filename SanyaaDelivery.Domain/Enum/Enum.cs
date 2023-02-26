@@ -38,4 +38,32 @@ namespace SanyaaDelivery.Domain.Enum
         CartImage = 1,
     }
 
+    public enum TechnicianSelectionType
+    {
+        Manual,
+        Auto,
+        App
+    }
+
+    public enum PromocodeType
+    {
+        Value = 1,
+        Precentage = 2,
+    }
+
+
+    public enum RequestStatus
+    {
+        Canceled = 0,
+        Delayed = 1,
+        Rejected = 2,
+        Accepted = 3,
+        NotSet = 10,
+        Waiting = 11,
+        Revieved = 12,
+        InExcution = 13,
+        Done = 14,
+        FollowUp = 20
+    }
+
 }

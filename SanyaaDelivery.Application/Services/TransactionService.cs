@@ -13,6 +13,7 @@ namespace SanyaaDelivery.Application.Services
 {
     public class TransactionService : ITransactionService
     {
+
         private readonly IRepository<TransactionT> repo;
 
         public TransactionService(IRepository<TransactionT> repo)
@@ -68,5 +69,6 @@ namespace SanyaaDelivery.Application.Services
             repo.Update(transaction.Id, transaction);
             return repo.SaveAsync();
         }
+
     }
 }

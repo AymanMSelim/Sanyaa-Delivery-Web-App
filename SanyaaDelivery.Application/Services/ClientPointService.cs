@@ -54,9 +54,14 @@ namespace SanyaaDelivery.Application.Services
             return repo.GetAsync(id);
         }
 
-        public Task<List<ClientPointT>> GetListAsync(int clientId, ClientPointType type)
+        public Task<List<ClientPointT>> GetListAsync(int clientId, ClientPointType? type = null)
         {
-            return repo.Where(d => d.ClientId == clientId && d.PointType == ((sbyte)type)).ToListAsync();  
+            var query = repo.Where(d => d.ClientId == clientId);
+            if(type != null)
+            {
+                query = query.Where(d => d.PointType == ((sbyte)type));
+            }
+            return query.ToListAsync();  
         }
 
         public Task<int> UpdateAsync(ClientPointT clientPoint)

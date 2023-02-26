@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using App.Global.ExtensionMethods;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
@@ -16,11 +17,13 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly SymmetricSecurityKey _key;
         private readonly IRepository<TokenT> tokenRepository;
+        private readonly IRoleService roleService;
 
-        public TokenService(IConfiguration config, IRepository<TokenT> tokenRepository)
+        public TokenService(IConfiguration config, IRepository<TokenT> tokenRepository, IRoleService roleService)
         {
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
             this.tokenRepository = tokenRepository;
+            this.roleService = roleService;
         }
 
         public async Task<int> AddAsync(TokenT token)
@@ -50,6 +53,10 @@ namespace SanyaaDelivery.Application.Services
             };
             foreach (var role in account.AccountRoleT)
             {
+                if (role.Role.IsNull())
+                {
+                    role.Role = GeneralSetting.RoleList.Find(d => d.RoleId == role.RoleId);
+                }
                 claims.Add(new Claim(ClaimTypes.Role, role.Role.RoleName));
             }
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);

@@ -13,8 +13,11 @@ namespace SanyaaDelivery.Domain.Models
             ClientPhonesT = new HashSet<ClientPhonesT>();
             ClientPointT = new HashSet<ClientPointT>();
             ClientSubscriptionT = new HashSet<ClientSubscriptionT>();
+            EmployeeReviewT = new HashSet<EmployeeReviewT>();
+            FavouriteEmployeeT = new HashSet<FavouriteEmployeeT>();
             FavouriteServiceT = new HashSet<FavouriteServiceT>();
             RequestT = new HashSet<RequestT>();
+            SiteT = new HashSet<SiteT>();
         }
 
         public int ClientId { get; set; }
@@ -28,6 +31,7 @@ namespace SanyaaDelivery.Domain.Models
         public int? BranchId { get; set; }
         public int? SystemUserId { get; set; }
         public int? ClientPoints { get; set; }
+        public bool IsGuest { get; set; }
 
         public BranchT Branch { get; set; }
         public SystemUserT SystemUser { get; set; }
@@ -37,7 +41,10 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<ClientPhonesT> ClientPhonesT { get; set; }
         public ICollection<ClientPointT> ClientPointT { get; set; }
         public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }
+        public ICollection<EmployeeReviewT> EmployeeReviewT { get; set; }
+        public ICollection<FavouriteEmployeeT> FavouriteEmployeeT { get; set; }
         public ICollection<FavouriteServiceT> FavouriteServiceT { get; set; }
         public ICollection<RequestT> RequestT { get; set; }
+        public ICollection<SiteT> SiteT { get; set; }
     }
 }

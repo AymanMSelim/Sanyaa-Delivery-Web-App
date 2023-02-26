@@ -25,7 +25,7 @@ namespace SanyaaDelivery.Application.Services
         public bool IsActive(string id)
         {
             var empLogin = Get(id).Result;
-            return empLogin.LoginAccountState != 0;
+            return empLogin.LoginAccountState.Value;
         }
 
         public bool IsOnline(string id)

@@ -21,21 +21,21 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{transactionId}")]
-        public async Task<ActionResult<OpreationResultMessage<TransactionT>>> Get(int transactionId)
+        public async Task<ActionResult<Result<TransactionT>>> Get(int transactionId)
         {
             try
             {
                 var transaction = await transactionService.GetAsync(transactionId);
-                return base.Ok(OpreationResultMessageFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                return base.Ok(ResultFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<TransactionT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<TransactionT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<TransactionT>>> Add(TransactionT transaction)
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<TransactionT>>> Add(TransactionT transaction)
         {
             try
             {
@@ -45,21 +45,21 @@ namespace SanyaaDelivery.API.Controllers
                 var affectedRows = await transactionService.AddAsync(transaction);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateErrorResponse());
+                    return Ok(ResultFactory<TransactionT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<TransactionT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<TransactionT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpPost]
-        public async Task<ActionResult<OpreationResultMessage<TransactionT>>> Update(TransactionT transaction)
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<TransactionT>>> Update(TransactionT transaction)
         {
             try
             {
@@ -69,51 +69,51 @@ namespace SanyaaDelivery.API.Controllers
                 var affectedRows = await transactionService.UpdateAsync(transaction);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.OpreationResultStatusCode.RecordUpdatedSuccessfully));
+                    return Ok(ResultFactory<TransactionT>.CreateSuccessResponse(transaction, App.Global.Enums.ResultStatusCode.RecordUpdatedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateErrorResponse());
+                    return Ok(ResultFactory<TransactionT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<TransactionT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<TransactionT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("Delete/{transactionId}")]
-        public async Task<ActionResult<OpreationResultMessage<TransactionT>>> Delete(int transactionId)
+        public async Task<ActionResult<Result<TransactionT>>> Delete(int transactionId)
         {
             try
             {
                 var affectedRows = await transactionService.DeletetAsync(transactionId);
                 if (affectedRows > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateSuccessResponse(null, App.Global.Enums.OpreationResultStatusCode.RecordDeletedSuccessfully));
+                    return Ok(ResultFactory<TransactionT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<TransactionT>.CreateErrorResponse());
+                    return Ok(ResultFactory<TransactionT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<TransactionT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<TransactionT>.CreateExceptionResponse(ex));
             }
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<TransactionT>>>> GetList(sbyte? referenceType = null, string referenceId = null, DateTime? startDate = null, DateTime? endDate = null, bool? isCanceled = null)
+        [HttpGet("GetList")]
+        public async Task<ActionResult<Result<List<TransactionT>>>> GetList(sbyte? referenceType = null, string referenceId = null, DateTime? startDate = null, DateTime? endDate = null, bool? isCanceled = null)
         {
             try
             {
                 var list = await transactionService.GetListAsync(referenceType, referenceId, startDate, endDate, isCanceled);
-                return Ok(OpreationResultMessageFactory<List<TransactionT>>.CreateSuccessResponse(list));
+                return Ok(ResultFactory<List<TransactionT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<TransactionT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<TransactionT>.CreateExceptionResponse(ex));
             }
         }
     }

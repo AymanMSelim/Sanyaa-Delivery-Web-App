@@ -10,7 +10,7 @@ namespace SanyaaDelivery.Domain.DTOs
 
         public DateTime? OrderTime { get; set; }
 
-        public float? OrderCost { get; set; }
+        public decimal OrderCost { get; set; }
 
         public int OrderStatus { get; set; }
 

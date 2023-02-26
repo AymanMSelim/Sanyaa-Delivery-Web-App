@@ -22,5 +22,6 @@ namespace SanyaaDelivery.Domain.DTOs
         //[MaxLength(11)]
         //[DataType(DataType.PhoneNumber)]
         public string Phone { get; set; }
+        public string FCMToken { get; set; }
     }
 }

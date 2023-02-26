@@ -11,5 +11,10 @@ namespace App.Global.Serialization
         {
             return JsonConvert.SerializeObject(obj);
         }
+
+        public static T Deserialize<T>(string data)
+        {
+            return JsonConvert.DeserializeObject<T>(data);
+        }
     }
 }

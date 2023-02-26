@@ -20,8 +20,8 @@ namespace SanyaaDelivery.API.Controllers
             this.appSettingService = appSettingService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<OpreationResultMessage<List<AppSettingT>>>> GetAppSettingList()
+        [HttpGet("GetAppSettingList")]
+        public async Task<ActionResult<Result<List<AppSettingT>>>> GetAppSettingList()
         {
             try
             {
@@ -29,16 +29,37 @@ namespace SanyaaDelivery.API.Controllers
                 if (list.IsNotNull())
                 {
                     var appList = list.Where(d => d.IsAppSetting == null || (d.IsAppSetting.HasValue && d.IsAppSetting.Value)).ToList();
-                    return Ok(OpreationResultMessageFactory<List<AppSettingT>>.CreateSuccessResponse(appList));
+                    return Ok(ResultFactory<List<AppSettingT>>.CreateSuccessResponse(appList));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<List<AppSettingT>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<AppSettingT>>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, OpreationResultMessageFactory<AppSettingT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<AppSettingT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("IsTechnicalSelectionAllowed")]
+        public async Task<ActionResult<Result<bool>>> IsTechnicalSelectionAllowed()
+        {
+            try
+            {
+                var setting = await appSettingService.Get("TechnicianSelectionMethod");
+                if (setting.IsNotNull() && setting.SettingValue.ToLower() == Domain.Enum.TechnicianSelectionType.App.ToString().ToLower())
+                {
+                    return Ok(ResultFactory<bool>.CreateSuccessResponse(true, App.Global.Enums.ResultStatusCode.Allowed));
+                }
+                else
+                {
+                    return Ok(ResultFactory<bool>.CreateSuccessResponse(false, App.Global.Enums.ResultStatusCode.NotAllowed));
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
             }
         }
     }

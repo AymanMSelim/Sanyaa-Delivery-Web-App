@@ -10,6 +10,7 @@ namespace SanyaaDelivery.Domain.Models
         public string ComplaintDes { get; set; }
         public int? NewRequestId { get; set; }
         public string ComplaintIsSolved { get; set; }
+        public bool? IsSolved { get; set; }
         public int SystemUserId { get; set; }
 
         public RequestT Request { get; set; }

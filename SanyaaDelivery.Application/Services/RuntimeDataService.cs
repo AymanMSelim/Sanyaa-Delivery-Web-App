@@ -31,6 +31,11 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<CountryT> countryRepository;
         private readonly IRepository<ServiceRatioT> serviceRatioRepository;
         private readonly IRepository<SystemUserT> systemUserRepository;
+        private readonly IRepository<SubscriptionT> subscriptionRepository;
+        private readonly IRepository<PromocodeT> promocodeRepository;
+        private readonly IRepository<SiteT> siteRepository;
+        private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
+        private readonly IRepository<EmployeeWorkplacesT> employeeBranchRepository;
 
         public RuntimeDataService(IRepository<BranchT> branchRepository, IRepository<ClientT> clientRepository,
             IRepository<EmployeeT> employeeRepository, IRepository<DepartmentT> departmentRepository,
@@ -40,7 +45,9 @@ namespace SanyaaDelivery.Application.Services
             IRepository<EmployeeSubscriptionT> employeeSubscriptionRepository, IRepository<ClientPhonesT> phoneRepository,
             IRepository<TranslatorT> translatorRepository, IRepository<EmployeeTypeT> employeeTypeRepository, 
             IRepository<CountryT> countryRepository, IRepository<ServiceRatioT> serviceRatioRepository,
-            IRepository<SystemUserT> systemUserRepository)
+            IRepository<SystemUserT> systemUserRepository, IRepository<SubscriptionT> subscriptionRepository, 
+            IRepository<PromocodeT> promocodeRepository, IRepository<SiteT> siteRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository,
+            IRepository<EmployeeWorkplacesT> employeeBranchRepository)
         {
             this.branchRepository = branchRepository;
             this.clientRepository = clientRepository;
@@ -59,6 +66,11 @@ namespace SanyaaDelivery.Application.Services
             this.countryRepository = countryRepository;
             this.serviceRatioRepository = serviceRatioRepository;
             this.systemUserRepository = systemUserRepository;
+            this.subscriptionRepository = subscriptionRepository;
+            this.promocodeRepository = promocodeRepository;
+            this.siteRepository = siteRepository;
+            this.employeeDepartmentRepository = employeeDepartmentRepository;
+            this.employeeBranchRepository = employeeBranchRepository;
         }
         public async Task<RuntimeData> Get()
         {
@@ -140,6 +152,31 @@ namespace SanyaaDelivery.Application.Services
                     {
                         SystemUserId = d.SystemUserId,
                         SystemUserName = d.SystemUserUsername,
+                    }).ToListAsync(),
+                    PromocodeLightList = await promocodeRepository.DbSet.Select(d => new Domain.LightModels.PromocodeLight
+                    {
+                        Promocode = d.Promocode,
+                        PromocodeId = d.PromocodeId
+                    }).ToListAsync(),
+                    SubsctiptionLighttList = await subscriptionRepository.DbSet.Select(d => new Domain.LightModels.SubscriptionLight
+                    {
+                        SubscriptionId = d.SubscriptionId,
+                        SubscriptionName = d.SubscriptionName
+                    }).ToListAsync(),
+                    SiteLighttList = await siteRepository.DbSet.Select(d => new Domain.LightModels.SiteLight
+                    {
+                        SiteId = d.SiteId,
+                        SiteName = d.SiteName
+                    }).ToListAsync(),
+                    EmployeeDepartmentLightList = await employeeDepartmentRepository.DbSet.Select(d => new Domain.LightModels.EmployeeDepartmentLight
+                    {
+                        DepartmentId = d.DepartmentId.Value,
+                        EmployeeId = d.EmployeeId
+                    }).ToListAsync(),
+                    EmployeeWorkplaceLightList = await employeeBranchRepository.DbSet.Select(d => new Domain.LightModels.EmployeeWorkplaceLight
+                    {
+                        EmployeeId = d.EmployeeId,
+                        BranchId = d.BranchId
                     }).ToListAsync()
                 };
                 return data;

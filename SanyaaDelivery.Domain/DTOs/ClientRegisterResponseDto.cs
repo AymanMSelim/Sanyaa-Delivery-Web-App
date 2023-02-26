@@ -12,4 +12,10 @@ namespace SanyaaDelivery.Domain.DTOs
         public string SecurityCode { get; set; }
         public DateTime OTPExpireTime { get; set; }
     }
+
+    public class GuestClientRegisterResponseDto
+    {
+        public ClientT Client { get; set; }
+       public AccountT Account { get; set; }
+    }
 }

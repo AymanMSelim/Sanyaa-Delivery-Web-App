@@ -8,6 +8,8 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IAccountService
     {
+        Task<int> DeleteSoft(int id);
+
         Task<AccountT> Get(int id);
 
         Task<AccountT> Get(int accountType, string referenceId);

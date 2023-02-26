@@ -8,7 +8,6 @@ namespace SanyaaDelivery.Domain.Models
         public CityT()
         {
             AddressT = new HashSet<AddressT>();
-            CouponCityT = new HashSet<CouponCityT>();
             OpeningSoonDepartmentT = new HashSet<OpeningSoonDepartmentT>();
             PromocodeCityT = new HashSet<PromocodeCityT>();
             RegionT = new HashSet<RegionT>();
@@ -28,7 +27,6 @@ namespace SanyaaDelivery.Domain.Models
         public BranchT Branch { get; set; }
         public GovernorateT Governorate { get; set; }
         public ICollection<AddressT> AddressT { get; set; }
-        public ICollection<CouponCityT> CouponCityT { get; set; }
         public ICollection<OpeningSoonDepartmentT> OpeningSoonDepartmentT { get; set; }
         public ICollection<PromocodeCityT> PromocodeCityT { get; set; }
         public ICollection<RegionT> RegionT { get; set; }

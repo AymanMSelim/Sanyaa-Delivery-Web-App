@@ -9,15 +9,22 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IEmployeeService
     {
-        Task<EmployeeT> Get(string id);
+        Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false,
+            bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false,
+            bool includeReview = false, bool includeReviewClient = false, bool includeFavourite = false);
 
-        Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive);
+        Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive = null, bool includeReview = false, 
+            bool includeClientWithReview = false, bool includeFavourite = false);
 
         Task<List<EmployeeT>> GetFreeListAsync(int departmentId, int branchId, DateTime requestTime, bool? getActive, bool? getOnline);
+
+        Task<decimal> GetEmployeePrecentageAsync(string employeeId, int departmentId);
 
         Task<EmployeeT> GetWithBeancesAndTimetable(string id);
 
         EmployeeDto GetCustomInfo(string id);
+        Task<decimal> GetDepartmentPrecentageAsync(string employeeId, int departmentId);
+        Task<bool> IsCleaningEmployeeAsync(string employeeId);
 
         Task<List<EmployeeT>> GetByDepartment(string departmentName);
 
@@ -39,8 +46,7 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> UpdateAsync(EmployeeT employee);
 
-        Task<List<FollowUpT>> GetReviewListAsync(string employeeId)
-            ;
+        Task<List<FollowUpT>> GetReviewListAsync(string employeeId);
         Task<List<FollowUpT>> GetReviewListAsync(List<string> employeeIdList);
     }
 }

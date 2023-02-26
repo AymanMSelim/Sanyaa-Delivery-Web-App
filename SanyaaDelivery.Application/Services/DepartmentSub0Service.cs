@@ -14,10 +14,12 @@ namespace SanyaaDelivery.Application.Services
     public class DepartmentSub0Service : IDeparmentSub0Service
     {
         private readonly IRepository<DepartmentSub0T> departmentSub0Repository;
+        private readonly IRepository<DepartmentSub1T> departmentSub1Repository;
 
-        public DepartmentSub0Service(IRepository<DepartmentSub0T> departmentSub0Repository)
+        public DepartmentSub0Service(IRepository<DepartmentSub0T> departmentSub0Repository, IRepository<DepartmentSub1T> departmentSub1Repository)
         {
             this.departmentSub0Repository = departmentSub0Repository;
+            this.departmentSub1Repository = departmentSub1Repository;
         }
 
         public async Task<int> AddAsync(DepartmentSub0T departmentSub0)
@@ -42,9 +44,20 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
         }
 
-        public Task<List<DepartmentSub0T>> GetListAsync()
+        public  async Task<List<DepartmentSub0T>> GetListAsync(int? departmentId = null, string departmentSub0Name = null)
         {
-            return departmentSub0Repository.GetListAsync();
+            var query = departmentSub1Repository.DbSet.AsQueryable();
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.DepartmentSub0Navigation.DepartmentId == departmentId.Value);
+            }
+            if(string.IsNullOrEmpty(departmentSub0Name) == false)
+            {
+                query = query.Where(d => d.DepartmentSub0.Contains(departmentSub0Name));
+            }
+            query = query.OrderByDescending(d => d.ServiceT.Count);
+            var list = await query.Select(d => d.DepartmentSub0Navigation).ToListAsync();
+            return list.Distinct().ToList();
         }
 
         public Task<List<DepartmentSub0T>> GetListAsync(string departmentName)

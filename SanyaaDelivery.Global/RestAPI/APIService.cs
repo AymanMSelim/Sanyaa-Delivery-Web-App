@@ -16,17 +16,18 @@ namespace App.Global.RestAPI
         private readonly HttpClient _httpClient;
         private string _token;
         private Uri _baseURL;
-
+        private string _urlPrefix;
         static APIService()
         {
             System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
         }
 
-        public APIService(string baseUrl, TokenType tokenType = TokenType.None, string token = null)
+        public APIService(string baseUrl, TokenType tokenType = TokenType.None, string token = null, string urlPrefix = null)
         {
             _httpClient = new HttpClient(new RetryHandler(new HttpClientHandler()));
             _baseURL = new Uri(baseUrl);
             _httpClient.BaseAddress = _baseURL;
+            _urlPrefix = urlPrefix;
             if (!string.IsNullOrEmpty(token))
             {
                 SetTokenHeader(token, tokenType);
@@ -57,21 +58,32 @@ namespace App.Global.RestAPI
             }
         }
 
+        private string GetPath(string url)
+        {
+            if (string.IsNullOrEmpty(_urlPrefix))
+            {
+                return url;
+            }
+            else
+            {
+                return $"/{_urlPrefix}/{url}";
+            }
+        }
         public Task<HttpResponseMessage> GetAsync(string url)
         {
-            return _httpClient.GetAsync(url);
+            return _httpClient.GetAsync(GetPath(url));
         }
 
         public Task<HttpResponseMessage> PostAsync(string url, HttpContent content)
         {
-            return _httpClient.PostAsync(url, content);
+            return _httpClient.PostAsync(GetPath(url), content);
         }
 
         public Task<HttpResponseMessage> PostAsync(string url, object model)
         {
             var modelData = JsonConvert.SerializeObject(model);
             var content = new StringContent(modelData, Encoding.UTF8, "application/json");
-            return _httpClient.PostAsync(url, content);
+            return _httpClient.PostAsync(GetPath(url), content);
         }
         public async Task<T> PostAsync<T>(string url, object model)
         {
@@ -89,11 +101,11 @@ namespace App.Global.RestAPI
                     }
                 });
                 var content = new StringContent(modelData, Encoding.UTF8, "application/json");
-                httpResponseMessage = await _httpClient.PostAsync(url, content);
+                httpResponseMessage = await _httpClient.PostAsync(GetPath(url), content);
             }
             else
             {
-                httpResponseMessage = await _httpClient.PostAsync(url, null);
+                httpResponseMessage = await _httpClient.PostAsync(GetPath(url), null);
             }
             return await HelperClass.GetResponseAsync<T>(httpResponseMessage);
         }

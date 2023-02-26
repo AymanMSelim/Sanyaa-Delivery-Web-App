@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using App.Global.ExtensionMethods;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -15,31 +16,70 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
+        private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
         private readonly IRepository<EmploymentApplicationsT> employmentApplicationRepository;
         private readonly IRepository<FollowUpT> followUpRepository;
+        private readonly IDepartmentService departmentService;
 
-        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, 
+        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<DepartmentT> departmentRepository,
             IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<EmploymentApplicationsT> employmentApplicationRepository,
-           IRepository<FollowUpT> followUpRepository)
+           IRepository<FollowUpT> followUpRepository, IDepartmentService departmentService)
         {
             this.employeeRepository = employeeRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
+            this.departmentRepository = departmentRepository;
             this.employeeWorkplaceRepository = employeeWorkplaceRepository;
             this.employmentApplicationRepository = employmentApplicationRepository;
             this.followUpRepository = followUpRepository;
+            this.departmentService = departmentService;
         }
 
-        public Task<EmployeeT> Get(string id)
+        public Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false, 
+            bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false, bool includeReview = false,
+            bool inculdeReviewClient = false, bool includeFavourite = false)
         {
-            return employeeRepository
-                 .Where(d => d.EmployeeId == id)
-                 .Include(d => d.DepartmentEmployeeT)
-                 .Include(d => d.EmployeeWorkplacesT)
-                 .Include(d => d.EmployeeLocation)
-                 .Include(d => d.LoginT)
-                 .Include(d => d.Subscription)
-                 .FirstOrDefaultAsync();
+            var query = employeeRepository.Where(d => d.EmployeeId == id);
+            if (includeDepartment)
+            {
+                query = query.Include(d => d.DepartmentEmployeeT);
+            }
+            if (includeLocation)
+            {
+                query = query.Include(d => d.EmployeeLocation);
+            }
+            if (includeLogin)
+            {
+                query = query.Include(d => d.LoginT);
+            }
+            if (includeSubscription)
+            {
+                query = query.Include(d => d.Subscription);
+            }
+            if (includeWorkplace)
+            {
+                query = query.Include(d => d.EmployeeWorkplacesT);
+            }
+            if (includeReview)
+            {
+                query = query.Include(d => d.EmployeeReviewT);
+            }
+            if (includeReview)
+            {
+                if (inculdeReviewClient)
+                {
+                    query = query.Include(d => d.EmployeeReviewT).ThenInclude(d => d.Client);
+                }
+                else
+                {
+                    query = query.Include(d => d.EmployeeReviewT);
+                }
+            }
+            if (includeFavourite)
+            {
+                query = query.Include(d => d.FavouriteEmployeeT);
+            }
+            return query.FirstOrDefaultAsync();
         }
 
         public Task<EmployeeT> GetWithBeancesAndTimetable(string id)
@@ -113,7 +153,8 @@ namespace SanyaaDelivery.Application.Services
             return employeeWorkplaceRepository.Where(d => d.EmployeeId == employeeId).ToListAsync();
         }
 
-        public Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive)
+        public Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive = null, bool includeReview = false,
+            bool includeClientWithReview = false, bool includeFavourite = false)
         {
             var query = employeeRepository.DbSet.AsQueryable();
             if (departmentId.HasValue)
@@ -126,7 +167,22 @@ namespace SanyaaDelivery.Application.Services
             }
             if (getActive.HasValue)
             {
-                query = query.Include(d => d.LoginT).Where(d => d.LoginT.LoginAccountState == Convert.ToSByte(getActive));
+                query = query.Include(d => d.LoginT).Where(d => d.LoginT.LoginAccountState == getActive);
+            }
+            if (includeReview)
+            {
+                if (includeClientWithReview)
+                {
+                    query = query.Include(d => d.EmployeeReviewT).ThenInclude(d => d.Client);
+                }
+                else
+                {
+                    query = query.Include(d => d.EmployeeReviewT);
+                }
+            }
+            if (includeFavourite)
+            {
+                query = query.Include(d => d.FavouriteEmployeeT);
             }
             return query.ToListAsync();
         }
@@ -147,6 +203,71 @@ namespace SanyaaDelivery.Application.Services
         public Task<List<EmployeeT>> GetFreeListAsync(int departmentId, int branchId, DateTime requestTime, bool? getActive, bool? getOnline)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<decimal> GetEmployeePrecentageAsync(string employeeId, int departmentId)
+        {
+            DepartmentT department = await departmentService.GetAsync(departmentId);
+            EmployeeT employee = await GetAsync(employeeId, includeDepartment: true);
+            if (employee.IsNull() || employee.DepartmentEmployeeT.IsEmpty())  
+            {
+                if (department.IsNotNull() && department.DepartmentPercentage.HasValue)
+                {
+                    return department.DepartmentPercentage.Value;
+                }
+                else
+                {
+                    return GeneralSetting.EmployeePercentage;
+                }
+            }
+            var currentDepartment = employee.DepartmentEmployeeT.FirstOrDefault(d => d.DepartmentId == departmentId);
+            if (currentDepartment.IsNotNull() && currentDepartment.Percentage.HasValue)
+            {
+                return currentDepartment.Percentage.Value;
+            }
+            else
+            {
+                if (department.IsNotNull() && department.DepartmentPercentage.HasValue)
+                {
+                    return department.DepartmentPercentage.Value;
+                }
+                else
+                {
+                    return GeneralSetting.EmployeePercentage;
+                }
+            }
+        }
+
+        public async Task<decimal> GetDepartmentPrecentageAsync(string employeeId, int departmentId)
+        {
+            decimal percentage = GeneralSetting.EmployeePercentage;
+            var department = await departmentRepository.GetAsync(departmentId);
+            if (department.IsNotNull() && department.DepartmentPercentage.HasValue)
+            {
+                percentage = department.DepartmentPercentage.Value;
+            }
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return percentage;
+            }
+
+            var employee = await GetAsync(employeeId, includeDepartment: true);
+            if (employee.IsNull())
+            {
+                return percentage;
+            }
+
+            var requestDepartment = employee.DepartmentEmployeeT.FirstOrDefault(d => d.DepartmentId == departmentId);
+            if (requestDepartment.IsNotNull() && requestDepartment.Percentage.GetValueOrDefault() > 0)
+            {
+                percentage = requestDepartment.Percentage.Value;
+            }
+            return percentage;       
+        }
+
+        public Task<bool> IsCleaningEmployeeAsync(string employeeId)
+        {
+            return employeeDepartmentRepository.Where(d => d.EmployeeId == employeeId && d.DepartmentId == GeneralSetting.CleaningDepartmentId).AnyAsync();
         }
     }
 }

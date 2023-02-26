@@ -7,6 +7,7 @@ namespace SanyaaDelivery.Domain.Models
     {
         public GovernorateT()
         {
+            AddressT = new HashSet<AddressT>();
             CityT = new HashSet<CityT>();
         }
 
@@ -18,6 +19,7 @@ namespace SanyaaDelivery.Domain.Models
         public int? CountryId { get; set; }
 
         public CountryT Country { get; set; }
+        public ICollection<AddressT> AddressT { get; set; }
         public ICollection<CityT> CityT { get; set; }
     }
 }

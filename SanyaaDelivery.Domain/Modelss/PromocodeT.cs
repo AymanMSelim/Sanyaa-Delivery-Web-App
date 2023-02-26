@@ -7,8 +7,10 @@ namespace SanyaaDelivery.Domain.Models
     {
         public PromocodeT()
         {
+            CartT = new HashSet<CartT>();
             PromocodeCityT = new HashSet<PromocodeCityT>();
             PromocodeDepartmentT = new HashSet<PromocodeDepartmentT>();
+            RequestT = new HashSet<RequestT>();
         }
 
         public int PromocodeId { get; set; }
@@ -21,10 +23,13 @@ namespace SanyaaDelivery.Domain.Models
         public DateTime ExpireTime { get; set; }
         public int UsageCount { get; set; }
         public decimal CompanyDiscountPercentage { get; set; }
+        public bool AutoApply { get; set; }
         public int SystemUserId { get; set; }
 
         public SystemUserT SystemUser { get; set; }
+        public ICollection<CartT> CartT { get; set; }
         public ICollection<PromocodeCityT> PromocodeCityT { get; set; }
         public ICollection<PromocodeDepartmentT> PromocodeDepartmentT { get; set; }
+        public ICollection<RequestT> RequestT { get; set; }
     }
 }

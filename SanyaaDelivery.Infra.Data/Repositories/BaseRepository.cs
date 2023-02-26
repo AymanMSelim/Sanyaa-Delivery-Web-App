@@ -103,19 +103,19 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 
         public async Task<int> SaveAsync()
         {
-            try
-            {
+            //try
+            //{
                 if (unitOfWork.IsTransaction)
                 {
-                    return 0;
+                    return 1;
                 }
                 return await DbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-                return 0;
-            }
+            //}
+            //catch (Exception ex)
+           // {
+            //    App.Global.Logging.LogHandler.PublishException(ex);
+               // return 0;
+            //}
         }
     }
 }

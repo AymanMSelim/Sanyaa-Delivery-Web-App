@@ -32,6 +32,15 @@ namespace App.Global.ExtensionMethods
             return false;
         }
 
+        public static List<T> ToObjectList<T>(this T obj)
+        {
+            if (obj == null)
+            {
+                return new List<T>();
+            }
+            return new List<T> { obj };
+        }
+
         public static bool IsNull<T>(this T obj)
         {
             return obj == null;

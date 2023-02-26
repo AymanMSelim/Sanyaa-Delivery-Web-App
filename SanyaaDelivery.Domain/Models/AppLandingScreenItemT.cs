@@ -15,8 +15,8 @@ namespace SanyaaDelivery.Domain.Models
         public string ImagePath { get; set; }
         public string Caption { get; set; }
         public int? DepartmentId { get; set; }
-        public bool? IsActive { get; set; }
-        public bool? HavePackage { get; set; }
+        public bool IsActive { get; set; }
+        public bool HavePackage { get; set; }
         public string ActionLink { get; set; }
 
         public ICollection<LandingScreenItemDetailsT> LandingScreenItemDetailsT { get; set; }

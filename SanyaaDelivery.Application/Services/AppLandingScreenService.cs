@@ -59,7 +59,7 @@ namespace SanyaaDelivery.Application.Services
         public Task<List<AppLandingScreenItemT>> GetListAsync(List<int> typeList)
         {
             return landingScreenRepository
-                .Where(d => typeList.Contains(d.ItemType.Value) && d.IsActive.HasValue && d.IsActive.Value)
+                .Where(d => typeList.Contains(d.ItemType.Value) && d.IsActive && d.IsActive)
                 .Include(d => d.LandingScreenItemDetailsT)
                 .ToListAsync();
         }

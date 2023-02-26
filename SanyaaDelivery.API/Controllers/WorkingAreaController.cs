@@ -26,166 +26,166 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{id}")]
-        public async Task<ActionResult<OpreationResultMessage<WorkingAreaT>>> Get(int id)
+        public async Task<ActionResult<Result<WorkingAreaT>>> Get(int id)
         {
             try
             {
                 var result = await workingAreaService.Get(id);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<WorkingAreaT>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<WorkingAreaT>.CreateSuccessResponse(result));
 
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<WorkingAreaT>.CreateExceptionResponse(ex));
             }
 
         }
 
         [HttpGet("GetList")]
-        public async Task<ActionResult<OpreationResultMessage<List<WorkingAreaT>>>> GetList(string govName, string cityName, string regionName)
+        public async Task<ActionResult<Result<List<WorkingAreaT>>>> GetList(string govName, string cityName, string regionName)
         {
             try
             {
                 var result = await workingAreaService.GetList(govName, cityName, regionName);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<WorkingAreaT>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<WorkingAreaT>>.CreateErrorResponse());
                 }
                 if(result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<WorkingAreaT>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<WorkingAreaT>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<WorkingAreaT>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<WorkingAreaT>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<WorkingAreaT>.CreateExceptionResponse(ex));
             }
 
         }
 
         [HttpGet("GetGovList/{searchValue}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ValueWithIdDto>>>> GetGovList(string searchValue)
+        public async Task<ActionResult<Result<List<ValueWithIdDto>>>> GetGovList(string searchValue)
         {
             try
             {
                 var result = await workingAreaService.GetGovList(searchValue);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateErrorResponse());
                 }
                 if(result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetCityList/{searchValue}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ValueWithIdDto>>>> GetCityList(string searchValue)
+        public async Task<ActionResult<Result<List<ValueWithIdDto>>>> GetCityList(string searchValue)
         {
             try
             {
                 var result = await workingAreaService.GetCityList(searchValue);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateErrorResponse());
                 }
                 if (result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetRegionList/{searchValue}")]
-        public async Task<ActionResult<OpreationResultMessage<List<ValueWithIdDto>>>> GetRegionList(string searchValue)
+        public async Task<ActionResult<Result<List<ValueWithIdDto>>>> GetRegionList(string searchValue)
         {
             try
             {
                 var result = await workingAreaService.GetRegionList(searchValue);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateErrorResponse());
                 }
                 if (result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetCityByGovList")]
-        public async Task<ActionResult<OpreationResultMessage<List<ValueWithIdDto>>>> GetCityByGovList(string govName, string searchValue)
+        public async Task<ActionResult<Result<List<ValueWithIdDto>>>> GetCityByGovList(string govName, string searchValue)
         {
             try
             {
                 var result = await workingAreaService.GetCityByGovList(govName, searchValue);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateErrorResponse());
                 }
                 if (result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpGet("GetRegionByCityList")]
-        public async Task<ActionResult<OpreationResultMessage<List<ValueWithIdDto>>>> GetRegionByCityList(string cityName, string searchValue)
+        public async Task<ActionResult<Result<List<ValueWithIdDto>>>> GetRegionByCityList(string cityName, string searchValue)
         {
             try
             {
                 var result = await workingAreaService.GetRegionByCityList(cityName, searchValue);
                 if (result == null)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateErrorResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateErrorResponse());
                 }
                 if (result.Count == 0)
                 {
-                    return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
+                    return Ok(ResultFactory<List<ValueWithIdDto>>.CreateNotFoundResponse());
                 }
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateSuccessResponse(result));
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("Add")]
-        public async Task<ActionResult<OpreationResultMessage<WorkingAreaT>>> Add(WorkingAreaT workingArea)
+        public async Task<ActionResult<Result<WorkingAreaT>>> Add(WorkingAreaT workingArea)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateErrorResponseMessage("InvalidData", App.Global.Enums.OpreationResultStatusCode.InvalidData));
+                    return Ok(ResultFactory<WorkingAreaT>.CreateErrorResponseMessage("InvalidData", App.Global.Enums.ResultStatusCode.InvalidData));
                 }
                 GovernorateT gov = await governorateService.GetAsync(workingArea.WorkingAreaGov);
                 CityT city = await cityService.GetAsync(workingArea.WorkingAreaCity);
@@ -223,33 +223,33 @@ namespace SanyaaDelivery.API.Controllers
                 var workingAreaList = await workingAreaService.GetList(workingArea.WorkingAreaGov, workingArea.WorkingAreaCity, workingArea.WorkingAreaRegion);
                 if (workingAreaList.HasItem())
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateSuccessResponse(workingAreaList.FirstOrDefault(), App.Global.Enums.OpreationResultStatusCode.AlreadyExist));
+                    return Ok(ResultFactory<WorkingAreaT>.CreateSuccessResponse(workingAreaList.FirstOrDefault(), App.Global.Enums.ResultStatusCode.AlreadyExist));
                 }
                 var result = await workingAreaService.Add(workingArea);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateSuccessResponse(workingArea, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<WorkingAreaT>.CreateSuccessResponse(workingArea, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateErrorResponse());
+                    return Ok(ResultFactory<WorkingAreaT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
 
         }
 
         [HttpPost("Update")]
-        public async Task<ActionResult<OpreationResultMessage<WorkingAreaT>>> Update(WorkingAreaT workingArea)
+        public async Task<ActionResult<Result<WorkingAreaT>>> Update(WorkingAreaT workingArea)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateErrorResponseMessage("InvalidData", App.Global.Enums.OpreationResultStatusCode.InvalidData));
+                    return Ok(ResultFactory<WorkingAreaT>.CreateErrorResponseMessage("InvalidData", App.Global.Enums.ResultStatusCode.InvalidData));
                 }
                 GovernorateT gov = await governorateService.GetAsync(workingArea.WorkingAreaGov);
                 CityT city = await cityService.GetAsync(workingArea.WorkingAreaCity);
@@ -287,16 +287,16 @@ namespace SanyaaDelivery.API.Controllers
                 var result = await workingAreaService.Add(workingArea);
                 if (result > 0)
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateSuccessResponse(workingArea, App.Global.Enums.OpreationResultStatusCode.RecordAddedSuccessfully));
+                    return Ok(ResultFactory<WorkingAreaT>.CreateSuccessResponse(workingArea, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
                 }
                 else
                 {
-                    return Ok(OpreationResultMessageFactory<WorkingAreaT>.CreateErrorResponse());
+                    return Ok(ResultFactory<WorkingAreaT>.CreateErrorResponse());
                 }
             }
             catch (Exception ex)
             {
-                return Ok(OpreationResultMessageFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
+                return Ok(ResultFactory<List<ValueWithIdDto>>.CreateExceptionResponse(ex));
             }
 
         }

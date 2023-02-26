@@ -8,6 +8,7 @@ namespace SanyaaDelivery.Domain.Models
         public AccountT()
         {
             AccountRoleT = new HashSet<AccountRoleT>();
+            FirebaseCloudT = new HashSet<FirebaseCloudT>();
             TokenT = new HashSet<TokenT>();
         }
 
@@ -28,6 +29,7 @@ namespace SanyaaDelivery.Domain.Models
         public string ResetPasswordToken { get; set; }
         public DateTime? LastResetPasswordRequestTime { get; set; }
         public sbyte PasswordResetCountWithinDay { get; set; }
+        public string FcmToken { get; set; }
         public bool? IsActive { get; set; }
         public DateTime CreationDate { get; set; }
         public int SystemUserId { get; set; }
@@ -35,6 +37,7 @@ namespace SanyaaDelivery.Domain.Models
         public AccountTypeT AccountType { get; set; }
         public SystemUserT SystemUser { get; set; }
         public ICollection<AccountRoleT> AccountRoleT { get; set; }
+        public ICollection<FirebaseCloudT> FirebaseCloudT { get; set; }
         public ICollection<TokenT> TokenT { get; set; }
     }
 }

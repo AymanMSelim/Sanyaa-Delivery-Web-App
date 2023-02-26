@@ -9,9 +9,9 @@ namespace App.Global.SMS
     public class SMSMisrService : ISMSService
     {
         static RestAPI.APIService APIService = new RestAPI.APIService("https://smsmisr.com/");
-        private static string _username = "of72I6GBoY";
-        private static string _password = "g3BfKxSVtY";
-        private static string _sender = "Sany3eDlvry";
+        private static string _username = "";
+        private static string _password = "";
+        private static string _sender = "";
 
         public static void SetParameters(string username, string password, string sender)
         {
@@ -22,6 +22,10 @@ namespace App.Global.SMS
 
         public static Task<bool> SendSmsAsync(string languange, string mobile, string message)
         {
+
+            //WhatsApp.WhatsAppService whatsApp = new WhatsApp.WhatsAppService();
+            //whatsApp.SendOTP(mobile, message);
+            //return null;
             SMSMisrService sMSMisrService = new SMSMisrService();
             return sMSMisrService.SendSms(languange, mobile, message);
         }

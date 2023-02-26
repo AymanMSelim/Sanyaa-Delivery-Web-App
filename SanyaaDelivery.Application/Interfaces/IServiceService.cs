@@ -21,9 +21,9 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<ServiceT>> GetListByDepartmentSub1Async(int departmentSub1Id);
         Task<List<ServiceT>> GetOfferListByDepartmentSub1Async(int departmentSub1Id);
         Task<int> DeleteAsync(int serviceId);
-        Task<List<ServiceT>> GetServiceList(int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null);
-        Task<List<ServiceCustom>> GetCustomServiceList(int clientId, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null);
-        Task<List<ServiceCustom>> ConvertServiceToCustom(List<ServiceT> serviceList, int clientId);
+        Task<List<ServiceT>> GetServiceList(int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, string searchValue = null);
+        Task<List<ServiceCustom>> GetCustomServiceList(int clientId, int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, int? requestId = null, string searchValue = null);
+        Task<List<ServiceCustom>> ConvertServiceToCustom(List<ServiceT> serviceList, int clientId, int? requestId = null);
         Task<List<ServiceCustom>> ConvertServiceToCustomMultiDepartment(List<ServiceT> serviceList, int clientId);
     }
 }

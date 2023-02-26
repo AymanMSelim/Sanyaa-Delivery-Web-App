@@ -10,11 +10,14 @@ namespace SanyaaDelivery.Application
 {
     public interface IGeneralSetting
     {
-
+        int CurrentClientId { get; set; }
+        bool CurrentIsViaApp { get; set; }
     }
 
     public class GeneralSetting : IGeneralSetting
     {
+        public int CurrentClientId { get; set; }
+        public bool CurrentIsViaApp { get; set; }
         public static int CustomerAccountTypeId
         {
             get
@@ -47,6 +50,14 @@ namespace SanyaaDelivery.Application
             }
         }
 
+        public static int GuestRoleId
+        {
+            get
+            {
+                return RoleList.Where(a => a.RoleName == "Guest").FirstOrDefault().RoleId;
+            }
+        }
+
         public static int EmployeeRoleId
         {
             get
@@ -69,16 +80,20 @@ namespace SanyaaDelivery.Application
 
         private static List<TranslatorT> _translationList;
 
+        private static List<RequestStatusT> _requestStatusList;
+
         public static List<RoleT> RoleList { get => _roleList; private set => _roleList = value; }
 
         public static List<AccountTypeT> AccountTypeList { get => _accountTypeList; private set => _accountTypeList = value; }
+        
+        public static List<RequestStatusT> RequestStatusList { get => _requestStatusList; private set => _requestStatusList = value; }
 
         public static List<AppSettingT> AppSetting { get => _appSettingList; private set => _appSettingList = value; }
 
         public static List<TranslatorT> TranslationList { get => _translationList; private set => _translationList = value; }
 
         public GeneralSetting(Interfaces.IAccountTypeService accountTypeService, 
-            Interfaces.IRoleService roleService, Interfaces.IAppSettingService appSettingService, 
+            Interfaces.IRoleService roleService, Interfaces.IAppSettingService appSettingService, IRequestStatusService requestStatusService,
             IConfiguration configuration)
         {
             _accountTypeService = accountTypeService;
@@ -96,12 +111,18 @@ namespace SanyaaDelivery.Application
             {
                 _appSettingList = appSettingService.GetListAsync().Result;
             }
+            if(_requestStatusList == null)
+            {
+                _requestStatusList = requestStatusService.GetListAsync().Result;
+            }
             OTPExpireMinutes = configuration.GetValue<int>("OTPExpireMinutes");
         }
         
         public const int TokenExpireInDays = 30;
         
         public const int CustomerAppSystemUserId = 500;
+
+        public const int SystemUserDefaultRoleId = 1;
 
         public const int CustomerAppDefaultRoleId = 2;
 
@@ -118,8 +139,15 @@ namespace SanyaaDelivery.Application
         private const int DefaultPointsPerEGP = 15;
 
         private const decimal DefaultPromocodeCompanyDiscountPercentage = 100;
+        private const decimal DefaultPointsCompanyDiscountPercentage = 100;
 
         private const int DefaultCity = 11;
+
+        private const decimal DefaultEmployeePercentage = 70;
+
+        private const int DefaultCleaningDepartmentId = 12;
+
+        private const int DefaultRequestExcutionHours = 3;
          
         public static bool IsEmailVerificationRequired
         {
@@ -211,6 +239,18 @@ namespace SanyaaDelivery.Application
                 return Convert.ToDecimal(setting.SettingValue);
             }
         }
+        public static decimal PointsCompanyDiscountPercentage
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "PointsCompanyDiscountPercentage");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultPointsCompanyDiscountPercentage;
+                }
+                return Convert.ToDecimal(setting.SettingValue);
+            }
+        }
 
         public static int DefaultCityId
         {
@@ -224,5 +264,46 @@ namespace SanyaaDelivery.Application
                 return Convert.ToInt32(setting.SettingValue);
             }
         }
+
+        public static decimal EmployeePercentage
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "DefaultEmployeePercentage");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultEmployeePercentage;
+                }
+                return Convert.ToDecimal(setting.SettingValue);
+            }
+        }
+
+
+        public static int CleaningDepartmentId
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "CleaningDepartmentId");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultCleaningDepartmentId;
+                }
+                return Convert.ToInt32(setting.SettingValue);
+            }
+        }
+         public static int RequestExcutionHours
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "RequestExcutionHours");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultRequestExcutionHours;
+                }
+                return Convert.ToInt32(setting.SettingValue);
+            }
+        }
+
+
     }
 }

@@ -11,7 +11,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<int> AddAsync(ClientPointT clientPoint);
         Task<int> WithdrawAsync(ClientPointT clientPoint);
-        Task<List<ClientPointT>> GetListAsync(int clientId, ClientPointType type);
+        Task<List<ClientPointT>> GetListAsync(int clientId, ClientPointType? type = null);
         Task<ClientPointT> GetAsync(int id);
         Task<int> DeletetAsync(int id);
         Task<int> UpdateAsync(ClientPointT clientPoint);
