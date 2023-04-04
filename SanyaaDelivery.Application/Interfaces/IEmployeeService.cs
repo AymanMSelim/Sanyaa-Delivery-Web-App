@@ -1,5 +1,6 @@
 ﻿using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Domain.OtherModels;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -48,5 +49,7 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<List<FollowUpT>> GetReviewListAsync(string employeeId);
         Task<List<FollowUpT>> GetReviewListAsync(List<string> employeeIdList);
+        Task<AppReviewIndexDto> GetAppReviewIndexAsync(string employeeId);
+        Task<bool> IsThisEmployeeExist(string natioalNumber);
     }
 }

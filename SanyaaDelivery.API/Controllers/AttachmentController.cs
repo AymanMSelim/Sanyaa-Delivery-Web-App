@@ -1,4 +1,5 @@
 ﻿using App.Global.DTOs;
+using App.Global.ExtensionMethods;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -94,8 +95,12 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
+                var attachmentList = new List<AttachmentT>();
                 var cart = await commonService.GetCurrentClientCartAsync(clientId);
-                var attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cart.CartId.ToString());
+                if (cart.IsNotNull())
+                {
+                    attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cart.CartId.ToString());
+                }
                 return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
             }
             catch (Exception ex)
@@ -103,5 +108,36 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
             }
         }
+
+        [HttpPost("AddLandingScreenImage")]
+        public async Task<ActionResult<Result<AttachmentT>>> AddLandingScreenImage()
+        {
+            try
+            {
+                if (Request.Form.Files== null || Request.Form.Files.Count == 0)
+                {
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessage("No file found"));
+                }
+                var file = Request.Form.Files[0];
+                if (commonService.IsFileValid(file) == false)
+                {
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessage("File not valid"));
+                }
+                var fileExtention = System.IO.Path.GetExtension(file.FileName);
+                fileExtention = fileExtention.Replace(".", "");
+                var byteArray = commonService.ConvertFileToByteArray(file);
+                var attachment = await attachmentService.SaveFileAsync(byteArray, (int)Domain.Enum.AttachmentType.AppLandingItem,
+                    "LandingScreen", fileExtention, "Public");
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachment, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+       
+
+
     }
 }

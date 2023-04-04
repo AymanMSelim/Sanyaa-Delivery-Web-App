@@ -34,11 +34,18 @@ namespace App.Global.Fawry
         }
         public async Task<Models.Fawry.FawryRefNumberResponse> GetRefNumberAsync()
         {
-            _fawryRequest.Signature = SetSignature();
+            _fawryRequest.Signature = SignRequest();
             return await fawryApi.PostAsync<Models.Fawry.FawryRefNumberResponse>("/ECommerceWeb/Fawry/payments/charge", _fawryRequest);
         }
 
-        public string SetSignature()
+        public async Task<Models.Fawry.FawryStatusResponse> GetStatusAsync(int systemId, string marchantCode, string securityCode)
+        {
+            string signature = Encreption.Hashing.ComputeSha256Hash(marchantCode + systemId + securityCode);
+            var url = $"/ECommerceWeb/Fawry/payments/status?merchantCode={marchantCode}&merchantRefNumber={systemId}&signature={signature}";
+            return await fawryApi.GetResponseAsync<Models.Fawry.FawryStatusResponse>(url);
+        }
+
+        public string SignRequest()
         {
             return Encreption.Hashing.ComputeSha256Hash(
                 _fawryRequest.MerchantCode +

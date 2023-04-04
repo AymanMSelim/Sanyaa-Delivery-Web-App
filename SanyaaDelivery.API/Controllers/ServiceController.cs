@@ -284,7 +284,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 if (mainDepartmentId.IsNull() && departmentSub0Id.IsNull() && departmentSub1Id.IsNull() && string.IsNullOrEmpty(searchValue))
                 {
-                    return  Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.InvalidData, "All parameters is null"));
+                    return  Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.InvalidData, "All department is null"));
                 }
                 var list = await serviceService.GetCustomServiceList(clientId.Value, mainDepartmentId, departmentSub0Id, departmentSub1Id, getOffer, requestId, searchValue);
                 return Ok(ResultFactory<List<ServiceCustom>>.CreateSuccessResponse(list));

@@ -36,91 +36,102 @@ namespace SanyaaDelivery.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["TokenKey"])),
-                        ValidateAudience = false,
-                        ValidateIssuer = false
-                    };
-                });
-            services.AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
-            services.AddDbContext<SanyaaDatabaseContext>(options =>
-                options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")).EnableSensitiveDataLogging(true).UseLoggerFactory(new LoggerFactory().AddConsole()));
-            DependencyContainer.RegisterServices(services);
-            services.AddHttpContextAccessor();
-            services.AddScoped<CommonService>();
-            services.AddCors();
-            services.AddSwaggerGen(c => c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
+            try
             {
-                Version = "v1",
-                Title = "Sanyaa API",
-                Description = "List of Api's.",
-                Contact = new Swashbuckle.AspNetCore.Swagger.Contact
+                services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+               .AddJwtBearer(options =>
+               {
+                   options.TokenValidationParameters = new TokenValidationParameters
+                   {
+                       ValidateIssuerSigningKey = true,
+                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["TokenKey"])),
+                       ValidateAudience = false,
+                       ValidateIssuer = false
+                   };
+               });
+                services.AddMvc()
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+                services.AddDbContext<SanyaaDatabaseContext>(options =>
+                    options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")));
+                DependencyContainer.RegisterServices(services);
+                services.AddHttpContextAccessor();
+                services.AddScoped<CommonService>();
+                services.AddCors();
+                services.AddSwaggerGen(c => c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
                 {
-                    Name = "Test site",
-                    Email = string.Empty
-                },
+                    Version = "v1",
+                    Title = "Sanyaa API",
+                    Description = "List of Api's.",
+                    Contact = new Swashbuckle.AspNetCore.Swagger.Contact
+                    {
+                        Name = "Test site",
+                        Email = string.Empty
+                    },
+                }
+                ));
+                App.Global.SMS.SMSMisrService.SetParameters(
+                    Configuration.GetValue<string>("SMSMisrUsername"),
+                    Configuration.GetValue<string>("SMSMisrPassword"),
+                    Configuration.GetValue<string>("SMSMisrSender"),
+                    Configuration.GetValue<string>("SMSMisrEnvironment")
+                    );
             }
-            ));
-            //App.Global.SMS.SMSMisrService.SetParameters(
-            //    Configuration.GetConnectionString("SMSMisrUsername"),
-            //    Configuration.GetConnectionString("SMSMisrPassword"),
-            //    Configuration.GetConnectionString("SMSMisrSender")
-            //    );
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
+           
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, Application.IGeneralSetting generalSetting, ITranslationService translationService)
         {
-            if (env.IsDevelopment())
+            try
             {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseHsts();
-            }
-            app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
-            app.UseHttpsRedirection();
-            app.UseAuthentication();
-            app.UseStaticFiles(new StaticFileOptions()
-            {
-                OnPrepareResponse = (context) =>
+                if (env.IsDevelopment())
                 {
-                    if (!context.File.PhysicalPath.ToLower().Contains("public") && !context.Context.User.Identity.IsAuthenticated)
-                    {
-                        throw new Exception("Not authenticated");
-                    }
+                    app.UseDeveloperExceptionPage();
                 }
-            });
-            //app.UseExceptionHandler(c => c.Run(async context =>
-            //{
-            //    var exception = context.Features
-            //        .Get<IExceptionHandlerPathFeature>()
-            //        .Error;
-            //    var response = new { error = exception.Message };
-            //    await context.Response.(response);
-            //}));
-            app.UseMvc();
-            app.UseSwagger();
-            app.UseSwaggerUI(c => {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
-            });
-            if(App.Global.Translation.Translator.TranslationList == null)
-            {
-                App.Global.Translation.Translator.TranslationList = translationService.GetList().Select(d => new App.Global.Translation.Translation
+                else
                 {
-                    Key = d.Key,
-                    LangId = d.LangId,
-                    Value = d.Value
-                }).ToList();
+                    app.UseHsts();
+                }
+                app.UseMiddleware<RequestTimerMiddleware>();
+                app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+                app.UseHttpsRedirection();
+                app.UseAuthentication();
+                app.UseStaticFiles(new StaticFileOptions()
+                {
+                    OnPrepareResponse = (context) =>
+                    {
+                        if (!context.File.PhysicalPath.ToLower().Contains("public") && !context.Context.User.Identity.IsAuthenticated)
+                        {
+                            throw new Exception("Not authenticated");
+                            //context.Response.WriteAsJsonAsync(response);
+                        }
+                    }
+                });
+                //app.UseExceptionHandler(c => c.Run(async context =>
+                //{
+                //    var exception = context.Features
+                //        .Get<IExceptionHandlerPathFeature>()
+                //        .Error;
+                //    var response = new { error = exception.Message };
+                //    await context.Response.(response);
+                //}));
+                app.UseMvc();
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
+                });
+                App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json");
+
             }
-            //App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json");
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
         }
     }
 }

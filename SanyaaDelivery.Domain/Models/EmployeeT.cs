@@ -7,6 +7,7 @@ namespace SanyaaDelivery.Domain.Models
     {
         public EmployeeT()
         {
+            BroadcastRequestT = new HashSet<BroadcastRequestT>();
             ClientSubscriptionT = new HashSet<ClientSubscriptionT>();
             DepartmentEmployeeT = new HashSet<DepartmentEmployeeT>();
             EmployeeReviewT = new HashSet<EmployeeReviewT>();
@@ -39,16 +40,24 @@ namespace SanyaaDelivery.Domain.Models
         public string EmployeeDes { get; set; }
         public string EmployeeRelativeName { get; set; }
         public string EmployeeRelativePhone { get; set; }
-        public DateTime EmployeeHireDate { get; set; }
+        public DateTime? EmployeeHireDate { get; set; }
         public sbyte? EmployeePercentage { get; set; }
         public sbyte? EmployeeType { get; set; }
         public string EmployeeImageUrl { get; set; }
         public int? SubscriptionId { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsDataComplete { get; set; }
+        public bool IsNewEmployee { get; set; }
+        public bool IsApproved { get; set; }
+        public int SystemId { get; set; }
 
         public EmployeeSubscriptionT Subscription { get; set; }
+        public SystemUserT System { get; set; }
         public EmployeeLocation EmployeeLocation { get; set; }
         public FiredStaffT FiredStaffT { get; set; }
         public LoginT LoginT { get; set; }
+        public OpreationT OpreationT { get; set; }
+        public ICollection<BroadcastRequestT> BroadcastRequestT { get; set; }
         public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }
         public ICollection<DepartmentEmployeeT> DepartmentEmployeeT { get; set; }
         public ICollection<EmployeeReviewT> EmployeeReviewT { get; set; }

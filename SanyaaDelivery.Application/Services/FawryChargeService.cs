@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using App.Global.DateTimeHelper;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -42,6 +43,13 @@ namespace SanyaaDelivery.Application.Services
                 query = query.Include(d => d.FawryChargeRequestT);
             }
             return query.FirstOrDefaultAsync();
+        }
+
+        public Task<bool> IsThisChargeExistAsync(string employeeId, decimal amount)
+        {
+            return fawryChargeRepository.DbSet.AnyAsync(d => d.EmployeeId == employeeId && d.ChargeAmount == amount
+            && d.ChargeStatus != App.Global.Enums.FawryRequestStatus.PAID.ToString()
+            && d.ChargeExpireDate < DateTime.Now.EgyptTimeNow());
         }
 
         public Task<FawryChargeT> GetByReferenceNumberAsync(long referenceNumber, bool includeRequest = false)

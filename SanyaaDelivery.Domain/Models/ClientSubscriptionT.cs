@@ -17,12 +17,13 @@ namespace SanyaaDelivery.Domain.Models
         public int? AddressId { get; set; }
         public int? PhoneId { get; set; }
         public string EmployeeId { get; set; }
-        public DateTime? VisitTime { get; set; }
         public DateTime? ExpireDate { get; set; }
+        public bool AutoRenew { get; set; }
+        public DateTime? VisitTime { get; set; }
+        public bool IsCanceled { get; set; }
+        public bool IsActive { get; set; }
         public DateTime? CreationTime { get; set; }
         public int SystemUserId { get; set; }
-        public bool IsCanceled { get; set; }
-        public bool AutoRenew { get; set; }
 
         public AddressT Address { get; set; }
         public ClientT Client { get; set; }

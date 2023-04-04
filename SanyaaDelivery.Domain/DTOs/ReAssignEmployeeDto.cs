@@ -8,5 +8,7 @@ namespace SanyaaDelivery.Domain.DTOs
     {
         public string EmployeeId { get; set; }
         public int RequestId { get; set; }
+        public DateTime? RequestTime { get; set; }
+        public bool SkipCheckEmployee { get; set; }
     }
 }

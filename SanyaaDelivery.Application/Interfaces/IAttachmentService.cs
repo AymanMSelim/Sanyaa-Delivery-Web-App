@@ -14,7 +14,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> DeleteAsync(int id);
         Task<int> DeleteByReferenceAsync(int type, string referenceId);
         Task<List<AttachmentT>> GetListAsync(int type, string referenceId);
-        Task<int> SaveFileAsync(Stream stream, int type, string referenceId);
+        Task<AttachmentT> SaveFileAsync(byte[] data, int type, string referenceId, string extension, string folder = "Attachment", string domain = "");
         Task<int> DeleteFileAsync(AttachmentT attachment);
 
 

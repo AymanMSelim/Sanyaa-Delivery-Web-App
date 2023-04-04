@@ -14,7 +14,9 @@ using SanyaaDelivery.Application;
 using App.Global.DTOs;
 using SanyaaDelivery.Domain;
 using App.Global.ExtensionMethods;
+using App.Global.DateTimeHelper;
 using System.Security.Claims;
+using SanyaaDelivery.API.Dto;
 
 namespace SanyaaDelivery.API.Controllers
 {
@@ -48,18 +50,18 @@ namespace SanyaaDelivery.API.Controllers
             this.commonService = commonService;
         }
 
-        [AllowAnonymous]
-        [HttpGet("GetToken")]
-        public object GetToken()
-        {
-            return Ok(
-                   new
-                   {
-                       Username = "AymanSelim",
-                       Token = tokenService.CreateToken(new AccountT { AccountId = 52, AccountTypeId = 3, AccountReferenceId = "10516", AccountUsername = "01090043513", AccountRoleT = new List<AccountRoleT> { new AccountRoleT {  Role = new RoleT { RoleName = "CustomerApp" } } } }),
-                       TokenExpireDate = DateTime.Now.AddDays(30),
-                   });
-        }
+        //[AllowAnonymous]
+        //[HttpGet("GetToken")]
+        //public object GetToken()
+        //{
+        //    return Ok(
+        //           new
+        //           {
+        //               Username = "AymanSelim",
+        //               Token = tokenService.CreateToken(new AccountT { AccountId = 52, AccountTypeId = 3, AccountReferenceId = "10516", AccountUsername = "01090043513", AccountRoleT = new List<AccountRoleT> { new AccountRoleT {  Role = new RoleT { RoleName = "CustomerApp" } } } }),
+        //               TokenExpireDate = DateTime.Now.AddDays(30),
+        //           });
+        //}
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -398,6 +400,130 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("RegisterEmployee")]
+        public async Task<ActionResult<Result<EmployeeRegisterResponseDto>>> RegisterEmployee(EmployeeRegisterDto employeeRegisterDto)
+        {
+            try
+            {
+                var result = await registerService.RegisterEmployee(employeeRegisterDto, commonService.GetSystemUserId());
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmployeeRegisterResponseDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("LoginEmployee")]
+        public async Task<ActionResult<Result<EmployeeLoginResponseDto>>> LoginEmployee(LoginEmployeeDto model)
+        {
+            try
+            {
+                var result = await loginService.LoginEmployee(model);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmployeeLoginResponseDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("ConfirmOtp")]
+        public async Task<ActionResult<Result<bool>>> ConfirmOtp(ConfirmOtpDto confirmOtpDto)
+        {
+            try
+            {
+                var result = await accountService.ConfirmOtp(confirmOtpDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("CompleteEmployeePersonalData")]
+        public async Task<ActionResult<Result<string>>> CompleteEmployeePersonalData([FromForm] CompleteEmployeePersonalDataDto model)
+        {
+            try
+            {
+                var isValid = commonService.IsFileValid(model.ProfilePic);
+                if (isValid == false)
+                {
+                    return Ok(ResultFactory<string>.FileValidationError("ProfilePicture"));
+                }
+                isValid = commonService.IsFileValid(model.NationalIdBack);
+                if (isValid == false)
+                {
+                    return Ok(ResultFactory<string>.FileValidationError("NationalIdBack"));
+                }
+                isValid = commonService.IsFileValid(model.NationalIdFront);
+                if (isValid == false)
+                {
+                    return Ok(ResultFactory<string>.FileValidationError("NationalIdFront"));
+                }
+                if (string.IsNullOrEmpty(model.PhoneNumber) || string.IsNullOrEmpty(model.NationalId) || string.IsNullOrEmpty(model.RelativeName) || string.IsNullOrEmpty(model.RelativePhone))
+                {
+                    return Ok(ResultFactory<string>.CreateModelNotValidResponse("Data not valid"));
+                }
+                var result = await registerService.CompleteEmployeePersonalData(model.PhoneNumber, model.NationalId, model.RelativeName, model.RelativePhone,
+                    commonService.ConvertFileToByteArray(model.ProfilePic), commonService.ConvertFileToByteArray(model.NationalIdFront), commonService.ConvertFileToByteArray(model.NationalIdBack));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<string>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("CompleteEmployeeAddress")]
+        public async Task<ActionResult<Result<string>>> CompleteEmployeeAddress(EmployeeAddressDto model)
+        {
+            try
+            {
+                var affectedRows = await registerService.CompleteEmployeeAddress(model);
+                return Ok(ResultFactory<string>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<string>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("CompleteEmployeeWorkingData")]
+        public async Task<ActionResult<Result<string>>> CompleteEmployeeWorkingData(EmployeeWorkingDataDto model)
+        {
+            try
+            {
+                if(model.Departments.IsEmpty() || model.CityId == 0 || string.IsNullOrEmpty(model.NationalId))
+                {
+                    return Ok(ResultFactory<string>.CreateErrorResponseMessageFD("Data not complete"));
+                }
+                var affectedRows = await registerService.CompleteEmployeeWorkingData(model);
+                return Ok(ResultFactory<string>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<string>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetEmployeeRegisterStep/{nationalId}")]
+        public async Task<ActionResult<Result<EmployeeRegisterStepDto>>> GetEmployeeRegisterStep(string nationalId)
+        {
+            try
+            {
+                var result = await registerService.GetEmployeeRegisterStep(nationalId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmployeeRegisterStepDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [AllowAnonymous]
         [HttpPost("ConfirmOTPCode")]
         public async Task<ActionResult<Result<ClientT>>> ConfirmRegisterOTPCode(int? clientId, string phone, string otpCode, string signature)
         {
@@ -473,34 +599,53 @@ namespace SanyaaDelivery.API.Controllers
             Result<OTPCodeDto> response;
             try
             {
-                if (!clientId.HasValue || string.IsNullOrEmpty(phone) || string.IsNullOrEmpty(signature))
+                //if (!clientId.HasValue)
+                //{
+                //    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("ClientId is empty", App.Global.Enums.ResultStatusCode.EmptyData);
+                //    return Ok(response);
+                //}
+                if (string.IsNullOrEmpty(phone))
                 {
-                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Empty data", App.Global.Enums.ResultStatusCode.EmptyData);
+                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Phone is empty", App.Global.Enums.ResultStatusCode.EmptyData);
                     return Ok(response);
                 }
-
-                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, clientId.ToString());
+                //if (string.IsNullOrEmpty(signature))
+                //{
+                //    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Signature is empty", App.Global.Enums.ResultStatusCode.EmptyData);
+                //    return Ok(response);
+                //}
+                var client = await clientService.GetByPhone(phone);
+                if (client.IsNull())
+                {
+                    response = ResultFactory<OTPCodeDto>.CreateNotFoundResponse("This client not found");
+                    return Ok(response);
+                }
+                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, client.ClientId.ToString());
                 if (account == null)
                 {
                     response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("This client not found", App.Global.Enums.ResultStatusCode.NotFound);
                     return Ok(response);
                 }
 
-                if (!HttpContext.User.Identity.IsAuthenticated && App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + account.AccountSecurityCode).ToLower() != signature.ToLower())
-                {
-                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Enums.ResultStatusCode.InvalidSignature);
-                    return Ok(response);
-                }
+                //if (!HttpContext.User.Identity.IsAuthenticated && App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + account.AccountSecurityCode).ToLower() != signature.ToLower())
+                //{
+                //    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Enums.ResultStatusCode.InvalidSignature);
+                //    return Ok(response);
+                //}
 
                 if (accountService.IsMaxOtpPerDayReached(account))
                 {
                     response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Maximum otp has been reached", App.Global.Enums.ResultStatusCode.MaximumCountReached);
                     return Ok(response);
                 }
+                if (account.LastOtpCreationTime.HasValue && DateTime.Now.EgyptTimeNow() < account.LastOtpCreationTime.Value.AddSeconds(60))
+                {
+                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("You can't request 2 otp code at the same time, please wait 1 minute at least", App.Global.Enums.ResultStatusCode.MaximumCountReached);
+                }
                 account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
-                account.LastOtpCreationTime = DateTime.Now;
+                account.LastOtpCreationTime = DateTime.Now.EgyptTimeNow();
                 int affectedRecord = await accountService.Update(account);
-                _ = App.Global.SMS.SMSMisrService.SendSmsAsync("2", phone, $"Your SanyaaDelivery code is {account.MobileOtpCode}");
+                _ = App.Global.SMS.SMSMisrService.SendOTPAsync(phone, account.MobileOtpCode);
                 if (affectedRecord < 0)
                 {
                     return Ok(ResultFactory<OTPCodeDto>.CreateErrorResponse());
@@ -540,20 +685,25 @@ namespace SanyaaDelivery.API.Controllers
                 var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, client.ClientId.ToString());
                 if (account == null)
                 {
-                    account = await registerService.RegisterClientAccount(client, new ClientRegisterDto { Phone = clientPhone });
+                    account = await registerService.RegisterClientAccount(client, new ClientRegisterDto { Phone = clientPhone, Email = client.ClientEmail, Name = client.ClientName, Password = clientPhone });
                 }
                 if (account.IsDeleted)
+                {
                     return Ok(ResultFactory<object>.CreateErrorResponseMessageFD("This client not found", App.Global.Enums.ResultStatusCode.NotFound));
-
+                }
                 if (accountService.IsMaxOtpPerDayReached(account))
                 {
-                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessage("Maximum otp has been reached", App.Global.Enums.ResultStatusCode.MaximumCountReached);
+                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessageFD("Maximum otp has been reached", App.Global.Enums.ResultStatusCode.MaximumCountReached);
                     return Ok(response);
                 }
+                if (account.LastOtpCreationTime.HasValue && DateTime.Now.EgyptTimeNow() < account.LastOtpCreationTime.Value.AddSeconds(60))
+                {
+                    response = ResultFactory<OTPCodeDto>.CreateErrorResponseMessageFD("You can't request 2 otp code at the same time, please wait 1 minute at least", App.Global.Enums.ResultStatusCode.MaximumCountReached);
+                }
                 account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
-                account.LastOtpCreationTime = DateTime.Now;
+                account.LastOtpCreationTime = DateTime.Now.EgyptTimeNow();
                 int affectedRecord = await accountService.Update(account);
-                _ = App.Global.SMS.SMSMisrService.SendSmsAsync("2", clientPhone, $"Your SanyaaDelivery code is {account.MobileOtpCode}");
+                _ = App.Global.SMS.SMSMisrService.SendOTPAsync(clientPhone, account.MobileOtpCode);
                 if (affectedRecord < 0)
                 {
                     return Ok(ResultFactory<OTPCodeDto>.CreateErrorResponse());
@@ -636,7 +786,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return ResultFactory<object>.CreateErrorResponse();
                 }
-                _ = App.Global.SMS.SMSMisrService.SendSmsAsync("2", phoneNumber, $"Your SanyaaDelivery code is {account.MobileOtpCode} expired after {GeneralSetting.OTPExpireMinutes} minutes");
+                _ = App.Global.SMS.SMSMisrService.SendOTPAsync(phoneNumber, account.MobileOtpCode);
                 return ResultFactory<object>.CreateSuccessResponse(new { OtpCode = account.MobileOtpCode, AccountId = account.AccountId });
             }
             catch (Exception ex)
@@ -850,6 +1000,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-
+        [Authorize(Roles ="Admin")]
+        [HttpGet("GetOTP")]
+        public async Task<ActionResult<Result<string>>> GetOTP(int? accountId = null, int? clientId = null, string employeeId = null)
+        {
+            try
+            {
+                var otp = await accountService.GetOTPAsync(accountId, clientId, employeeId);
+                return Ok(ResultFactory<string>.CreateSuccessResponse(otp));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<string>.CreateExceptionResponse(ex));
+            }
+        }
     }
 }

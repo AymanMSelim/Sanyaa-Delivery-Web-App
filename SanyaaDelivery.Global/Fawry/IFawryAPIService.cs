@@ -8,7 +8,8 @@ namespace App.Global.Interfaces
     public interface IFawryAPIService
     {
         void SetFawryRequest(Models.Fawry.FawryRequest fawryRequest, string securityCode);
-        string SetSignature();
+        string SignRequest();
         Task<Models.Fawry.FawryRefNumberResponse> GetRefNumberAsync();
+        Task<Models.Fawry.FawryStatusResponse> GetStatusAsync(int systemId, string marchantCode, string securityCode);
     }
 }

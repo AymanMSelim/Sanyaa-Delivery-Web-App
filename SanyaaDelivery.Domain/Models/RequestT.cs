@@ -8,6 +8,7 @@ namespace SanyaaDelivery.Domain.Models
         public RequestT()
         {
             BillNumberT = new HashSet<BillNumberT>();
+            BroadcastRequestT = new HashSet<BroadcastRequestT>();
             EmployeeReviewT = new HashSet<EmployeeReviewT>();
             FawryChargeRequestT = new HashSet<FawryChargeRequestT>();
             FollowUpT = new HashSet<FollowUpT>();
@@ -70,6 +71,7 @@ namespace SanyaaDelivery.Domain.Models
         public PaymentT PaymentT { get; set; }
         public RequestStagesT RequestStagesT { get; set; }
         public ICollection<BillNumberT> BillNumberT { get; set; }
+        public ICollection<BroadcastRequestT> BroadcastRequestT { get; set; }
         public ICollection<EmployeeReviewT> EmployeeReviewT { get; set; }
         public ICollection<FawryChargeRequestT> FawryChargeRequestT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }

@@ -31,7 +31,8 @@ namespace SanyaaDelivery.Application.Services
             SubscriptionSequenceT subscriptionSequence = new SubscriptionSequenceT();
             int requestCount;
             var clientSubscription = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
-                .Include(d => d.SubscriptionService).ThenInclude(d => d.SubscriptionSequenceT)
+                .Include(d => d.SubscriptionService)
+                .ThenInclude(d => d.SubscriptionSequenceT)
                 .FirstOrDefaultAsync();
             var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscription.ClientId && d.IsCanceled == false &&
             d.RequestTimestamp >= App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS(requestTime) &&

@@ -14,10 +14,15 @@ namespace SanyaaDelivery.API.Controllers
     public class EmployeeAccountController : APIBaseAuthorizeController
     {
         private readonly IEmployeeAppAccountService appAccountService;
+        private readonly CommonService commonService;
+        private readonly IRegisterService registerService;
 
-        public EmployeeAccountController(IEmployeeAppAccountService appAccountService)
+        public EmployeeAccountController(IEmployeeAppAccountService appAccountService, CommonService commonService,
+            IRegisterService registerService)
         {
             this.appAccountService = appAccountService;
+            this.commonService = commonService;
+            this.registerService = registerService;
         }
 
         [HttpGet("Get/{employeeId}")]
@@ -73,10 +78,12 @@ namespace SanyaaDelivery.API.Controllers
                 EmployeeId = employeeId,
                 LastActive = account.LastActiveTimestamp.Value,
                 IsActive = account.LastActiveTimestamp > DateTime.Now.AddMinutes(-3),
-                IsEnabled = account.LoginAccountState.Value,
+                IsEnabled = account.LoginAccountState,
                 Message = account.LoginAccountDeactiveMessage
             });
         }
 
+
+       
     }
 }

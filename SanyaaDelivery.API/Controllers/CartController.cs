@@ -18,16 +18,19 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly ICartService cartService;
         private readonly IServiceService serviceService;
+        private readonly ITranslationService translationService;
         private readonly CommonService commonService;
         private readonly IGeneralSetting generalSetting;
         private readonly IDayWorkingTimeService dayWorkingTimeService;
         private readonly IClientSubscriptionService clientSubscriptionService;
 
-        public CartController(ICartService cartService, IServiceService serviceService, 
-            CommonService commonService, IGeneralSetting generalSetting, IDayWorkingTimeService dayWorkingTimeService, IClientSubscriptionService clientSubscriptionService)
+        public CartController(ICartService cartService, IServiceService serviceService, ITranslationService translationService,
+            CommonService commonService, IGeneralSetting generalSetting, IDayWorkingTimeService dayWorkingTimeService,
+            IClientSubscriptionService clientSubscriptionService)
         {
             this.cartService = cartService;
             this.serviceService = serviceService;
+            this.translationService = translationService;
             this.commonService = commonService;
             this.generalSetting = generalSetting;
             this.dayWorkingTimeService = dayWorkingTimeService;
@@ -35,7 +38,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("AddService")]
-        public async Task<ActionResult<Result<CartDetailsT>>> AddService(int serviceId, int? clientId = null, int? serviceQuantity = 1)
+        public async Task<ActionResult<Result<CartDetailsT>>> AddService(int serviceId, int? clientId = null, int serviceQuantity = 1)
         {
             bool isViaApp = false;
             try
@@ -451,18 +454,17 @@ namespace SanyaaDelivery.API.Controllers
                 var affectedRows = await cartService.DeletetDetailsAsync(id);
                 if (affectedRows >= 0)
                 {
-                    var cart = await commonService.GetCurrentClientCartAsync();
-                    var cartDto = await cartService.GetCartForAppAsync(cart.CartId);
-                    if (cartDto.IsNull())
+                    var cartId = await commonService.GetCurrentClientCartIdAsync();
+                    if (cartId.HasValue)
                     {
-                        return Ok(ResultFactory<CartDto>.CreateErrorResponse());
+                        var cartDto = await cartService.GetCartForAppAsync(cartId.Value);
+                        if (cartDto.IsNotNull())
+                        {
+                            return Ok(ResultFactory<CartDto>.CreateSuccessResponse(cartDto));
+                        }
                     }
-                    return Ok(ResultFactory<CartDto>.CreateSuccessResponse(cartDto));
                 }
-                else
-                {
-                    return Ok(ResultFactory<CartDto>.CreateErrorResponse());
-                }
+                return Ok(ResultFactory<CartDto>.CreateErrorResponse());
             }
             catch (Exception ex)
             {
@@ -498,22 +500,53 @@ namespace SanyaaDelivery.API.Controllers
         [HttpGet("ValidateCart")]
         public async Task<ActionResult<Result<List<string>>>> ValidateCart(int? clientId = null)
         {
+            List<string> errorList = new List<string>();
             try
             {
-                var client = await commonService.GetClient(clientId);
+                var client = await commonService.GetClient(clientId, true, true);
                 if (client.IsGuest)
                 {
                     return Ok(ResultFactory<List<string>>.CreateRequireRegisterResponse(new List<string> 
                     { 
-                        "You must register first"
+                        translationService.Translate("You must register first")
                     }));
+                }
+                if (client.AddressT.IsEmpty())
+                {
+                    errorList.Add(translationService.Translate("You must add at least one address"));
+                }
+                else
+                {
+                    var defaultAddress = client.AddressT.FirstOrDefault(d => d.IsDefault);
+                    if (defaultAddress.IsNull())
+                    {
+                        errorList.Add(translationService.Translate("You must select a default address address"));
+                    }
+                    else
+                    {
+                        if (defaultAddress.GovernorateId.IsNull() ||
+                            defaultAddress.CityId.IsNull() ||
+                            defaultAddress.RegionId.IsNull() ||
+                            string.IsNullOrEmpty(defaultAddress.AddressStreet))
+                        {
+                            errorList.Add(translationService.Translate("You must complete your address"));
+                        }
+                    }
+                }
+                if (errorList.HasItem())
+                {
+                    return Ok(ResultFactory<List<string>>.CreateErrorResponse(errorList));
+                }
+                if (client.ClientPhonesT.IsEmpty())
+                {
+                    errorList.Add(translationService.Translate("You must add at least one mobile number"));
                 }
                 var cart = await commonService.GetCurrentClientCartAsync(clientId);
                 if (cart.IsNull())
                 {
                     return Ok(ResultFactory<List<string>>.CreateNotFoundResponse("Cart not found"));
                 }
-                return Ok(ResultFactory<List<string>>.CreateSuccessResponse(new List<string> { "Note1", "Note2", "Note3"}));
+                return Ok(ResultFactory<List<string>>.CreateSuccessResponse());
             }
             catch (Exception ex)
             {

@@ -11,7 +11,9 @@ namespace SanyaaDelivery.Infra.Data
         bool IsTransaction { get; }
         int NoOfTransaction { get; }
         Task<int> SaveAsync();
-        Task<int> CommitAsync();
-        void StartTransaction();
+        Task<int> CommitAsync(bool checkNoOfTransaction = true);
+        bool StartTransaction();
+        void RollBack();
+        void DisposeTransaction(bool checkNoOfTransaction = true);
     }
 }

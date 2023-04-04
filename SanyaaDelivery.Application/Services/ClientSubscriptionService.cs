@@ -76,7 +76,7 @@ namespace SanyaaDelivery.Application.Services
             bool includeDepartment = false, bool includeSubscriptionService = false, bool includeService = false,
             bool includeAddress = false, bool includePhone = false)
         {
-            var query = repo.Where(d => d.IsCanceled == false);
+            var query = repo.Where(d => d.IsCanceled == false && (d.ExpireDate == null || d.ExpireDate.Value > DateTime.Now.ToEgyptTime()));
             if (includeSubscription)
             {
                 if (includeDepartment)
@@ -118,29 +118,47 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> UnSubscripe(int id, int systemUserId)
         {
+            bool isRootTransaction = false;
             try
             {
-                unitOfWork.StartTransaction();
+                isRootTransaction = unitOfWork.StartTransaction();
                 var clientSubscription = await GetAsync(id);
+                if (clientSubscription.IsCanceled)
+                {
+                    return (int)App.Global.Enums.ResultStatusCode.Success;
+                }
                 clientSubscription.IsCanceled = true;
                 await UpdateAsync(clientSubscription);
-                var activeRequestList = await requestRepository.Where(d => d.ClientSubscriptionId == id && d.IsCanceled == false && d.IsCompleted == false)
+                var activeRequestList = await requestRepository
+                    .Where(d => d.ClientSubscriptionId == id && d.IsCanceled == false && d.IsCompleted == false)
                     .ToListAsync();
                 if (activeRequestList.HasItem())
                 {
                     foreach (var item in activeRequestList)
                     {
-                        var affectedRows = await requestService.CancelAsync(item.RequestId, "Cancel subscription", systemUserId, false);
+                        var cancelResult = await requestService.CancelAsync(item.RequestId, "Cancel subscription", systemUserId, false);
+                        if (cancelResult.IsFail)
+                        {
+                            return (int)App.Global.Enums.ResultStatusCode.Failed;
+                        }
                     }
                 }
-                return await unitOfWork.CommitAsync();
+                if (isRootTransaction)
+                {
+                    return await unitOfWork.CommitAsync(false);
+                }
+                return (int)App.Global.Enums.ResultStatusCode.Success;
+            }
+            catch(Exception ex)
+            {
+                unitOfWork.RollBack();
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
             }
             finally
             {
-                unitOfWork.Dispose();
+                unitOfWork.DisposeTransaction(false);
             }
-            
-
         }
 
         public Task<int> UpdateAsync(ClientSubscriptionT clientSubscription)

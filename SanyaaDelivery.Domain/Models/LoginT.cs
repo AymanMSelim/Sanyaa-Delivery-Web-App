@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Domain.Models
         public string EmployeeId { get; set; }
         public DateTime? LastActiveTimestamp { get; set; }
         public string LoginPassword { get; set; }
-        public bool? LoginAccountState { get; set; }
+        public bool LoginAccountState { get; set; }
         public string LoginAvailability { get; set; }
         public string LoginMessage { get; set; }
         public string LoginAccountDeactiveMessage { get; set; }

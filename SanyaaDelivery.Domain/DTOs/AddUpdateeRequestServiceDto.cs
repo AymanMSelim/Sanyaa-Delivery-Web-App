@@ -10,4 +10,11 @@ namespace SanyaaDelivery.Domain.DTOs
         public int ServiceId { get; set; }
         public int ServiceQuantity { get; set; }
     }
+
+    public class AddUpdateeRequestServiceODto
+    {
+        public int RequestId { get; set; }
+        public string ServiceName { get; set; }
+        public int ServiceQuantity { get; set; }
+    }
 }

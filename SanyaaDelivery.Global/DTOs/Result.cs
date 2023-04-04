@@ -78,6 +78,7 @@ namespace App.Global.DTOs
                 Result.Message = message ?? "Opreation Done Successfully";
                 Result.Data = data;
             }
+            Result.Message = App.Global.Translation.Translator.STranlate(Result.Message);
             return Result;
         }
 
@@ -107,6 +108,7 @@ namespace App.Global.DTOs
 
         public static Result<T> CreateExceptionResponse(System.Exception ex = null, ResultAleartType resultAleartType = ResultAleartType.FailedToast)
         {
+            App.Global.Logging.LogHandler.PublishException(ex);
             var message = "Exception: " + ex.Message;
             if(ex.InnerException != null)
             {
@@ -138,6 +140,15 @@ namespace App.Global.DTOs
         public static Result<T> ReturnClientError()
         {
             return CreateErrorResponse(resultStatusCode: ResultStatusCode.EmptyData, message: "Error happen while getting client", resultAleartType: ResultAleartType.FailedToast);
+        }
+        public static Result<T> ReturnEmployeeError()
+        {
+            return CreateErrorResponse(resultStatusCode: ResultStatusCode.EmptyData, message: "This employee not exist, or not approved yet or account is suspended", resultAleartType: ResultAleartType.FailedToast);
+        }
+
+        public static Result<T> FileValidationError(string fileName = null)
+        {
+            return CreateErrorResponse(resultStatusCode: ResultStatusCode.InvalidData, message: $"Invalid file: {fileName}", resultAleartType: ResultAleartType.FailedToast);
         }
 
         public static Result<T> CreateAffectedRowsResult(int affectedRow, string errorMessage = null, T data = default)

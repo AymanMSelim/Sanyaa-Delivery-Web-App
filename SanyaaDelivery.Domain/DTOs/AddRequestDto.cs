@@ -13,5 +13,8 @@ namespace SanyaaDelivery.Domain.DTOs
         public int? ClientSubscriptionId { get; set; }
         public DateTime? RequestTime { get; set; }
         public string EmployeeId { get; set; }
+        public bool SkipCheckEmployeeStatus { get; set; }
+        public decimal AdditionalDiscount { get; set; }
+        public decimal AdditionalDiscountCompanyPercantage { get; set; }
     }
 }

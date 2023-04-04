@@ -23,8 +23,9 @@ namespace SanyaaDelivery.Domain.Models
         public sbyte? DepartmentPercentage { get; set; }
         public string DepartmentDes { get; set; }
         public string DepartmentImage { get; set; }
-        public string Terms { get; set; }
         public sbyte? MaximumDiscountPercentage { get; set; }
+        public string Terms { get; set; }
+        public bool IncludeDeliveryPrice { get; set; }
 
         public ICollection<CartT> CartT { get; set; }
         public ICollection<DepartmentEmployeeT> DepartmentEmployeeT { get; set; }

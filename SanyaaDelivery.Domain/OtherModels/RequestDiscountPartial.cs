@@ -41,6 +41,18 @@ namespace SanyaaDelivery.Domain.Models
             };
         }
 
+        public static RequestDiscountT ReturnSubscriptionDiscount(decimal discountValue, decimal companyPercentage)
+        {
+            return new RequestDiscountT
+            {
+                CompanyPercentage = companyPercentage,
+                CreationTime = DateTime.Now,
+                Description = "خصم باقة",
+                DiscountTypeId = 4,
+                DiscountValue = discountValue,
+            };
+        }
+
         public static RequestDiscountT ReturnOtherDiscount(decimal discountValue, decimal companyPercentage)
         {
             return new RequestDiscountT

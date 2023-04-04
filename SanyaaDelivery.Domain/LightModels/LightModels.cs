@@ -104,6 +104,7 @@ namespace SanyaaDelivery.Domain.LightModels
     public class SubscriptionLight
     {
         public int SubscriptionId { get; set; }
+        public int DepartmentId { get; set; }
         public string SubscriptionName { get; set; }
     }
     public class PromocodeLight

@@ -20,6 +20,7 @@ namespace SanyaaDelivery.API.Controllers
             this.appSettingService = appSettingService;
         }
 
+ 
         [HttpGet("GetAppSettingList")]
         public async Task<ActionResult<Result<List<AppSettingT>>>> GetAppSettingList()
         {
@@ -56,6 +57,45 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(ResultFactory<bool>.CreateSuccessResponse(false, App.Global.Enums.ResultStatusCode.NotAllowed));
                 }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("IsTestMode")]
+        public async Task<ActionResult<Result<bool>>> IsTestMode()
+        {
+            try
+            {
+                var setting = await appSettingService.Get("ApplicationMode");
+                if (setting.IsNotNull() && setting.SettingValue.ToLower() == Domain.Enum.TechnicianSelectionType.App.ToString().ToLower())
+                {
+                    return Ok(ResultFactory<bool>.CreateSuccessResponse(true, App.Global.Enums.ResultStatusCode.Allowed));
+                }
+                else
+                {
+                    return Ok(ResultFactory<bool>.CreateSuccessResponse(false, App.Global.Enums.ResultStatusCode.NotAllowed));
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
+            }
+        }
+
+
+        [HttpGet("GetMem")]
+        public ActionResult<Result<long>> GetMem()
+        {
+            try
+            {
+                long memoryUsed = GC.GetTotalMemory(false);
+                memoryUsed = memoryUsed / 1024;
+                memoryUsed = memoryUsed / 1024;
+                return Ok(ResultFactory<long>.CreateSuccessResponse(memoryUsed, App.Global.Enums.ResultStatusCode.NotAllowed));
+
             }
             catch (Exception ex)
             {

@@ -59,9 +59,27 @@ namespace SanyaaDelivery.Application.Services
             return repo.Where(d => d.AttachmentType == type && d.ReferenceId == referenceId).ToListAsync();
         }
 
-        public Task<int> SaveFileAsync(Stream stream, int type, string referenceId)
+        public async Task<AttachmentT> SaveFileAsync(byte[] data, int type, string referenceId, string extension, string folder = "Attachment", string domain = "")
         {
-            return null;
+            var folderPath = $@"wwwroot\{folder}\{referenceId}\{type}";
+            if (Directory.Exists(folderPath) == false)
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            var uniqueFileName = Guid.NewGuid().ToString();
+            var filePath = folderPath + $@"\{uniqueFileName}.{extension}";
+            await File.WriteAllBytesAsync(filePath, data);
+            var attachment = new AttachmentT
+            {
+                AttachmentType = type,
+                CreationTime = DateTime.Now,
+                FileName = $"{uniqueFileName}.{extension}",
+                FilePath = $@"{domain}/{folder}/{referenceId}/{type}/{uniqueFileName}.{extension}",
+                ReferenceId = referenceId
+            };
+            await repo.AddAsync(attachment);
+            await repo.SaveAsync();
+            return attachment; 
         }
     }
 }

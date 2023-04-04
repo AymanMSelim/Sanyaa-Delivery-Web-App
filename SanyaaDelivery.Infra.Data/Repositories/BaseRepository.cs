@@ -25,97 +25,42 @@ namespace SanyaaDelivery.Infra.Data.Repositories
 
         public async Task DeleteAsync(object id)
         {
-            try
-            {
-                Entity entity = await GetAsync(id);
-                DbSet.Remove(entity);
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-            }
-          
+            Entity entity = await GetAsync(id);
+            DbSet.Remove(entity);
         }
 
         public Task<Entity> GetAsync(object id)
         {
-            try
-            {
-                return DbSet.FindAsync(id);
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-                return null;
-            }
+            return DbSet.FindAsync(id);
         }
 
         public Task<List<Entity>> GetListAsync()
         {
-            try
-            {
-                return DbSet.ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-                return null;
-            }
+            return DbSet.ToListAsync();
         }
 
         public Task AddAsync(Entity entity)
         {
-            try
-            {
-                return DbSet.AddAsync(entity);
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-                return null;
-            }
+            return DbSet.AddAsync(entity);
         }
 
         public void Update(object id, Entity updatedEntity)
         {
-            try
-            {
-                DbSet.Update(updatedEntity);
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-            }
+            DbSet.Update(updatedEntity);
         }
 
         public IQueryable<Entity> Where(Expression<Func<Entity, bool>> filter)
         {
-            try
-            {
-                return DbSet.Where(filter);
-            }
-            catch (Exception ex)
-            {
-                App.Global.Logging.LogHandler.PublishException(ex);
-                return null;
-            }
+            return DbSet.Where(filter);
         }
 
         public async Task<int> SaveAsync()
         {
-            //try
-            //{
-                if (unitOfWork.IsTransaction)
-                {
-                    return 1;
-                }
-                return await DbContext.SaveChangesAsync();
-            //}
-            //catch (Exception ex)
-           // {
-            //    App.Global.Logging.LogHandler.PublishException(ex);
-               // return 0;
-            //}
+            if (unitOfWork.IsTransaction)
+            {
+                return 1;
+            }
+            return await DbContext.SaveChangesAsync();
         }
     }
 }

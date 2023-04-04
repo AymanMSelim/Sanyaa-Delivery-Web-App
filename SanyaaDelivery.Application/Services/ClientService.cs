@@ -81,14 +81,17 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> AddAddress(AddressT address)
         {
+            address.AddressId = 0;
             await addressRepository.AddAsync(address);
             return await addressRepository.SaveAsync();
         }
 
-        public Task<int> UpdateAddress(AddressT address)
+        public async Task<int> UpdateAddress(AddressT address)
         {
+            unitOfWork.StartTransaction();
             addressRepository.Update(address.AddressId, address);
-            return addressRepository.SaveAsync();
+            await SelectDefaultAddressAutoAsync(address.ClientId);
+            return await unitOfWork.CommitAsync();
         }
 
         public async Task<Result<AddressT>> DeleteAddress(int addressId)
@@ -99,16 +102,18 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NotFound, "AddressNotFound");
             }
-            var addressList = await GetAddressListAsync(address.ClientId.Value);
+            var addressList = await GetAddressListAsync(address.ClientId);
             if (addressList.Count == 1)
             {
                 return ResultFactory<AddressT>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.DeleteFailed, "OneAddressFound");
             }
             address.IsDeleted = true;
+            address.IsDefault = false;
             await UpdateAddress(address);
+            await unitOfWork.SaveAsync();
             if (address.IsDefault)
             {
-                await SelectDefaultAddressAutoAsync(address.ClientId.Value);
+                await SelectDefaultAddressAutoAsync(address.ClientId);
             }
             await unitOfWork.CommitAsync();
             return ResultFactory<AddressT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully); ;
@@ -203,12 +208,8 @@ namespace SanyaaDelivery.Application.Services
         public async Task<int> AddPointAsync(int clientId, int points)
         {
             var client = await GetAsync(clientId);
-            if (client.IsNotNull())
-            {
-                client.ClientPoints += points;
-                return await UpdateAsync(client);
-            }
-            return 1;
+            client.ClientPoints += points;
+            return await UpdateAsync(client);
         }
 
         public async Task<int> WidthrawPointAsync(int clientId, int points)
@@ -262,11 +263,11 @@ namespace SanyaaDelivery.Application.Services
             var addressList = await GetAddressListAsync(clientId);
             if (addressList.IsEmpty())
             {
-                return -1;
+                return ((int)App.Global.Enums.ResultStatusCode.Failed);
             }
             if(!addressList.Any(d => d.AddressId == addressId))
             {
-                return -1;
+                return ((int)App.Global.Enums.ResultStatusCode.Failed);
             }
             foreach (var address in addressList)
             {
@@ -291,43 +292,95 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ((int)App.Global.Enums.ResultStatusCode.NotFound);
             }
-            address = addressList.OrderBy(d => d.AddressId).LastOrDefault();
-            address.IsDefault = true;
-            return await UpdateAddress(address);
+            var defaultAddressList = addressList.Where(d => d.IsDefault).ToList();
+            if (defaultAddressList.IsEmpty())
+            {
+                address = addressList.OrderBy(d => d.AddressId).LastOrDefault();
+                address.IsDefault = true;
+                return await UpdateAddress(address);
+            }
+            else if (defaultAddressList.Count == 1)
+            {
+                return ((int)App.Global.Enums.ResultStatusCode.Success);
+            }
+            else
+            {
+                unitOfWork.StartTransaction();
+                addressList.ForEach(d => d.IsDefault = false);
+                address = addressList.OrderBy(d => d.AddressId).FirstOrDefault();
+                address.IsDefault = true;
+                foreach (var item in addressList)
+                {
+                    await UpdateAddress(item);
+                }
+                return await unitOfWork.CommitAsync();
+            }
         }
 
         public async Task<AddressT> GetDefaultAddressAsync(int clientId)
         {
-            AddressT defaultAddress = null;
-            var addressList = await GetAddressListAsync(clientId);
-            if (addressList.IsEmpty())
-            {
-                return null;
-            }
-            if(addressList.Count == 1)
-            {
-                defaultAddress = addressList.FirstOrDefault();
-                if (defaultAddress.IsDefault == false)
-                {
-                    defaultAddress.IsDefault = true;
-                    await UpdateAddress(defaultAddress);
-                }
-                return defaultAddress;
-            }
-            defaultAddress = addressList.FirstOrDefault(d => d.IsDefault);
-            if (defaultAddress.IsNull())
-            {
-                var firstAddress = addressList.OrderBy(d => d.AddressId).FirstOrDefault();
-                firstAddress.IsDefault = true;
-                await UpdateAddress(firstAddress);
-                return firstAddress;
-            }
-            else
+            AddressT defaultAddress = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false && d.IsDefault)
+                .FirstOrDefaultAsync();
+            if (defaultAddress.IsNotNull())
             {
                 return defaultAddress;
             }
+            defaultAddress = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false)
+                .FirstOrDefaultAsync();
+            if (defaultAddress.IsNotNull())
+            {
+                defaultAddress.IsDefault = true;
+                await UpdateAddress(defaultAddress);
+                return defaultAddress;
+            }
+            return null;
+            //var addressList = await GetAddressListAsync(clientId);
+            //if (addressList.IsEmpty())
+            //{
+            //    return null;
+            //}
+            //if(addressList.Count == 1)
+            //{
+            //    defaultAddress = addressList.FirstOrDefault();
+            //    if (defaultAddress.IsDefault == false)
+            //    {
+            //        defaultAddress.IsDefault = true;
+            //        await UpdateAddress(defaultAddress);
+            //    }
+            //    return defaultAddress;
+            //}
+            //defaultAddress = addressList.FirstOrDefault(d => d.IsDefault);
+            //if (defaultAddress.IsNull())
+            //{
+            //    var firstAddress = addressList.OrderBy(d => d.AddressId).FirstOrDefault();
+            //    firstAddress.IsDefault = true;
+            //    await UpdateAddress(firstAddress);
+            //    return firstAddress;
+            //}
+            //else
+            //{
+            //    return defaultAddress;
+            //}
         }
 
+        public async Task<int?> GetDefaultAddressCityIdAsync(int clientId)
+        {
+            var defaultCity = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false && d.IsDefault)
+                .Select(d => d.CityId)
+                .FirstOrDefaultAsync();
+            if (defaultCity.IsNotNull())
+            {
+                return defaultCity;
+            }
+            defaultCity = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false)
+                 .Select(d => d.CityId)
+                .FirstOrDefaultAsync();
+            if (defaultCity.IsNotNull())
+            {
+                return defaultCity;
+            }
+            return null;
+        }
         public async Task<ClientPhonesT> GetDefaultPhoneAsync(int clientId)
         {
             ClientPhonesT defaultPhone = null;
@@ -410,12 +463,31 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> GetDefaultCityIdAsync(int clientId)
         {
-            var defaultAddress = await GetDefaultAddressAsync(clientId);
-            if (defaultAddress.IsNotNull() && defaultAddress.CityId.HasValue)
+            var defaultCity = await GetDefaultAddressCityIdAsync(clientId);
+            if (defaultCity.IsNotNull())
             {
-                return defaultAddress.CityId.Value;
+                return defaultCity.Value;
             }
             return GeneralSetting.DefaultCityId;
+        }
+
+        public async Task<CityT> GetDefaultCityAsync(int clientId)
+        {
+            var defaultCity = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false && d.IsDefault)
+                  .Select(d => d.City)
+                  .FirstOrDefaultAsync();
+            if (defaultCity.IsNotNull())
+            {
+                return defaultCity;
+            }
+            defaultCity = await addressRepository.Where(d => d.ClientId == clientId && d.IsDeleted == false)
+                 .Select(d => d.City)
+                .FirstOrDefaultAsync();
+            if (defaultCity.IsNotNull())
+            {
+                return defaultCity;
+            }
+            return null;
         }
 
         public Task<List<ClientT>> GetListAsync(string searchValue)
@@ -451,6 +523,12 @@ namespace SanyaaDelivery.Application.Services
             await UpdatePhone(defaultPhone);
             var affectedRow = await unitOfWork.CommitAsync();
             return ResultFactory<ClientPhonesT>.CreateAffectedRowsResult(affectedRow);
+        }
+
+        public Task<int> GetPointAsync(int clientId)
+        {
+            return clientRepository.Where(d => d.ClientId == clientId)
+                .Select(d => d.ClientPoints).FirstOrDefaultAsync();
         }
     }
 }

@@ -30,8 +30,8 @@ namespace SanyaaDelivery.Application.Interfaces
             bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
             bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false);
 
-        Task<List<RequestT>> GetAppList(int clientId, int? status);
-        Task<List<RequestT>> GetAppDetails(int requestId);
+        Task<List<AppRequestDto>> GetAppList(int? clientId = null, string employeeId = null, int? status = null);
+        Task<AppRequestDetailsDto> GetAppDetails(int requestId);
         Task<List<RequestT>> GetEmployeeOrdersList(string employeeId, DateTime time);
         Task<List<OrderDto>> GetEmployeeOrdersCustomList(string employeeId, DateTime day);
         Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(DateTime day);
@@ -39,16 +39,20 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(string employeeId, DateTime day);
         Task<List<RequestT>> GetUnPaidAsync(string employeeId, bool ignoreRequestWithValidFawryRequest = false);
         Task<int> AddAsync(RequestT request);
+        Task<int> UpdatePriceAsync(UpdateRequestPriceDto model);
+        Task<int> UpdatePhoneAsync(UpdateRequestPhoneDto model);
+        Task<int> UpdateAddressAsync(UpdateRequestAddressDto model);
         Task<Result<RequestServicesT>> AddUpdateServiceAsync(RequestServicesT requestService);
+        Task<Result<RequestServicesT>> AddUpdateServiceOAsync(AddUpdateeRequestServiceODto model);
         Task<RequestServicesT> GetServiceAsync(int requestServiceId);
         Task<List<RequestServicesT>> GetServiceListAsync(int requestId);
         Task<int> UpdateAsync(RequestT request);
-        Task<Result<int>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true);
-        Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId);
-        Task<Result<EmployeeT>> ReAssignEmployeeAsync(int requestId, string employeeId);
+        Task<Result<RequestCanceledT>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true);
+        Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId, bool skipCheckEmployee = false);
+        Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model);
         Task<int> AddComplaintAsync(RequestComplaintT requestComplaint);
         Task<int?> GetCartIdAsync(int requestId);
-        Task<Result<RequestT>> AddAsync(int clientId, bool isViaApp, int addressId, int phoneId, string employeeId, int? siteId, int? clientSubscriptionId, DateTime requestTime, int systemUserId);
+        Task<Result<RequestT>> AddAsync(AddRequestDto model, bool isViaApp, int systemUserId);
         Task<Result<RequestT>> AddAsync(int clientSubscriptionId, DateTime requestDate, int systemUserId, bool isViaApp);
     }
 

@@ -10,5 +10,6 @@ namespace App.Global.SMS
     public interface ISMSService
     {
         Task<bool> SendSms(string languange, string mobile, string message);
+        Task<bool> SendOTP(string mobile, string otp);
     }
 }

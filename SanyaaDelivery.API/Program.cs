@@ -14,7 +14,14 @@ namespace SanyaaDelivery.API
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            try
+            {
+                CreateWebHostBuilder(args).Build().Run();
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+            }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>

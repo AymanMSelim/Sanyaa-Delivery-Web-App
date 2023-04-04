@@ -89,12 +89,12 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.InvalidData, "No client id found"));
                 }
-                var item = await landingScreenService.GetAsync(itemId);
-                if(item.IsNull() || item.DepartmentId.IsNull())
+                var detailsList = await landingScreenService.GetDetailsItemListAsync(itemId);
+                if(detailsList.IsEmpty())
                 {
-                    return Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NotFound, "No data found"));
+                    return Ok(ResultFactory<List<ServiceCustom>>.CreateErrorResponse(new List<ServiceCustom>(), App.Global.Enums.ResultStatusCode.NotFound, "No data found"));
                 }
-                var serviceList = await serviceService.GetOfferListByMainDeparmentAsync(item.DepartmentId.Value);
+                var serviceList = await serviceService.GetOfferListByMainDeparmentAsync(detailsList.Select(d => d.DepartmentId).ToList());
                 if (serviceList.HasItem())
                 {
                     customServiceList = await serviceService.ConvertServiceToCustom(serviceList, clientId.Value);
@@ -141,6 +141,146 @@ namespace SanyaaDelivery.API.Controllers
             {
                 return StatusCode(500, ResultFactory<CompanyInfoDto>.CreateExceptionResponse(ex));
             }
+        }
+
+
+        [HttpGet("GetEmployeeAppCompanyInfo")]
+        public ActionResult<Result<CompanyInfoDto>> GetEmployeeAppCompanyInfo()
+        {
+            try
+            {
+                var data = System.IO.File.ReadAllText(@"companycontact.json");
+                var aboutCompany = System.IO.File.ReadAllText(@"AboutCompanyEmployeeApp.txt");
+                var privacyPolicy = System.IO.File.ReadAllText(@"PrivacyPolicyEmployeeApp.txt");
+                var companyInfo = JsonConvert.DeserializeObject<CompanyInfoDto>(data);
+                companyInfo.AboutCompany = aboutCompany;
+                companyInfo.PrivacyPolicy = privacyPolicy;
+                return Ok(ResultFactory<CompanyInfoDto>.CreateSuccessResponse(companyInfo));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<CompanyInfoDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<AppLandingScreenItemT>>> Add(AppLandingScreenItemT model)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.AddAsync(model);
+                return Ok(ResultFactory<AppLandingScreenItemT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppLandingScreenItemT>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<AppLandingScreenItemT>>> Update(AppLandingScreenItemT model)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.UpdateAsync(model);
+                return Ok(ResultFactory<AppLandingScreenItemT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppLandingScreenItemT>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpPost("Delete/{id}")]
+        public async Task<ActionResult<Result<object>>> Delete(int id)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.DeleteAsync(id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpGet("GetList")]
+        public async Task<ActionResult<Result<List<AppLandingScreenItemT>>>> GetList(string searchValue = null, int? type = null)
+        {
+            try
+            {
+                var list = await landingScreenService.GetListAsync(searchValue, type);
+                return Ok(ResultFactory<List<AppLandingScreenItemT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppLandingScreenItemT>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpPost("AddDetails")]
+        public async Task<ActionResult<Result<LandingScreenItemDetailsT>>> AddDetails(LandingScreenItemDetailsT model)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.AddDetailsAsync(model);
+                return Ok(ResultFactory<LandingScreenItemDetailsT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<LandingScreenItemDetailsT>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpPost("UpdateDetails")]
+        public async Task<ActionResult<Result<LandingScreenItemDetailsT>>> UpdateDetails(LandingScreenItemDetailsT model)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.UpdateDetailsAsync(model);
+                return Ok(ResultFactory<LandingScreenItemDetailsT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<LandingScreenItemDetailsT>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpPost("DeleteDetails/{id}")]
+        public async Task<ActionResult<Result<object>>> DeleteDetails(int id)
+        {
+            try
+            {
+                var affectedRows = await landingScreenService.DeleteDetailsAsync(id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+
+        }
+
+        [HttpGet("GetDetailsList/{itemId}")]
+        public async Task<ActionResult<Result<List<LandingScreenItemDetailsT>>>> GetDetailsList(int itemId)
+        {
+            try
+            {
+                var list = await landingScreenService.GetDetailsListAsync(itemId);
+                return Ok(ResultFactory<List<LandingScreenItemDetailsT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<LandingScreenItemDetailsT>.CreateExceptionResponse(ex));
+            }
+
         }
     }
 }

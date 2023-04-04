@@ -68,11 +68,19 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet("GetNotPaid/{employeeId}")]
-        public async Task<ActionResult<Result<List<EmployeeNotPaidRequestDto>>>> GetNotPaid(string employeeId)
+        [HttpGet("GetNotPaid/{employeeId?}")]
+        public async Task<ActionResult<Result<List<EmployeeNotPaidRequestDto>>>> GetNotPaid(string employeeId = null)
         {
             try
             {
+                if (commonService.IsViaApp())
+                {
+                    employeeId = commonService.GetEmployeeId(employeeId);
+                }
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<List<EmployeeNotPaidRequestDto>>.ReturnEmployeeError());
+                }
                 var list = await requestUtilityService.GetNotPaidAsync(employeeId);
                 var result = ResultFactory<List<EmployeeNotPaidRequestDto>>.CreateSuccessResponse(list);
                 return Ok(result);
@@ -80,6 +88,29 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<EmployeeNotPaidRequestDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetAppPaymentIndex/{employeeId?}")]
+        public async Task<ActionResult<Result<EmployeeAppPaymentIndexDto>>> GetAppPaymentIndex(string employeeId = null)
+        {
+            try
+            {
+                if (commonService.IsViaApp())
+                {
+                    employeeId = commonService.GetEmployeeId(employeeId);
+                }
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<object>.ReturnEmployeeError());
+                }
+                var indexDto = await requestUtilityService.GetEmployeeAppPaymentIndex(employeeId);
+                var result = ResultFactory<EmployeeAppPaymentIndexDto>.CreateSuccessResponse(indexDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmployeeAppPaymentIndexDto>.CreateExceptionResponse(ex));
             }
         }
     }

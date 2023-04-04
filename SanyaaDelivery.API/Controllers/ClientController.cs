@@ -217,7 +217,32 @@ namespace SanyaaDelivery.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<ClientT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<AddressT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("AddAddess")]
+        public async Task<ActionResult<Result<AddressT>>> AddAddess(AddressT address)
+        {
+            try
+            {
+                if (address == null)
+                {
+                    return Ok(ResultFactory<AddressT>.CreateErrorResponseMessage("Address can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                int affectedRecords = await clientService.AddAddress(address);
+                if (affectedRecords > 0)
+                {
+                    return Ok(ResultFactory<AddressT>.CreateSuccessResponse(address, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
+                }
+                else
+                {
+                    return Ok(ResultFactory<AddressT>.CreateErrorResponse());
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AddressT>.CreateExceptionResponse(ex));
             }
         }
 
@@ -605,6 +630,43 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ClientPointDto>>(ex));
+            }
+        }
+
+        [HttpPost("AddPoint")]
+        public async Task<ActionResult<Result<ClientPointT>>> AddPoint(ClientPointT clientPoint)
+        {
+            try
+            {
+                int affectedRows = 0;
+                clientPoint.SystemUserId = commonService.GetSystemUserId();
+                if (clientPoint.PointType == (int)Domain.Enum.ClientPointType.Add)
+                {
+                    affectedRows = await clientPointService.AddAsync(clientPoint);
+                }
+                else
+                {
+                    affectedRows = await clientPointService.WithdrawAsync(clientPoint);
+                }
+                return ResultFactory<ClientPointT>.CreateAffectedRowsResult(affectedRows, data: clientPoint);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientPointT>(ex));
+            }
+        }
+
+        [HttpPost("DeletePoint")]
+        public async Task<ActionResult<Result<ClientPointT>>> DeletePoint(int clientPointId)
+        {
+            try
+            {
+                var affectedRows = await clientPointService.DeletetAsync(clientPointId);
+                return ResultFactory<ClientPointT>.CreateAffectedRowsResult(affectedRows);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientPointT>(ex));
             }
         }
 

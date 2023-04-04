@@ -10,10 +10,21 @@ namespace SanyaaDelivery.Domain.Enum
         Sucsess = 1
     }
 
+    public enum EmployeeRegisterStep
+    {
+        Register = 1,
+        ConfirmMobile = 2,
+        CompleteNationalAndRelative = 3,
+        CompleteAddress = 4,
+        CompleteDepartmentAndWorkplace = 5,
+        AdditionNonMandatoryData = 6,
+        Done = 7
+    }
+
     public enum ClientPointType
     {
-        Add = 1,
-        Withdraw = 2
+        Withdraw = 1,
+        Add = 2
     }
 
     public enum LandingScreenItemType
@@ -33,9 +44,20 @@ namespace SanyaaDelivery.Domain.Enum
         
     }
 
+    public enum BroadcastStatus
+    {
+        Pending = 1,
+        Accepted = 2,
+        Rejected = 3
+    }
+
     public enum AttachmentType
     {
         CartImage = 1,
+        ProfilePicture = 2,
+        NationalIdFront = 3,
+        NationalIdBack = 4,
+        AppLandingItem = 5
     }
 
     public enum TechnicianSelectionType

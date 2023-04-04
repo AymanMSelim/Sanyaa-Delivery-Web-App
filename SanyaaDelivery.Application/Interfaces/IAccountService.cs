@@ -1,4 +1,6 @@
-﻿using SanyaaDelivery.Domain.Models;
+﻿using App.Global.DTOs;
+using SanyaaDelivery.Domain.DTOs;
+using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,6 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> DeleteSoft(int id);
 
         Task<AccountT> Get(int id);
+        Task<string> GetOTPAsync(int? accountId = null, int? clientId = null, string employeeId = null);
 
         Task<AccountT> Get(int accountType, string referenceId);
 
@@ -31,5 +34,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> ConfirmResetPasswordOtp(AccountT account);
 
         Task<int> ConfirmRegisterOtp(AccountT account);
+        Task<Result<bool>> ConfirmOtp(ConfirmOtpDto confirmOtpDto);
     }
 }

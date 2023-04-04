@@ -122,24 +122,17 @@ namespace SanyaaDelivery.Application.Services
             return null;
         }
 
-        public async Task<decimal> GetRatioAsync(int? cityId = null, int? departmentId = null)
+        public async Task<decimal> GetRatioAsync(int cityId, int departmentId)
         {
-            var serviceRatioList = await GetListAsync(cityId, departmentId, true);
-            if (serviceRatioList.IsEmpty())
+            var ratio = await serviceRatioDetailsRepository.Where(d => d.DepartmentId == departmentId && d.CityId == cityId)
+                .Select(d => d.ServiceRatio.Ratio).LastOrDefaultAsync();
+            if (ratio.IsNull() || ratio == 0)
             {
                 return 1;
             }
             else
             {
-                var ratio = serviceRatioList.LastOrDefault().Ratio;
-                if (ratio.IsNull() || ratio == 0)
-                {
-                    return  1;
-                }
-                else
-                {
-                    return 1 + (ratio.Value / 100);
-                }
+                return 1 + (ratio.Value / 100);
             }
         }
 

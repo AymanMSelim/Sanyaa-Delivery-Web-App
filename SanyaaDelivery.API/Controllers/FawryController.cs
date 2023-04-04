@@ -1,8 +1,11 @@
 ﻿using App.Global.DTOs;
+using App.Global.ExtensionMethods;
 using App.Global.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using SanyaaDelivery.Application.Interfaces;
+using SanyaaDelivery.Domain.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,23 +30,94 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GenerateRefNumber/{employeeId}")]
-        public async Task<ActionResult<App.Global.Models.Fawry.FawryRefNumberResponse>> GenerateRefNumber(string employeeId, bool includeAllUnPaid)
+        public async Task<ActionResult<Result<App.Global.Models.Fawry.FawryRefNumberResponse>>> GenerateRefNumber(string employeeId, bool ignoreValidFawryRequest = false)
         {
             try
             {
-                var result = await fawryService.SendAllUnpaidRequestAsync(employeeId);  
-                if (result != null)
-                {
-                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateSuccessResponse(result));
-                }
-                else
-                {
-                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateErrorResponse());
-                }
+                var result = await fawryService.SendAllUnpaidRequestAsync(employeeId, ignoreValidFawryRequest: ignoreValidFawryRequest);
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("GenerateRefNumberForRequest")]
+        public async Task<ActionResult<Result<App.Global.Models.Fawry.FawryRefNumberResponse>>> GenerateRefNumberForRequest(GenerateRefNumberForRequestDto model)
+        {
+            try
+            {
+                var result = await fawryService.SendUnpaidRequestAsync(model);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("StartFarwy")]
+        public async Task<ActionResult<Result<List<App.Global.Models.Fawry.FawryRefNumberResponse>>>> StartFarwy(bool ignoreValidFawryRequest = false)
+        {
+            try
+            {
+                var result = await fawryService.SendAllUnpaidRequestAsync(ignoreValidFawryRequest);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<App.Global.Models.Fawry.FawryRefNumberResponse>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("UpdateStatus")]
+        public async Task<ActionResult<Result<object>>> UpdateStatus()
+        {
+            try
+            {
+                await fawryService.UpdateStatusTask();
+                return Ok(ResultFactory<object>.CreateSuccessResponse());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<App.Global.Models.Fawry.FawryRefNumberResponse>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("UpdateEmployeeValidCharge")]
+        public async Task<ActionResult<Result<object>>> UpdateEmployeeValidCharge(StringIdDto idDto)
+        {
+            try
+            {
+                await fawryService.UpdateEmployeeValidChargeAsync(idDto.Id);
+                return Ok(ResultFactory<object>.CreateSuccessResponse());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<App.Global.Models.Fawry.FawryRefNumberResponse>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("CallbackNotification")]
+        public async Task<ActionResult> CallbackNotification(App.Global.Models.Fawry.FawryNotificationCallback model)
+        {
+            try
+            {
+                var result = await fawryService.CallbackNotification(model);
+                if (result > 0)
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500);
             }
         }
     }

@@ -1,13 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using App.Global.DTOs;
+using App.Global.ExtensionMethods;
+using Microsoft.AspNetCore.Http;
 using SanyaaDelivery.Application;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Application.Services;
+using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using App.Global.DateTimeHelper;
+using Microsoft.EntityFrameworkCore;
 
 namespace SanyaaDelivery.API
 {
@@ -17,18 +23,29 @@ namespace SanyaaDelivery.API
         private readonly ICartService cartService;
         private readonly IClientService clientService;
         private readonly ICityService cityService;
+        private readonly IRepository<CartT> cartRepository;
+        private readonly IRepository<EmployeeT> employeeRepository;
+        private readonly IRepository<AccountT> accountRepository;
+        private readonly IRepository<OpreationT> operationRepository;
 
-        public CommonService(IHttpContextAccessor context, ICartService cartService, IClientService clientService, ICityService cityService, IGeneralSetting generalSetting)
+        public CommonService(IHttpContextAccessor context, ICartService cartService, 
+            IClientService clientService, ICityService cityService, IGeneralSetting generalSetting, IRepository<CartT> cartRepository,
+            IRepository<EmployeeT> employeeRepository, IRepository<AccountT> accountRepository, IRepository<OpreationT> operationRepository)
         {
             this.context = context;
             this.cartService = cartService;
             this.clientService = clientService;
             this.cityService = cityService;
+            this.cartRepository = cartRepository;
+            this.employeeRepository = employeeRepository;
+            this.accountRepository = accountRepository;
+            this.operationRepository = operationRepository;
             if (context.HttpContext.User.Identity.IsAuthenticated)
             {
                 generalSetting.CurrentIsViaApp = IsViaApp();
             }
         }
+
         public int? GetClientId(int? clientId = null)
         {
             if (IsViaApp())
@@ -41,6 +58,43 @@ namespace SanyaaDelivery.API
             {
                 return clientId;
             }
+        }
+
+        public string GetEmployeeId(string employeeId = null)
+        {
+            if (IsViaApp())
+            {
+                var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+                employeeId = App.Global.JWT.TokenHelper.GetReferenceIdString(identity);
+                if(string.IsNullOrEmpty(employeeId) is false)
+                {
+                    var operation = operationRepository.Where(d => d.EmployeeId == employeeId)
+                        .FirstOrDefault();
+                    if (operation.IsNotNull())
+                    {
+                        operation.LastActiveTime = DateTime.Now.EgyptTimeNow();
+                        operationRepository.DbSet.Update(operation);
+                        operationRepository.DbContext.SaveChanges();
+                    }
+                //    var accountState = accountRepository.Where(d => d.AccountReferenceId == employeeId)
+                //        .Select(d => new { d.IsActive, d.IsDeleted }).FirstOrDefault();
+                //    if(accountState.IsActive is false)
+                //    {
+                //        return null;
+                //    }
+                //    if (accountState.IsDeleted)
+                //    {
+                //        return null;
+                //    }
+                //    var isApproved = employeeRepository.Where(d => d.EmployeeId == employeeId)
+                //        .Select(d => d.IsApproved).FirstOrDefault();
+                //    if(isApproved is false)
+                //    {
+                //        return null;
+                //    }
+                }
+            }
+            return employeeId;
         }
 
         public int? GetAccountId()
@@ -67,7 +121,7 @@ namespace SanyaaDelivery.API
             }
             if (clientId.HasValue)
             {
-                return await clientService.GetAsync(clientId.Value);
+                return await clientService.GetAsync(clientId.Value, includePhone, includeAddress);
             }
             return null;
         }
@@ -121,6 +175,24 @@ namespace SanyaaDelivery.API
             }
         }
 
+        public async Task<int?> GetCurrentClientCartIdAsync(int? clientId = null)
+        {
+            bool isViaApp = IsViaApp();
+            if (isViaApp)
+            {
+                clientId = GetClientId();
+            }
+            if (clientId.HasValue)
+            {
+                return await cartRepository.Where(d => d.ClientId == clientId.Value && d.IsViaApp == isViaApp && d.HaveRequest == false)
+                    .Select(d => d.CartId).FirstOrDefaultAsync();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public int GetSystemUserId()
         {
             var identity = context.HttpContext.User.Identity as ClaimsIdentity;
@@ -136,11 +208,44 @@ namespace SanyaaDelivery.API
         {
             var identity = context.HttpContext.User.Identity as ClaimsIdentity;
             int? accountType = App.Global.JWT.TokenHelper.GetAccountType(identity);
-            if (accountType.HasValue && GeneralSetting.CustomerAccountTypeId == accountType.Value)
+            if (accountType.HasValue && (GeneralSetting.CustomerAccountTypeId == accountType.Value || GeneralSetting.EmployeeAccountTypeId == accountType.Value))
             {
                 return true;
             }
             return false;
+        }
+
+        public bool IsFileValid(IFormFile formFile)
+        {
+            if (formFile.IsNull())
+            {
+                return false;
+            }
+            if(formFile.Length <= 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public byte[] ConvertFileToByteArray(IFormFile formFile)
+        {
+            var result = IsFileValid(formFile);
+            if (result == false)
+            {
+                return null;
+            }
+            using (var ms = new MemoryStream())
+            {
+                formFile.CopyTo(ms);
+                var fileBytes = ms.ToArray();
+                return fileBytes;
+            }
+        }
+
+        public string GetHost()
+        {
+            return "https://" + context.HttpContext.Request.Host.Host;
         }
     }
 }

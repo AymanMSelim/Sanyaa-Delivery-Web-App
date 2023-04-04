@@ -58,6 +58,14 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
         }
 
+        public Task<int> GetCityBranchIdAsync(int cityId)
+        {
+            return repo.DbSet
+               .Where(d => d.CityId == cityId)
+               .Select(d => d.Branch.BranchId)
+               .FirstOrDefaultAsync();
+        }
+
         public Task<List<CityT>> GetListAsync(int? countryId = null, int? governorateId = null, string cityName = null)
         {
             var query = repo.DbSet.AsQueryable();

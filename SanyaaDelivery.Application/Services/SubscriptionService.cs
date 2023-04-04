@@ -81,9 +81,9 @@ namespace SanyaaDelivery.Application.Services
             return subscriptionSequenceRepo.GetAsync(id);
         }
 
-        public Task<List<SubscriptionSequenceT>> GetSequenceListAsync(int subscriptionId)
+        public Task<List<SubscriptionSequenceT>> GetSequenceListAsync(int subscriptionServiceId)
         {
-            return subscriptionSequenceRepo.DbSet.Where(d => d.SubscriptionService.SubscriptionId == subscriptionId).ToListAsync();
+            return subscriptionSequenceRepo.DbSet.Where(d => d.SubscriptionServiceId == subscriptionServiceId).ToListAsync();
         }
 
         public Task<List<SubscriptionT>> GetListAsync(int? departmentId = null, bool? isActive = null, bool includeDepartment = false)
@@ -99,7 +99,7 @@ namespace SanyaaDelivery.Application.Services
             }
             if (isActive.HasValue)
             {
-                query = query.Where(d => d.IsActive.Value == isActive);
+                query = query.Where(d => d.IsActive == isActive);
             }
             return query.ToListAsync();
         }
@@ -135,7 +135,7 @@ namespace SanyaaDelivery.Application.Services
             }
             if (isActive.HasValue)
             {
-                query = query.Where(d => d.IsActive.Value == isActive);
+                query = query.Where(d => d.IsActive == isActive);
             }
             return query.ToListAsync();
         }

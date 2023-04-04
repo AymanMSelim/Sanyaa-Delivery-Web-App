@@ -34,12 +34,12 @@ namespace SanyaaDelivery.Application.Services
             {
                 discount += Convert.ToInt32(item.Service.NoDiscount) * (Convert.ToInt32(item.Service.ServiceDiscount) / 100) * Convert.ToInt32(item.ServiceQuantity / item.Service.DiscountServiceCount) * Convert.ToInt32(item.ServiceQuantity);
             }
-            totalPrice = serviceList.Sum(d => d.Service.ServiceCost * d.ServiceQuantity.Value);
+            totalPrice = serviceList.Sum(d => d.Service.ServiceCost * d.ServiceQuantity);
             summary.TotalPrice = totalPrice;
             summary.ServiceRatio = serviceRatio;
             summary.TotalRatioPrice = totalPrice + (totalPrice * serviceRatio);
             summary.TotalDiscount = discount;
-            summary.TotalPoints = serviceList.Sum(d => d.Service.ServicePoints.Value * d.ServiceQuantity.Value);
+            summary.TotalPoints = serviceList.Sum(d => d.Service.ServicePoints.Value * d.ServiceQuantity);
             summary.NetPrice = summary.TotalRatioPrice - summary.TotalDiscount;
             return summary;
         }

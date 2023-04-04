@@ -23,6 +23,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public int RequestId { get; set; }
         public string RequestCaption { get; set; }
         public string Date { get; set; }
+        public DateTime RequestTimestamp { get; set; }
         public string DayOfWeek { get; set; }
         public string Time { get; set; }
         public string RequestStatus { get; set; }
@@ -41,6 +42,8 @@ namespace SanyaaDelivery.Domain.DTOs
         public bool ShowCancelRequestButton { get; set; }
         public bool ShowDelayRequestButton { get; set; }
         public bool ShowReAssignEmployeeButton { get; set; }
+        public bool IsCanceled { get; set; }
+        public bool IsCompleted { get; set; }
         public AppEmployeeDto Employee { get; set; }
         public Dictionary<string, decimal> InvoiceDetails { get; set; }
         public List<RequestServiceDto> RequestServiceList { get; set; }
@@ -54,6 +57,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public string ServiceDescription { get; set; }
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+        public decimal Discount { get; set; }
         public decimal NetPrice { get; set; }
     }
 

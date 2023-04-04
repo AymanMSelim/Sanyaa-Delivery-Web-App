@@ -17,11 +17,12 @@ namespace SanyaaDelivery.Domain.Models
         public string Description { get; set; }
         public int DepartmentId { get; set; }
         public sbyte? RequestNumberPerMonth { get; set; }
+        public int NumberOfMonth { get; set; }
         public decimal? StartFromPrice { get; set; }
         public string Condition { get; set; }
         public bool IsActive { get; set; }
         public bool IsContract { get; set; }
-        public int NumberOfMonth { get; set; }
+        public bool IgnoreServiceDiscount { get; set; }
 
         public DepartmentT Department { get; set; }
         public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }

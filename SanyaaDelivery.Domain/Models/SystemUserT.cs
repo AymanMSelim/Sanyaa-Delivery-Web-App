@@ -12,6 +12,7 @@ namespace SanyaaDelivery.Domain.Models
             Cleaningsubscribers = new HashSet<Cleaningsubscribers>();
             ClientSubscriptionT = new HashSet<ClientSubscriptionT>();
             ClientT = new HashSet<ClientT>();
+            EmployeeT = new HashSet<EmployeeT>();
             FollowUpT = new HashSet<FollowUpT>();
             IncreaseDiscountT = new HashSet<IncreaseDiscountT>();
             InsurancePaymentT = new HashSet<InsurancePaymentT>();
@@ -44,6 +45,7 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<Cleaningsubscribers> Cleaningsubscribers { get; set; }
         public ICollection<ClientSubscriptionT> ClientSubscriptionT { get; set; }
         public ICollection<ClientT> ClientT { get; set; }
+        public ICollection<EmployeeT> EmployeeT { get; set; }
         public ICollection<FollowUpT> FollowUpT { get; set; }
         public ICollection<IncreaseDiscountT> IncreaseDiscountT { get; set; }
         public ICollection<InsurancePaymentT> InsurancePaymentT { get; set; }

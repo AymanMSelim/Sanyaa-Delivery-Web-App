@@ -117,10 +117,18 @@ namespace SanyaaDelivery.Application
             }
             OTPExpireMinutes = configuration.GetValue<int>("OTPExpireMinutes");
         }
+
+        public static sbyte GetRequestStatusId(string statusName)
+        {
+            return RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == statusName.ToLower())
+                .RequestStatusId;
+        }
         
         public const int TokenExpireInDays = 30;
         
         public const int CustomerAppSystemUserId = 500;
+
+        public const int EmployeeAppSystemUserId = 900;
 
         public const int SystemUserDefaultRoleId = 1;
 
@@ -304,6 +312,6 @@ namespace SanyaaDelivery.Application
             }
         }
 
-
+        public static int CurrentRequest { get; set; }
     }
 }

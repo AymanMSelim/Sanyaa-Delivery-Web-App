@@ -10,7 +10,7 @@ namespace SanyaaDelivery.Domain.OtherModels
         public int ClientId { get; set; }
         public string ClientName { get; set; }
         public string Review { get; set; }
-        public int Rate { get; set; }
+        public sbyte Rate { get; set; }
         public DateTime CreationTime { get; set; }
     }
 
@@ -27,5 +27,15 @@ namespace SanyaaDelivery.Domain.OtherModels
         public bool ShowCalendar { get; set; }
         public bool ShowContact { get; set; }
         public List<EmployeeReviewDto> EmployeeReviews { get; set; }
+    }
+
+    public class AppReviewIndexDto
+    {
+        public string EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public string Title { get; set; }
+        public int Rate { get; set; }
+        public string Image { get; set; }
+        public List<EmployeeReviewDto> ReviewList { get; set; }
     }
 }

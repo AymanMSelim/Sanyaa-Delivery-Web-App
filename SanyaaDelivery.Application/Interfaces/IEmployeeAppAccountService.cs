@@ -37,5 +37,7 @@ namespace SanyaaDelivery.Application.Interfaces
         /// <param name="id">Employee id</param>
         /// <returns>Return true of online</returns>
         bool IsOnline(string id);
+
+        Task<int> ActiveAccountAsync(string id);
     }
 }

@@ -12,7 +12,7 @@ namespace SanyaaDelivery.Domain.Models
         }
 
         public int AddressId { get; set; }
-        public int? ClientId { get; set; }
+        public int ClientId { get; set; }
         public int? GovernorateId { get; set; }
         public int? CityId { get; set; }
         public int? RegionId { get; set; }

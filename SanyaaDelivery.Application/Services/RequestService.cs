@@ -43,6 +43,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RequestT> requestRepository;
         private readonly IRepository<RequestServicesT> requestServiceRepository;
         private readonly IRepository<AddressT> addressRepository;
+        private readonly IRepository<ServiceT> serviceRepository;
         private readonly IRepository<RequestCanceledT> cancelRequestRepository;
         private readonly IRepository<RequestDelayedT> delayRequestRepository;
         private readonly IRepository<RequestComplaintT> complaintRequestRepository;
@@ -54,7 +55,8 @@ namespace SanyaaDelivery.Application.Services
         private readonly ISubscriptionRequestService subscriptionRequestService;
         private readonly ICityService cityService;
         private readonly WhatsAppService whatsAppService;
-
+        private readonly IRepository<MessagesT> messageRepository;
+        private readonly IHelperService helperService;
         private readonly IClientPointService clientPointService;
         private readonly IEmployeeRequestService employeeRequestService;
         private readonly Translator translationService;
@@ -63,9 +65,10 @@ namespace SanyaaDelivery.Application.Services
         public RequestService(IRepository<RequestT> requestRepository, IRepository<RequestCanceledT> cancelRequestRepository,
             IRepository<RequestDelayedT> delayRequestRepository, IRepository<RequestComplaintT> complaintRequestRepository,
             IRepository<RequestServicesT> requestServiceRepository, IRepository<AddressT> addressRepository,
+            IRepository<ServiceT> serviceRepository,
             ICartService cartService, IRepository<ClientPhonesT> phoneRepository, IRepository<EmployeeT> employeeRepository,
             IRepository<ClientSubscriptionT> clientSubscriptionRepository, ISubscriptionRequestService subscriptionRequestService,
-            ICityService cityService, WhatsAppService whatsAppService,
+            ICityService cityService, WhatsAppService whatsAppService, IRepository<MessagesT> messageRepository, IHelperService helperService,
             IClientPointService clientPointService, IEmployeeRequestService employeeRequestService, Translator translationService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
@@ -75,6 +78,7 @@ namespace SanyaaDelivery.Application.Services
             //this.clientService = clientService;
             this.requestServiceRepository = requestServiceRepository;
             this.addressRepository = addressRepository;
+            this.serviceRepository = serviceRepository;
             this.cartService = cartService;
             this.phoneRepository = phoneRepository;
             this.employeeRepository = employeeRepository;
@@ -83,6 +87,8 @@ namespace SanyaaDelivery.Application.Services
             this.subscriptionRequestService = subscriptionRequestService;
             this.cityService = cityService;
             this.whatsAppService = whatsAppService;
+            this.messageRepository = messageRepository;
+            this.helperService = helperService;
             //this.subscriptionService = subscriptionService;
             this.clientPointService = clientPointService;
             this.employeeRequestService = employeeRequestService;
@@ -115,7 +121,7 @@ namespace SanyaaDelivery.Application.Services
                 .Include(d => d.Department)
                 .Include(d => d.Employee)
                 .Include(d => d.EmployeeReviewT)
-                .Include(d => d.FawryChargeRequestT)
+                .Include(d => d.FawryChargeRequestT).ThenInclude(d => d.Charge)
                 .Include(d => d.FollowUpT)
                 .Include(d => d.PartinerPaymentRequestT)
                 .Include(d => d.PaymentT)
@@ -301,7 +307,7 @@ namespace SanyaaDelivery.Application.Services
             }
             if (getCanceled.HasValue)
             {
-                query = query.Where(d => d.RequestCanceledT.Any() == getCanceled);
+                query = query.Where(d => d.IsCanceled);
             }
             if (!string.IsNullOrEmpty(employeeId))
             {
@@ -462,34 +468,21 @@ namespace SanyaaDelivery.Application.Services
         public Task<List<RequestT>> GetUnPaidAsync(string employeeId, bool ignoreRequestWithValidFawryRequest = false)
         {
             var query = requestRepository
-                .Where(d => d.EmployeeId == employeeId && d.RequestStagesT.PaymentFlag == false);
+                .Where(d => d.EmployeeId == employeeId && d.IsPaid == false && d.IsCompleted == true && d.IsCanceled == false);
             if (ignoreRequestWithValidFawryRequest)
             {
-                query = query
-                    .Where(d => d.FawryChargeRequestT.Any(t => t.Charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.UNPAID.ToString()));
+                query = query.Where(d => d.FawryChargeRequestT
+                .Count(t => t.Charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.NEW.ToString() 
+                || t.Charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.UNPAID.ToString()) == 0);
             }
-            query = query.Include(d => d.RequestStagesT);
             return query.ToListAsync();
         }
 
-         
-        public async Task<Result<RequestT>> AddAsync(int clientId, bool isViaApp, int addressId, int phoneId, string employeeId,
-            int? siteId, int? clientSubscriptionId, DateTime requestTime, int systemUserId)
+        private async Task<Result<RequestT>> ValidateRequestMainData(string employeeId, DateTime requestTime, int addressId, int departmentId, bool skipEmployeeCheck = false)
         {
-            CartT cart;
-            int? cartId = null;
-            int? subscriptionId = null;
-            if(requestTime < DateTime.Now.EgyptTimeNow())
+            if (requestTime < DateTime.Now.EgyptTimeNow())
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessageFD("You can't place a request in the past, time " + requestTime.ToString(), App.Global.Enums.ResultStatusCode.Failed);
-            }
-            if (string.IsNullOrEmpty(employeeId) == false)
-            {
-                var isEmployeeFree = await employeeRequestService.IsThisEmployeeFree(employeeId, requestTime);
-                if (isEmployeeFree == false)
-                {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessageFD("This employee have a request in this time please select another", App.Global.Enums.ResultStatusCode.Failed);
-                }
             }
             var address = await addressRepository.GetAsync(addressId);
             if (address.IsNull())
@@ -501,65 +494,79 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Branch not found", App.Global.Enums.ResultStatusCode.NotFound);
             }
-            unitOfWork.StartTransaction();
-            if (clientSubscriptionId.HasValue)
+            if (string.IsNullOrEmpty(employeeId) == false && skipEmployeeCheck == false)
             {
-                var clientSubscription = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId.Value)
-                    .Include(d => d.Subscription)
-                    .Include(d => d.SubscriptionService)
-                    .FirstOrDefaultAsync();
-                if (clientSubscription.IsNull())
+                var result = await employeeRequestService.ValidateEmployeeForRequest(employeeId, requestTime, branch.BranchId, departmentId);
+                if (result.IsFail)
                 {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription not found", App.Global.Enums.ResultStatusCode.NotFound);
+                    return result.Convert(new RequestT());
                 }
-                if (clientSubscription.IsCanceled)
+            }
+            return ResultFactory<RequestT>.CreateSuccessResponse();
+        }
+
+        private async Task<Result<RequestT>> ValidateRequestSubscription(ClientSubscriptionT clientSubscription, DateTime requestTime)
+        {
+            if (clientSubscription.IsNull())
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription not found", App.Global.Enums.ResultStatusCode.NotFound);
+            }
+            if (clientSubscription.IsCanceled)
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is canceled", App.Global.Enums.ResultStatusCode.Failed);
+            }
+            if (clientSubscription.ExpireDate.HasValue && DateTime.Now.EgyptTimeNow() > clientSubscription.ExpireDate.Value)
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is expired", App.Global.Enums.ResultStatusCode.Failed);
+            }
+            if (requestTime < clientSubscription.CreationTime.Value)
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage($"Please select a date after subscription date", App.Global.Enums.ResultStatusCode.Failed);
+            }
+            if (clientSubscription.ExpireDate.HasValue && requestTime > clientSubscription.ExpireDate.Value)
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage($"Please select a date before the subscription end date", App.Global.Enums.ResultStatusCode.Failed);
+            }
+            if (clientSubscription.Subscription.IsNull())
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage("Subscription error found", App.Global.Enums.ResultStatusCode.NotFound);
+            }
+            var subService = clientSubscription.SubscriptionService;
+            if (subService.IsNull())
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessage("Subscription service not found", App.Global.Enums.ResultStatusCode.NotFound);
+            }
+            if (clientSubscription.ExpireDate.HasValue)
+            {
+                var isExceed = await subscriptionRequestService.IsExceedContractSubscriptionLimitAsync(clientSubscription.ClientSubscriptionId, requestTime);
+                if (isExceed)
                 {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is canceled", App.Global.Enums.ResultStatusCode.Failed);
+                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Your have been reach the request count limit for this subscription", App.Global.Enums.ResultStatusCode.Failed);
                 }
-                if (clientSubscription.ExpireDate.HasValue && DateTime.Now.EgyptTimeNow() > clientSubscription.ExpireDate.Value)
+            }
+            else
+            {
+                var isExceed = await subscriptionRequestService.IsExceedSubscriptionLimitAsync(clientSubscription.ClientSubscriptionId, requestTime);
+                if (isExceed)
                 {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is expired", App.Global.Enums.ResultStatusCode.Failed);
+                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Your subscription is ended for this month", App.Global.Enums.ResultStatusCode.Failed);
                 }
-                if (requestTime < clientSubscription.CreationTime.Value)
-                {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage($"Please select a date after subscription date {clientSubscription.CreationTime.Value.ToShortDateString()}", App.Global.Enums.ResultStatusCode.Failed);
-                }
-                if (clientSubscription.ExpireDate.HasValue && requestTime > clientSubscription.ExpireDate.Value )
-                {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage($"Please select a date before the subscription end date {clientSubscription.ExpireDate.Value.ToShortDateString()}", App.Global.Enums.ResultStatusCode.Failed);
-                }
-                if (clientSubscription.Subscription.IsNull())
-                {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Subscription error found", App.Global.Enums.ResultStatusCode.NotFound);
-                }
-                var subService = clientSubscription.SubscriptionService;
-                if (subService.IsNull())
-                {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Subscription service not found", App.Global.Enums.ResultStatusCode.NotFound);
-                }
-                if (clientSubscription.ExpireDate.HasValue)
-                {
-                    var isExceed = await subscriptionRequestService.IsExceedContractSubscriptionLimitAsync(clientSubscriptionId.Value, requestTime);
-                    if (isExceed)
-                    {
-                        return ResultFactory<RequestT>.CreateErrorResponseMessage("Your have been reach the request count limit for this subscription", App.Global.Enums.ResultStatusCode.Failed);
-                    }
-                }
-                else
-                {
-                    var isExceed = await subscriptionRequestService.IsExceedSubscriptionLimitAsync(clientSubscriptionId.Value, requestTime);
-                    if (isExceed)
-                    {
-                        return ResultFactory<RequestT>.CreateErrorResponseMessage("Your subscription is ended for this month, id " + clientSubscriptionId, App.Global.Enums.ResultStatusCode.Failed);
-                    }
-                }
-               
-                subscriptionId = clientSubscription.SubscriptionId;
+            }
+            return ResultFactory<RequestT>.CreateSuccessResponse();
+
+        }
+
+        private async Task<Result<CartT>> GetRequestCart(ClientSubscriptionT clientSubscription, DateTime requestTime, int clientId, bool isViaApp)
+        {
+            Result<RequestT> result;
+            CartT cart;
+            if (clientSubscription.IsNotNull())
+            {
                 var subscriptionCustomCart = new CartT
                 {
                     ClientId = clientId,
                     DepartmentId = clientSubscription.Subscription.DepartmentId,
-                    CreationTime = DateTime.Now,
+                    CreationTime = DateTime.Now.EgyptTimeNow(),
                     IsViaApp = isViaApp,
                     UsePoint = false,
                     CartDetailsT = new List<CartDetailsT>
@@ -567,8 +574,8 @@ namespace SanyaaDelivery.Application.Services
                         new CartDetailsT
                         {
                             ServiceQuantity = 1,
-                            CreationTime = DateTime.Now,
-                            ServiceId = subService.ServiceId,
+                            CreationTime = DateTime.Now.EgyptTimeNow(),
+                            ServiceId = clientSubscription.SubscriptionService.ServiceId,
                         }
                     }
                 };
@@ -576,155 +583,343 @@ namespace SanyaaDelivery.Application.Services
                 var affectedRow = await unitOfWork.SaveAsync();
                 if (affectedRow <= 0)
                 {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Can't create cart");
+                    return ResultFactory<CartT>.CreateErrorResponseMessage("Can't create cart");
                 }
                 cart = subscriptionCustomCart;
-                cartId = subscriptionCustomCart.CartId;
             }
             else
             {
                 cart = await cartService.GetCurrentByClientIdAsync(clientId, isViaApp);
                 if (cart.IsNull())
                 {
-                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Cart not found", App.Global.Enums.ResultStatusCode.NotFound);
+                    return ResultFactory<CartT>.CreateErrorResponseMessage("Cart not found", App.Global.Enums.ResultStatusCode.NotFound);
                 }
-                cartId = cart.CartId;
             }
-            var customCart = await cartService.GetCartForAppAsync(cartId.Value, address.CityId, clientSubscriptionId, requestTime);
-            if (customCart.IsNull())
-            {
-                return ResultFactory<RequestT>.CreateErrorResponseMessage("Error with custom Cart", App.Global.Enums.ResultStatusCode.NotFound);
-            }
-            var request = new RequestT
-            {
-                RequestedAddressId = addressId,
-                RequestedPhoneId = phoneId,
-                EmployeeId = employeeId,
-                SystemUserId = systemUserId,
-                RequestTimestamp = requestTime,
-                RequestCurrentTimestamp = DateTime.Now.ToEgyptTime(),
-                BranchId = branch.BranchId,
-                RequestStatus = string.IsNullOrEmpty(employeeId) ? ((sbyte)Domain.Enum.RequestStatus.NotSet) : ((sbyte)Domain.Enum.RequestStatus.Waiting),
-                SiteId = siteId,
-                ClientSubscriptionId = clientSubscriptionId,
-                SubscriptionId = subscriptionId,
-                IsPaid = false,
-                IsReviewed = false,
-                RequestStagesT = new RequestStagesT
-                {
-                    PaymentFlag = false,
-                    SentTimestamp = DateTime.Now
-                },
-            };
-            request = ConvertCustomCartToRequest(customCart, request);
-            request.RequestDiscountT.ToList().ForEach(d => d.SystemUserId = systemUserId);
-            await AddAsync(request);
-            cart.HaveRequest = true;
-            await cartService.UpdateAsync(cart);
-            if (customCart.UsedPoints > 0)
-            {
-                await clientPointService.WithdrawAsync(new ClientPointT
-                {
-                    ClientId = customCart.ClientId,
-                    Points = customCart.UsedPoints,
-                    Reason = "Request #" + request.RequestId,
-                    SystemUserId = systemUserId
-                });
-            }
-            var affectedRows = await unitOfWork.CommitAsync();
-            if (affectedRows > 0)
-            {
-                var phone = await phoneRepository.GetAsync(phoneId);
-                var msg = $"Your appointment is coming up on {request.RequestTimestamp.Value.DayOfWeek} at {request.RequestTimestamp.Value.ToString("hh:mm tt")}";
-                whatsAppService.SendRequestDetails(phone.ClientPhone, msg);
-                return ResultFactory<RequestT>.CreateSuccessResponse(request);
-            }
-            else
-            {
-                return ResultFactory<RequestT>.CreateErrorResponse();
-            }
+            return ResultFactory<CartT>.CreateSuccessResponse(cart);
         }
 
-        public async Task<List<RequestT>> GetAppList(int clientId, int? status)
+        public async Task<Result<RequestT>> AddAsync(AddRequestDto model, bool isViaApp, int systemUserId)
+        {
+            bool isRootTransaction = false;
+            CartT cart;
+            int? cityId;
+            int branchId;
+            ClientSubscriptionT clientSubscription = null;
+            Result<RequestT> result;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (model.ClientSubscriptionId.HasValue)
+                {
+                    clientSubscription = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == model.ClientSubscriptionId.Value)
+                            .Include(d => d.Subscription)
+                            .Include(d => d.SubscriptionService)
+                            .FirstOrDefaultAsync();
+                    result = await ValidateRequestSubscription(clientSubscription, model.RequestTime.Value);
+                    if (result.IsFail)
+                    {
+                        return result;
+                    }
+                }
+                var cartResult = await GetRequestCart(clientSubscription, model.RequestTime.Value, model.ClientId.Value, isViaApp);
+                if (cartResult.IsFail)
+                {
+                    return cartResult.Convert(new RequestT());
+                }
+                cart = cartResult.Data;
+                result = await ValidateRequestMainData(model.EmployeeId, model.RequestTime.Value, model.AddressId.Value, cart.DepartmentId, model.SkipCheckEmployeeStatus);
+                if (result.IsFail)
+                {
+                    return result;
+                }
+                cityId = await addressRepository.Where(d => d.AddressId == model.AddressId)
+                   .Select(d => d.CityId).FirstOrDefaultAsync();
+                var customCart = await cartService.GetCartForAppAsync(cart.CartId, cityId, model.ClientSubscriptionId, model.RequestTime.Value);
+                if (customCart.IsNull())
+                {
+                    return ResultFactory<RequestT>.CreateErrorResponseMessage("Error with custom Cart", App.Global.Enums.ResultStatusCode.NotFound);
+                }
+                branchId = await cityService.GetCityBranchIdAsync(cityId.Value);
+                var request = new RequestT
+                {
+                    RequestedAddressId = model.AddressId,
+                    RequestedPhoneId = model.PhoneId,
+                    EmployeeId = model.EmployeeId,
+                    SystemUserId = systemUserId,
+                    RequestTimestamp = model.RequestTime,
+                    RequestCurrentTimestamp = DateTime.Now.ToEgyptTime(),
+                    BranchId = branchId,
+                    RequestStatus = string.IsNullOrEmpty(model.EmployeeId) ? ((sbyte)Domain.Enum.RequestStatus.NotSet) : ((sbyte)Domain.Enum.RequestStatus.Waiting),
+                    SiteId = model.SiteId,
+                    IsPaid = false,
+                    IsReviewed = isViaApp ? false : true,
+                    RequestStagesT = new RequestStagesT
+                    {
+                        PaymentFlag = false,
+                        SentTimestamp = DateTime.Now.EgyptTimeNow()
+                    },
+                };
+                if (clientSubscription.IsNotNull())
+                {
+                    request.ClientSubscriptionId = clientSubscription.ClientSubscriptionId;
+                    request.SubscriptionId = clientSubscription.SubscriptionId;
+                }
+                request = ConvertCustomCartToRequest(customCart, request);
+                request.RequestDiscountT.ToList().ForEach(d => d.SystemUserId = systemUserId);
+                await AddAsync(request);
+                cart.HaveRequest = true;
+                await cartService.UpdateAsync(cart);
+                if (customCart.UsedPoints > 0)
+                {
+                    await unitOfWork.SaveAsync();
+                    await clientPointService.WithdrawAsync(new ClientPointT
+                    {
+                        ClientId = customCart.ClientId,
+                        Points = customCart.UsedPoints,
+                        Reason = translationService.Tranlate("Request") + $" #{request.RequestId}",
+                        SystemUserId = systemUserId
+                    });
+                }
+                if (model.ClientSubscriptionId.HasValue)
+                {
+                    var requestCountAfter = await requestRepository.DbSet
+                        .CountAsync(d => d.ClientSubscriptionId == model.ClientSubscriptionId && d.IsCanceled == false
+                        && d.IsCompleted == false && d.RequestTimestamp >= model.RequestTime && d.RequestId != request.RequestId);
+                    if(requestCountAfter > 0)
+                    {
+                        var resetResult = await ResetSubscriptionMonthRequestAsync(model.ClientSubscriptionId.Value, model.RequestTime.Value);
+                        if (resetResult.IsFail)
+                        {
+                            return ResultFactory<RequestT>.CreateErrorResponseMessage("Error reset subscription request");
+                        }
+                    }
+                }
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                if (affectedRows >= 0)
+                {
+                    var phone = await phoneRepository.GetAsync(model.PhoneId);
+                    var msg = $"Your appointment is coming up on {request.RequestTimestamp.Value.DayOfWeek} at {request.RequestTimestamp.Value.ToString("hh:mm tt")}";
+                    //whatsAppService.SendRequestDetails(phone.ClientPhone, msg);
+                    return ResultFactory<RequestT>.CreateSuccessResponse(request);
+                }
+                else
+                {
+                    return ResultFactory<RequestT>.CreateErrorResponse();
+                }
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<RequestT>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+          
+           
+        }
+
+        public async Task<List<AppRequestDto>> GetAppList(int? clientId = null, string employeeId = null, int? status = null)
         {
             bool getCanceled = false;
-            var cancelStatus = GeneralSetting.RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == "Canceled".ToLower());
+            var cancelStatus = GeneralSetting.RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == "canceled");
             if(cancelStatus.RequestStatusGroupId == status)
             {
                 getCanceled = true;
             }
-            var list = await GetList(requestStatusGroupId: status, clientId: clientId, getCanceled: getCanceled, includeStatus: true,
-                includeRequestService: true, includeService: true, includeDepartment: true);
-            list = list.OrderByDescending(d => d.RequestTimestamp).ToList();
+            var query = requestRepository.DbSet.AsQueryable();
+            if (clientId.HasValue)
+            {
+                query = query.Where(d => d.ClientId == clientId.Value);
+            }
+            if(string.IsNullOrEmpty(employeeId) is false)
+            {
+                query = query.Where(d => d.EmployeeId == employeeId);
+            }
+            if (status.HasValue && getCanceled == false)
+            {
+                query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == status.Value && d.IsCanceled == false);
+            }
+            if (getCanceled)
+            {
+                query = query.Where(d => d.IsCanceled);
+            }
+            query = query.OrderByDescending(d => d.RequestTimestamp);
+            var list = await query.Select(d => new AppRequestDto
+            {
+                Date = d.RequestTimestamp.Value.ToString("yyyy-MM-dd"),
+                DayOfWeek = translationService.Tranlate(d.RequestTimestamp.Value.DayOfWeek.ToString()),
+                Department = d.Department.DepartmentName,
+                RequestCaption = translationService.Tranlate("Request") + " #" + d.RequestId,
+                RequestId = d.RequestId,
+                RequestStatus = translationService.Tranlate(d.RequestStatusNavigation.RequestStatusName),
+                Time = d.RequestTimestamp.Value.ToString("tt hh:mm"),
+                Services = string.Join(", ", d.RequestServicesT.Select(t => t.Service.ServiceName))
+            }).ToListAsync();
+            //var list = await GetList(requestStatusGroupId: status, clientId: clientId, getCanceled: getCanceled, includeStatus: true,
+            //    includeRequestService: true, includeService: true, includeDepartment: true, employeeId: employeeId);
+            //list = list.OrderByDescending(d => d.RequestTimestamp).ToList();
             return list;
         }
 
-        public Task<List<RequestT>> GetAppDetails(int requestId)
+        public Task<AppRequestDetailsDto> GetAppDetails(int requestId)
         {
-            return GetList(requestId: requestId, includeStatus: true,
-                includeRequestService: true, includeService: true, includeEmployee: true, includeAddress: true, includePhone: true, includeDepartment: true);
+            var requst = requestRepository.Where(d => d.RequestId == requestId)
+                   .Select(d => new AppRequestDetailsDto
+                   {
+                       CityName = d.RequestedAddress.City.CityName,
+                       RequestId = d.RequestId,
+                       FlatNumber = d.RequestedAddress.AddressFlatNum.HasValue ? d.RequestedAddress.AddressFlatNum.Value : 0,
+                       Date = d.RequestTimestamp.Value.ToString("yyyy-MM-dd"),
+                       DepartmentId = d.DepartmentId.Value,
+                       FloorNumber = d.RequestedAddress.AddressBlockNum.HasValue ? d.RequestedAddress.AddressBlockNum.Value : 0,
+                       DepartmentName = d.Department.DepartmentName,
+                       StreetName = d.RequestedAddress.AddressStreet,
+                       Phone = d.RequestedPhone.ClientPhone,
+                       RegionName = d.RequestedAddress.Region.RegionName,
+                       RequestServiceList = d.RequestServicesT.OrderBy(t => t.RequestServiceId).Select(t => new RequestServiceDto
+                       {
+                           Discount = t.ServiceDiscount,
+                           NetPrice = t.ServicePrice - t.ServiceDiscount,
+                           Price = t.ServicePrice,
+                           Quantity = t.RequestServicesQuantity,
+                           RequestServiceId = t.RequestServiceId,
+                           ServiceId = t.ServiceId,
+                           ServiceDescription = t.Service.ServiceDes,
+                           ServiceName = t.Service.ServiceName
+                       }).ToList(),
+                       RequestCaption = translationService.Tranlate("Request") + " #" + d.RequestId,
+                       Time = d.RequestTimestamp.Value.ToString("tt hh:mm"),
+                       DayOfWeek = translationService.Tranlate(d.RequestTimestamp.Value.DayOfWeek.ToString()),
+                       Employee = new Domain.OtherModels.AppEmployeeDto
+                       {
+                           DepartmentId = d.DepartmentId.Value,
+                           Id = d.EmployeeId,
+                           Image = d.Employee.EmployeeImageUrl,
+                           Name = d.Employee.EmployeeName,
+                           Title = d.Employee.Title,
+                           Phone = d.Employee.EmployeePhone,
+                           //Rate = d.EmployeeReviewT.Sum(e => e.Rate) / d.Employee.EmployeeReviewT.Count,
+                           //IsFavourite = d.Client.FavouriteEmployeeT.Any(t => t.EmployeeId == d.EmployeeId),
+                       },
+                       InvoiceDetails = new Dictionary<string, decimal>
+                       {
+                           { "الاجمالى", Math.Round(d.TotalPrice, 2) },
+                           { "انتقالات", Math.Round(d.DeliveryPrice, 2) },
+                           { "الخصم", Math.Round(d.TotalDiscount, 2) },
+                           { "المطلوب", Math.Round(d.CustomerPrice, 2) }
+                       },
+                       IsCanceled = d.IsCanceled,
+                       IsCompleted = d.IsCompleted,
+                       RequestTimestamp = d.RequestTimestamp.Value
+                   }).FirstOrDefaultAsync();
+            return requst;
         }
 
-        public async Task<Result<int>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true)
+        public async Task<Result<RequestCanceledT>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true)
         {
+            bool isRootTransaction = false;
             try
             {
-                unitOfWork.StartTransaction();
-                var request = await GetAsync(requestId);
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (string.IsNullOrEmpty(reason))
+                {
+                    return ResultFactory<RequestCanceledT>.CreateNotFoundResponse("Please fill the reason first");
+                }
+                var request = await requestRepository.Where(d => d.RequestId == requestId)
+                    .Include(d => d.RequestCanceledT)
+                    .FirstOrDefaultAsync();
                 if (request.IsNull())
                 {
-                    return ResultFactory<int>.CreateNotFoundResponse("Request not found " + requestId); 
+                    return ResultFactory<RequestCanceledT>.CreateNotFoundResponse("Request not found"); 
                 }
-                if (request.IsCanceled)
+                if (request.IsCanceled || request.RequestCanceledT.Any())
                 {
-                    return ResultFactory<int>.CreateErrorResponseMessage("Request is already canceled " + requestId);
+                    return ResultFactory<RequestCanceledT>.CreateSuccessResponse(message: "Request is already canceled");
                 }
                 if (request.IsCompleted)
                 {
-                    return ResultFactory<int>.CreateErrorResponseMessage("This request is completed " + requestId);
+                    return ResultFactory<RequestCanceledT>.CreateErrorResponseMessage("This request is completed");
                 }
-                await cancelRequestRepository.AddAsync(new RequestCanceledT
+                var cancelRequest = new RequestCanceledT
                 {
-                    CancelRequestReason = reason,
-                    CancelRequestTimestamp = DateTime.Now,
+                    CancelRequestReason = translationService.Tranlate(reason),
+                    CancelRequestTimestamp = DateTime.Now.EgyptTimeNow(),
                     RequestId = requestId,
                     SystemUserId = systemUserId
-                });
+                };
+                await cancelRequestRepository.AddAsync(cancelRequest);
                 request.IsCanceled = true;
                 request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName == "Canceled").RequestStatusId;
+                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "canceled").RequestStatusId;
                 await UpdateAsync(request);
-                await clientPointService.AddAsync(new ClientPointT
+                if (request.UsedPoints > 0)
                 {
-                    ClientId = request.ClientId,
-                    Points = request.UsedPoints,
-                    Reason = translationService.Tranlate("Cancel Request") + $" #{requestId}",
-                    SystemUserId = systemUserId,
-                });
+                    await clientPointService.AddAsync(new ClientPointT
+                    {
+                        ClientId = request.ClientId,
+                        Points = request.UsedPoints,
+                        Reason = translationService.Tranlate("Cancel Request") + $" #{requestId}",
+                        SystemUserId = systemUserId,
+                    });
+                }
+                if(string.IsNullOrEmpty(request.EmployeeId) is false)
+                {
+                    string message = string.Format("لقد تم الغاء الطلب رقم {0} من قبل العميل", requestId);
+                    await messageRepository.AddAsync(new MessagesT
+                    {
+                        EmployeeId = request.EmployeeId,
+                        MessageTimestamp = DateTime.Now.ToEgyptTime(),
+                        IsRead = 0,
+                        Title = "الغاء طلب",
+                        Body = message
+                    });
+                }
                 if (request.ClientSubscriptionId.HasValue && resetSubscriptionMonthRequest)
                 {
                     await unitOfWork.SaveAsync();
                     var result = await ResetSubscriptionMonthRequestAsync(request.ClientSubscriptionId.Value, request.RequestTimestamp.Value);
                     if (result.IsFail)
                     {
-                        return result;
+                        return ResultFactory<RequestCanceledT>.CreateErrorResponseMessage("Error while reset subscription month requests");
                     }
                 }
-                var affectedRows = await unitOfWork.CommitAsync();
-                return ResultFactory<int>.CreateAffectedRowsResult(affectedRows);
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return ResultFactory<RequestCanceledT>.CreateAffectedRowsResult(affectedRows, data: cancelRequest);
+            }
+            catch(Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<RequestCanceledT>.CreateExceptionResponse(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
         }
 
         public async Task<Result<int>> ResetSubscriptionMonthRequestAsync(int clientSubscriptionId, DateTime dateTime)
         {
             int affectedRows = 0;
+            bool isRootTransaction = false;
             try
             {
-                unitOfWork.StartTransaction();
+                isRootTransaction = unitOfWork.StartTransaction();
                 var requestList = await GetList(clientSubscriptionId: clientSubscriptionId, getCanceled: false, isCompleted: false,
                     startDate: App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS(dateTime),
                     endDate: App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS(dateTime),
@@ -754,12 +949,23 @@ namespace SanyaaDelivery.Application.Services
                     }
 
                 }
-                affectedRows = await unitOfWork.CommitAsync();
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
                 return ResultFactory<int>.CreateAffectedRowsResult(affectedRows);
+            }
+            catch(Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<int>.CreateExceptionResponse(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
           
         }
@@ -790,47 +996,85 @@ namespace SanyaaDelivery.Application.Services
             return await requestRepository.SaveAsync();
         }
 
-        public async Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId)
+        public async Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId, bool skipCheckEmployee = false)
         {
-            unitOfWork.StartTransaction();
-            var request = await GetAsync(requestId);
-            if (request.IsCompleted)
+            bool isRootTransaction = false;
+            try
             {
-                return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is already complete");
-            }
-            if (request.IsCanceled)
-            {
-                return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is canceled");
-            }
-            if (string.IsNullOrEmpty(request.EmployeeId) == false)
-            {
-                var isFree = await employeeRequestService.IsThisEmployeeFree(request.EmployeeId, newTime);
-                if (isFree == false)
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (newTime <= DateTime.Now.EgyptTimeNow())
                 {
-                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessage("This employee not avalible at this time");
+                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("The selected time is not valid");
+                }
+                var request = await GetAsync(requestId);
+                if (request.IsCompleted)
+                {
+                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is already complete");
+                }
+                if (request.IsCanceled)
+                {
+                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is canceled");
+                }
+
+                if (string.IsNullOrEmpty(request.EmployeeId) == false)
+                {
+                    if (skipCheckEmployee == false)
+                    {
+                        var employeeValidateResult = await employeeRequestService.ValidateEmployeeForRequest(request.EmployeeId, newTime, request.BranchId,  request.DepartmentId, requestId);
+                        if (employeeValidateResult.IsFail)
+                        {
+                            return employeeValidateResult.Convert(new RequestDelayedT());
+                        }
+                    }
+                    string message = string.Format("لقد تم تاجيل الطلب رقم {0} الى ميعاد {1}", requestId, newTime.ToString());
+                    await messageRepository.AddAsync(new MessagesT
+                    {
+                        EmployeeId = request.EmployeeId,
+                        MessageTimestamp = DateTime.Now.ToEgyptTime(),
+                        IsRead = 0,
+                        Title = "تأجبل طلب",
+                        Body = message
+                    });
+                }
+                var delayRequest = new RequestDelayedT
+                {
+                    DelayRequestTimestamp = request.RequestTimestamp.Value,
+                    DelayRequestNewTimestamp = newTime,
+                    DelayRequestReason = reason,
+                    RequestId = requestId,
+                    SystemUserId = systemUserId
+                };
+                await delayRequestRepository.AddAsync(delayRequest);
+                request.RequestStatus = GeneralSetting.RequestStatusList
+                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "Delayed".ToLower()).RequestStatusId;
+                request.RequestTimestamp = newTime;
+                await UpdateAsync(request);
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return ResultFactory<RequestDelayedT>.CreateAffectedRowsResult(affectedRows, data: delayRequest);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<RequestDelayedT>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
                 }
             }
-            var delayRequest = new RequestDelayedT
-            {
-                DelayRequestTimestamp = request.RequestTimestamp.Value,
-                DelayRequestNewTimestamp = newTime,
-                DelayRequestReason = reason,
-                RequestId = requestId,
-                SystemUserId = systemUserId
-            };
-            await delayRequestRepository.AddAsync(delayRequest);
-            request.RequestStatus = GeneralSetting.RequestStatusList
-                .FirstOrDefault(d => d.RequestStatusName == "Delayed").RequestStatusId;
-            request.RequestTimestamp = newTime;
-            await UpdateAsync(request);
-            int affectedRows = await unitOfWork.CommitAsync();
-            return ResultFactory<RequestDelayedT>.CreateAffectedRowsResult(affectedRows, data: delayRequest);
+           
         }
 
-        public async Task<Result<EmployeeT>> ReAssignEmployeeAsync(int requestId, string employeeId)
+        public async Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model)
         {
             EmployeeT employee = null;
-            var request = await GetAsync(requestId);
+            var request = await GetAsync(model.RequestId);
             if (request.IsCompleted)
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("This request is already complete");
@@ -839,21 +1083,30 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("This request is canceled");
             }
-            if (string.IsNullOrEmpty(employeeId))
+            if (model.RequestTime.HasValue)
+            {
+                request.RequestTimestamp = model.RequestTime;
+            }
+            if (string.IsNullOrEmpty(model.EmployeeId))
             {
                 request.EmployeeId = null;
                 request.RequestStatus = GeneralSetting.RequestStatusList
-               .FirstOrDefault(d => d.RequestStatusName == "NotSet").RequestStatusId;
+               .FirstOrDefault(d => d.RequestStatusName.ToLower() == "notset").RequestStatusId;
             }
             else
             {
-                request.EmployeeId = employeeId;
-                var isFree = await employeeRequestService.IsThisEmployeeFree(employeeId, request.RequestTimestamp.Value);
-                if(isFree == false)
+                request.EmployeeId = model.EmployeeId;
+                if (model.SkipCheckEmployee == false)
                 {
-                    return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee is not available at this time");
+                    var employeeValidateResult = await employeeRequestService.ValidateEmployeeForRequest(model.EmployeeId, request.RequestTimestamp.Value, request.BranchId, request.DepartmentId, model.RequestId);
+                    if (employeeValidateResult.IsFail)
+                    {
+                        return employeeValidateResult;
+                    }
                 }
-                employee = await employeeRepository.GetAsync(employeeId);
+                request.RequestStatus = GeneralSetting.RequestStatusList
+                 .FirstOrDefault(d => d.RequestStatusName.ToLower() == "waiting").RequestStatusId;
+                    employee = await employeeRepository.GetAsync(model.EmployeeId);
             }
             request.IsReviewed = false;
             var affectedRows = await UpdateAsync(request);
@@ -902,6 +1155,7 @@ namespace SanyaaDelivery.Application.Services
 
         private void ConvertCartServiceToRequestService(CartDto cart, RequestT request)
         {
+            if(request.IsNull() || cart.IsNull()) { return; }
             if (request.RequestServicesT.IsNull())
             {
                 request.RequestServicesT = new List<RequestServicesT>();
@@ -909,11 +1163,11 @@ namespace SanyaaDelivery.Application.Services
             foreach (var item in cart.CartServiceDetails)
             {
                 var requestService = request.RequestServicesT.FirstOrDefault(d => d.ServiceId == item.ServiceId);
-                if(requestService != null)
+                if(requestService.IsNotNull())
                 {
                     requestService.ServicePrice = item.Price;
                     requestService.ServiceDiscount = item.Discount;
-                    requestService.RequestServicesQuantity = item.ServiceQuantity.Value;
+                    requestService.RequestServicesQuantity = item.ServiceQuantity;
                     requestService.ServiceMaterialCost = item.MaterialCost;
                     requestService.ServiceId = item.ServiceId;
                     requestService.ServicePoint = item.Points;
@@ -922,10 +1176,10 @@ namespace SanyaaDelivery.Application.Services
                 {
                     request.RequestServicesT.Add(new RequestServicesT
                     {
-                        AddTimestamp = DateTime.Now,
+                        AddTimestamp = DateTime.Now.EgyptTimeNow(),
                         ServicePrice = item.Price,
                         ServiceDiscount = item.Discount,
-                        RequestServicesQuantity = item.ServiceQuantity.Value,
+                        RequestServicesQuantity = item.ServiceQuantity,
                         ServiceMaterialCost = item.MaterialCost,
                         ServiceId = item.ServiceId,
                         ServicePoint = item.Points,
@@ -943,7 +1197,7 @@ namespace SanyaaDelivery.Application.Services
             foreach (var item in cart.RequestDiscounts)
             {
                 var discount = request.RequestDiscountT.FirstOrDefault(d => d.DiscountTypeId == item.DiscountTypeId);
-                if (discount != null)
+                if (discount.IsNotNull())
                 {
                     discount.DiscountValue = item.DiscountValue;
                 }
@@ -951,7 +1205,7 @@ namespace SanyaaDelivery.Application.Services
                 {
                     request.RequestDiscountT.Add(new RequestDiscountT
                     {
-                        CreationTime = DateTime.Now,
+                        CreationTime = DateTime.Now.EgyptTimeNow(),
                         RequestId = item.RequestId,
                         CompanyPercentage = item.CompanyPercentage,
                         DiscountValue = item.DiscountValue,
@@ -965,54 +1219,93 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<RequestServicesT>> AddUpdateServiceAsync(RequestServicesT requestService)
         {
-            unitOfWork.StartTransaction();
-            var requestServiceList = await GetServiceListAsync(requestService.RequestId);
-            if (requestServiceList.Count <= 1 && requestService.RequestServicesQuantity <= 0)
+            bool isRootTransaction = false;
+            try
             {
-                return ResultFactory<RequestServicesT>.CreateErrorResponseMessageFD("Can't delete this service, the request must have at least one service");
-            }
-            var cartId = await GetCartIdAsync(requestService.RequestId);
-            if (cartId.IsNull())
-            {
-                return ResultFactory<RequestServicesT>.CreateErrorResponseMessageFD("This request has no cart please contact with us");
-            }
-            var cartResult = await cartService.AddUpdateServiceAsync(cartId.Value, requestService.ServiceId, requestService.RequestServicesQuantity);
-            if (cartResult.IsFail)
-            {
-                return cartResult.Convert(requestService);
-            }
-            requestService.AddTimestamp = DateTime.Now;
-            var requestServiceFound = requestServiceList.FirstOrDefault(d => d.ServiceId == requestService.ServiceId);
-            if (requestServiceFound.IsNotNull())
-            {
-                if (requestService.RequestServicesQuantity <= 0)
+                isRootTransaction = unitOfWork.StartTransaction();
+                var requestServiceList = await GetServiceListAsync(requestService.RequestId);
+                if (requestServiceList.Count <= 1 && requestService.RequestServicesQuantity <= 0)
                 {
-                    await requestServiceRepository.DeleteAsync(requestServiceFound.RequestServiceId);
+                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessageFD("Can't delete this service, the request must have at least one service");
+                }
+                var cartId = await GetCartIdAsync(requestService.RequestId);
+                if (cartId.IsNull())
+                {
+                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessageFD("This request has no cart please contact with us");
+                }
+                var cartResult = await cartService.AddUpdateServiceAsync(cartId.Value, requestService.ServiceId, requestService.RequestServicesQuantity);
+                if (cartResult.IsFail)
+                {
+                    return cartResult.Convert(requestService);
+                }
+                requestService.AddTimestamp = DateTime.Now;
+                var requestServiceFound = requestServiceList.FirstOrDefault(d => d.ServiceId == requestService.ServiceId);
+                if (requestServiceFound.IsNotNull())
+                {
+                    if (requestService.RequestServicesQuantity <= 0)
+                    {
+                        await requestServiceRepository.DeleteAsync(requestServiceFound.RequestServiceId);
+                    }
+                    else
+                    {
+                        requestServiceFound.RequestServicesQuantity = requestService.RequestServicesQuantity;
+                        requestServiceRepository.Update(requestServiceFound.RequestServiceId, requestServiceFound);
+                    }
                 }
                 else
                 {
-                    requestServiceFound.RequestServicesQuantity = requestService.RequestServicesQuantity;
-                    requestServiceRepository.Update(requestServiceFound.RequestServiceId, requestServiceFound);
+                    await requestServiceRepository.AddAsync(requestService);
+                }
+                await unitOfWork.SaveAsync();
+                var requestList = await GetList(requestId: requestService.RequestId, includeRequestService: true, includeRequestStage: true, includeDiscounts: true);
+                var request = requestList.FirstOrDefault();
+                if (request.IsCanceled)
+                {
+                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is canceled");
+                }
+                if (request.IsCompleted)
+                {
+                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is complete");
+                }
+                await UpdateWithCartAsync(request);
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return ResultFactory<RequestServicesT>.CreateAffectedRowsResult(affectedRows);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<RequestServicesT>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
                 }
             }
-            else
+            
+        }
+
+        public async Task<Result<RequestServicesT>> AddUpdateServiceOAsync(AddUpdateeRequestServiceODto model)
+        {
+            if (model.ServiceName.IsNull() || model.ServiceName.Contains("-") == false)
             {
-                await requestServiceRepository.AddAsync(requestService);
+                return ResultFactory<RequestServicesT>.CreateNotFoundResponse("Service not found");
             }
-            await unitOfWork.SaveAsync();
-            var requestList = await GetList(requestId: requestService.RequestId, includeRequestService: true, includeRequestStage: true, includeDiscounts: true);
-            var request = requestList.FirstOrDefault();
-            if (request.IsCanceled)
+            var list = model.ServiceName.Split('-');
+            var serviceId = Convert.ToInt32(list.LastOrDefault().Trim());
+            var requestService = new RequestServicesT
             {
-                return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is canceled");
-            }
-            if (request.IsCompleted)
-            {
-                return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is complete");
-            }
-            await UpdateWithCartAsync(request);
-            var affectedRows = await unitOfWork.CommitAsync();
-            return ResultFactory<RequestServicesT>.CreateAffectedRowsResult(affectedRows);
+                RequestId = model.RequestId,
+                AddTimestamp = DateTime.Now,
+                RequestServicesQuantity = model.ServiceQuantity,
+                ServiceId = serviceId
+            };
+            return await AddUpdateServiceAsync(requestService);
         }
 
         public Task<RequestServicesT> GetServiceAsync(int requestServiceId)
@@ -1035,17 +1328,59 @@ namespace SanyaaDelivery.Application.Services
         public async Task<Result<RequestT>> AddAsync(int clientSubscriptionId, DateTime requestTime, int systemUserId, bool isViaApp)
         {
             var clientSubscription = await clientSubscriptionRepository.GetAsync(clientSubscriptionId);
-            if (clientSubscription.IsNull())
+            var result = helperService.ValidateClientSubscription(clientSubscription);
+            if (result.IsFail)
             {
-                return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription not found");
-            }
-            if (clientSubscription.IsCanceled)
-            {
-                return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is canceled");
+                return result.Convert(new RequestT());
             }
             var time = new DateTime(requestTime.Year, requestTime.Month, requestTime.Day, clientSubscription.VisitTime.Value.Hour, 0, 0);
-            return await AddAsync(clientSubscription.ClientId, isViaApp, clientSubscription.AddressId.Value, clientSubscription.PhoneId.Value, clientSubscription.EmployeeId,
-                null, clientSubscriptionId, time, systemUserId);
+            return await AddAsync(new AddRequestDto
+            {
+                AddressId = clientSubscription.AddressId,
+                ClientId = clientSubscription.ClientId,
+                ClientSubscriptionId = clientSubscription.ClientSubscriptionId,
+                EmployeeId = clientSubscription.EmployeeId,
+                PhoneId = clientSubscription.PhoneId,
+                RequestTime = time,
+            }, isViaApp, systemUserId);
+        }
+
+        public async Task<int> UpdatePriceAsync(UpdateRequestPriceDto model)
+        {
+            var request = await requestRepository.GetAsync(model.RequestId);
+            if (request.IsNull())
+            {
+                return (int)App.Global.Enums.ResultStatusCode.NotFound;
+            }
+            request.CustomerPrice = model.CustomerPrice;
+            request.CompanyPercentageAmount = model.CompanyPercentage;
+            request.EmployeePercentageAmount = model.EmployeePercentage;
+            requestRepository.Update(request.RequestId, request);
+            return await requestRepository.SaveAsync();
+        }
+
+        public async Task<int> UpdatePhoneAsync(UpdateRequestPhoneDto model)
+        {
+            var request = await requestRepository.GetAsync(model.RequestId);
+            if (request.IsNull())
+            {
+                return (int)App.Global.Enums.ResultStatusCode.NotFound;
+            }
+            request.RequestedPhoneId = model.PhoneId;
+            requestRepository.Update(request.RequestId, request);
+            return await requestRepository.SaveAsync();
+        }
+
+        public async Task<int> UpdateAddressAsync(UpdateRequestAddressDto model)
+        {
+            var request = await requestRepository.GetAsync(model.RequestId);
+            if (request.IsNull())
+            {
+                return (int)App.Global.Enums.ResultStatusCode.NotFound;
+            }
+            request.RequestedPhoneId = model.AddressId;
+            requestRepository.Update(request.RequestId, request);
+            return await requestRepository.SaveAsync();
         }
     }
 }

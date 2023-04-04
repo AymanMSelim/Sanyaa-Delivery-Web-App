@@ -14,11 +14,19 @@
 
   <ItemGroup>
     <None Remove="AboutCompany.txt" />
+    <None Remove="AboutCompanyEmployeeApp.txt" />
     <None Remove="PrivacyPolicy.txt" />
+    <None Remove="PrivacyPolicyEmployeeApp.txt" />
     <None Remove="TermsAndConditions.txt" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="AboutCompanyEmployeeApp.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PrivacyPolicyEmployeeApp.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="PrivacyPolicy.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

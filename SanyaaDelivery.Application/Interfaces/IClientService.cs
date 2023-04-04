@@ -13,6 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
         ClientDto GetAllClients();
 
         Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false);
+        Task<int> GetPointAsync(int clientId);
 
         Task<List<ClientT>> GetListAsync(string searchValue);
 
@@ -51,9 +52,11 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> SetDefaultAddressAsync(int addressId, int clientId);
 
         Task<AddressT> GetDefaultAddressAsync(int clientId);
+        Task<int?> GetDefaultAddressCityIdAsync(int clientId);
         Task<ClientPhonesT> GetDefaultPhoneAsync(int clientId);
 
         Task<int> GetDefaultCityIdAsync(int clientId);
+        Task<CityT> GetDefaultCityAsync(int clientId);
 
         Task<List<ClientPhonesT>> GetPhoneListAsync(int clientId, bool? getDeleted = false); 
         

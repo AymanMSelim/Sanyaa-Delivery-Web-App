@@ -30,7 +30,7 @@ namespace SanyaaDelivery.Domain.Models
         public string ClientKnowUs { get; set; }
         public int? BranchId { get; set; }
         public int? SystemUserId { get; set; }
-        public int? ClientPoints { get; set; }
+        public int ClientPoints { get; set; }
         public bool IsGuest { get; set; }
 
         public BranchT Branch { get; set; }

@@ -2,6 +2,7 @@
 using App.Global.ExtensionMethods;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SanyaaDelivery.Application;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
@@ -47,6 +48,25 @@ namespace SanyaaDelivery.API.Controllers
                     return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
                 }
                 return ResultFactory<object>.CreateErrorResponseMessage("Error update token");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SendFirebaseNotificationtToClient")]
+        public async Task<ActionResult<Result<object>>> SendFirebaseNotificationtToClient(SendFirebaseNotificationDto model)
+        {
+            try
+            {
+                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, model.Id);
+                if (account.IsNull() || string.IsNullOrEmpty(account.FcmToken))
+                {
+                    return ResultFactory<object>.CreateNotFoundResponse("No token for this client");
+                }
+                await App.Global.Firebase.FirebaseMessaging.Send(account.FcmToken, model.Title, model.Body);
+                return ResultFactory<object>.CreateSuccessResponse();
             }
             catch (Exception ex)
             {

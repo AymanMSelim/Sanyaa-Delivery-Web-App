@@ -9,6 +9,7 @@ namespace SanyaaDelivery.Domain.DTOs
     {
         public int? Points { get; set; }
         public sbyte? PointType { get; set; }
+        public string PointTypeDescription { get; set; }
         public string Reason { get; set; }
         public string CreationDate { get; set; }
     }

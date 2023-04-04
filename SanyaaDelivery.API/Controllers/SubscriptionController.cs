@@ -214,6 +214,20 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpGet("GetSequenceList/{subscriptionServiceId}")]
+        public async Task<ActionResult<Result<List<SubscriptionSequenceT>>>> GetSequenceList(int subscriptionServiceId)
+        {
+            try
+            {
+                var subscriptionList = await subscriptionService.GetSequenceListAsync(subscriptionServiceId);
+                return Ok(ResultFactory<List<SubscriptionSequenceT>>.CreateSuccessResponse(subscriptionList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<SubscriptionSequenceT>>(ex));
+            }
+        }
+
         [HttpPost("DeleteSequence/{sequenceId}")]
         public async Task<ActionResult<Result<SubscriptionSequenceT>>> DeleteSequence(int sequenceId)
         {
@@ -253,7 +267,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 if (clientId.IsNull())
                 {
-                    return Ok(ResultFactory<ClientSubscriptionT>.CreateErrorResponseMessage("ClientId can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<ClientSubscriptionT>.ReturnClientError());
                 }
                 var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, departmentId, true, true, true, true, true, true);
                 var mapList = mapper.Map<List<ClientSubscriptionDto>>(clientSubscriptionList);
@@ -272,6 +286,24 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpGet("GetClientSubcription")]
+        public async Task<ActionResult<Result<List<ClientSubscriptionT>>>> GetClientSubcription(int? clientId = null, int? departmentId = null)
+        {
+            try
+            {
+                clientId = commonService.GetClientId();
+                if (clientId.IsNull())
+                {
+                    return Ok(ResultFactory<ClientSubscriptionT>.ReturnClientError());
+                }
+                var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, departmentId);
+                return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateSuccessResponse(clientSubscriptionList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ClientSubscriptionT>>(ex));
+            }
+        }
         [HttpGet("GetSubscriptionList/{departmentId?}")]
         public async Task<ActionResult<Result<List<SubscriptionDto>>>> GetSubscriptionList(int? departmentId = null)
         {
@@ -358,6 +390,36 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpGet("GetClientSubscription/{clientSubscriptionId}")]
+        public async Task<ActionResult<Result<ClientSubscriptionT>>> GetClientSubscription(int clientSubscriptionId)
+        {
+            try
+            {
+                var clientSubscription = await clientSubscriptionService.GetAsync(clientSubscriptionId);
+                return Ok(ResultFactory<ClientSubscriptionT>.CreateSuccessResponse(clientSubscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientSubscriptionT>(ex));
+            }
+        }
 
+        [HttpPost("UpdateClientSubscription")]
+        public async Task<ActionResult<Result<ClientSubscriptionT>>> UpdateClientSubscription(ClientSubscriptionT clientSubscription)
+        {
+            try
+            {
+                if (clientSubscription.SystemUserId == 0)
+                {
+                    clientSubscription.SystemUserId = commonService.GetSystemUserId();
+                }
+                var affectedRows = await clientSubscriptionService.UpdateAsync(clientSubscription);
+                return Ok(ResultFactory<ClientSubscriptionT>.CreateAffectedRowsResult(affectedRows, data: clientSubscription));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientSubscriptionT>(ex));
+            }
+        }
     }
 }

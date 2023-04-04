@@ -93,6 +93,7 @@ namespace SanyaaDelivery.Application.Services
                 .ToListAsync();
         }
 
+
         public Task<List<ServiceT>> GetOfferListByDeparmentSub0Async(int departmentSub0Id)
         {
             return serviceRepository
@@ -104,6 +105,13 @@ namespace SanyaaDelivery.Application.Services
         {
             return serviceRepository
                 .Where(d => d.Department.DepartmentSub0Navigation.Department.DepartmentId == departmentId && d.ServiceDiscount > 0 && d.NoDiscount == false)
+                .ToListAsync();
+        }
+
+        public Task<List<ServiceT>> GetOfferListByMainDeparmentAsync(List<int> departmentIdList)
+        {
+            return serviceRepository
+                .Where(d => departmentIdList.Contains(d.Department.DepartmentSub0Navigation.Department.DepartmentId) && d.ServiceDiscount > 0 && d.NoDiscount == false)
                 .ToListAsync();
         }
 
@@ -162,7 +170,7 @@ namespace SanyaaDelivery.Application.Services
                     inServiceList = cart.CartDetailsT.Select(d => new MiniService
                     {
                         ServiceId = d.ServiceId,
-                        ServiceQuantity  = d.ServiceQuantity.Value
+                        ServiceQuantity  = d.ServiceQuantity
                     }).ToList();
                 }
             }
@@ -244,7 +252,7 @@ namespace SanyaaDelivery.Application.Services
                 DiscountServiceCount = d.DiscountServiceCount,
                 IsFavourite = favouriteServiceList.Any(f => f.ServiceId == d.ServiceId),
                 IsInCart = inCartServiceList.Any(c => c.ServiceId == d.ServiceId),
-                CartQuantity = inCartServiceList.Any(c => c.ServiceId == d.ServiceId) ? inCartServiceList.FirstOrDefault(c => c.ServiceId == d.ServiceId).ServiceQuantity.Value : 0,
+                CartQuantity = inCartServiceList.Any(c => c.ServiceId == d.ServiceId) ? inCartServiceList.FirstOrDefault(c => c.ServiceId == d.ServiceId).ServiceQuantity : 0,
                 MaterialCost = d.MaterialCost,
                 NoDiscount = d.NoDiscount,
                 ServiceCost = d.ServiceCost,
@@ -269,7 +277,8 @@ namespace SanyaaDelivery.Application.Services
             {
                 service.ServiceDes = $"اطلب {service.DiscountServiceCount} خدمة واحصل على الخصم";
             }
-            return (short)((decimal)service.ServiceCost - ((decimal)service.ServiceDiscount.Value / 100 * (decimal)service.ServiceCost));
+            var netCost = service.ServiceCost - (service.ServiceDiscount.Value / 100 * service.ServiceCost);
+            return Math.Round(netCost, 0);
 
         }
         public Task<List<ServiceT>> GetServiceList(int? mainDepartmentId = null, int? departmentSub0Id = null, int? departmentSub1Id = null, bool? getOffer = null, string searchValue = null)

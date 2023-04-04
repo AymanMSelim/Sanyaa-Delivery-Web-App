@@ -9,6 +9,7 @@ namespace SanyaaDelivery.Application.Interfaces
     public interface IFawryChargeService
     {
         Task<FawryChargeT> GetAsync(int id, bool includeRequest = false);
+        Task<bool> IsThisChargeExistAsync(string employeeId, decimal amount);
         Task<FawryChargeT> GetByReferenceNumberAsync(long referenceNumber, bool includeRequest = false);
         Task<int> AddAsync(FawryChargeT fawryCharge);
         Task<int> UpdateAsync(FawryChargeT fawryCharge);

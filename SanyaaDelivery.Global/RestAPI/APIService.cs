@@ -110,6 +110,13 @@ namespace App.Global.RestAPI
             return await HelperClass.GetResponseAsync<T>(httpResponseMessage);
         }
 
+        public async Task<T> PostFileAsync<T>(string url, HttpContent content)
+        {
+            HttpResponseMessage httpResponseMessage;
+            httpResponseMessage = await _httpClient.PostAsync(GetPath(url), content);
+            return await HelperClass.GetResponseAsync<T>(httpResponseMessage);
+        }
+
         public async Task<JObject> GetResponseJsonAsync(string url)
         {
             try

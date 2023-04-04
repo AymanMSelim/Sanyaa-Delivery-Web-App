@@ -18,29 +18,22 @@ using App.Global.DateTimeHelper;
 namespace SanyaaDelivery.API.Controllers
 {
     [Authorize]
-    public class RequestController : APIBaseAuthorizeController
+    public partial class RequestController : APIBaseAuthorizeController
     {
         private readonly IRequestService requestService;
         private readonly CommonService commonService;
-        private readonly ICartService cartService;
-        private readonly IClientService clientService;
-        private readonly ICityService cityService;
         private readonly IRequestStatusService requestStatusService;
         private readonly IMapper mapper;
         private readonly IRequestHelperService requestHelperService;
         private readonly IRequestUtilityService requestUtilityService;
 
         public RequestController(IRequestService requestService, 
-            CommonService commonService, ICartService cartService, 
-            IClientService clientService, ICityService cityService,
+            CommonService commonService,
             IRequestStatusService requestStatusService,
             IMapper mapper, IRequestHelperService requestHelperService, IRequestUtilityService requestUtilityService)
         {
             this.requestService = requestService;
             this.commonService = commonService;
-            this.cartService = cartService;
-            this.clientService = clientService;
-            this.cityService = cityService;
             this.requestStatusService = requestStatusService;
             this.mapper = mapper;
             this.requestHelperService = requestHelperService;
@@ -72,6 +65,59 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpPost("UpdatePrice")]
+        public async Task<ActionResult<Result<object>>> UpdatePrice(UpdateRequestPriceDto model)
+        {
+            try
+            {
+                if (model.IsNull())
+                {
+                    return Ok(ResultFactory<object>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                int affectedRecords = await requestService.UpdatePriceAsync(model);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRecords));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("UpdatePhone")]
+        public async Task<ActionResult<Result<object>>> UpdatePhone(UpdateRequestPhoneDto model)
+        {
+            try
+            {
+                if (model.IsNull())
+                {
+                    return Ok(ResultFactory<object>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                int affectedRecords = await requestService.UpdatePhoneAsync(model);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRecords));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("UpdateAddress")]
+        public async Task<ActionResult<Result<object>>> UpdateAddress(UpdateRequestAddressDto model)
+        {
+            try
+            {
+                if (model.IsNull())
+                {
+                    return Ok(ResultFactory<object>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                int affectedRecords = await requestService.UpdateAddressAsync(model);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRecords));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
         [HttpPost("AddCustom")]
         public async Task<ActionResult<Result<AppRequestDto>>> AddCustom(AddRequestDto requestDto)
         {
@@ -113,8 +159,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 int systemUserId = commonService.GetSystemUserId();
                 bool isViaApp = commonService.IsViaApp();
-                var result = await requestService.AddAsync(requestDto.ClientId.Value, isViaApp, requestDto.AddressId.Value, 
-                    requestDto.PhoneId.Value, requestDto.EmployeeId, requestDto.SiteId, requestDto.ClientSubscriptionId, requestDto.RequestTime.Value, systemUserId);
+                var result = await requestService.AddAsync(requestDto, isViaApp, systemUserId);
                 if (result.IsSuccess)
                 {
                     var mapRequest = mapper.Map<AppRequestDto>(result.Data);
@@ -212,7 +257,7 @@ namespace SanyaaDelivery.API.Controllers
             try
             {
                 clientId = commonService.GetClientId(clientId);
-                var list = await requestService.GetAppList(clientId.Value, status);
+                var list = await requestService.GetAppList(clientId: clientId.Value, status: status);
                 var mapList = mapper.Map<List<AppRequestDto>>(list);
                 return ResultFactory<List<AppRequestDto>>.CreateSuccessResponse(mapList);
             }
@@ -246,40 +291,31 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                AppRequestDetailsDto appRequest = null;
-                var list = await requestService.GetAppDetails(requestId);
-                if (list.HasItem())
+                AppRequestDetailsDto request = await requestService.GetAppDetails(requestId);
+                if (request.IsNotNull())
                 {
-                    var request = list.FirstOrDefault();
-                    request.RequestServicesT = request.RequestServicesT.OrderBy(d => d.RequestServiceId).ToList();
-                    appRequest = mapper.Map<AppRequestDetailsDto>(request);
-                    appRequest.InvoiceDetails = new Dictionary<string, decimal>();
-                    appRequest.InvoiceDetails.Add("الاجمالى", Math.Round(request.TotalPrice, 2));
-                    appRequest.InvoiceDetails.Add("انتقالات", Math.Round(request.DeliveryPrice, 2));
-                    appRequest.InvoiceDetails.Add("الخصم", Math.Round(request.TotalDiscount, 2));
-                    appRequest.InvoiceDetails.Add("المطلوب", Math.Round(request.CustomerPrice, 2));
                     if (request.IsCanceled || request.IsCompleted)
                     {
-                        appRequest.ShowCancelRequestButton = false;
-                        appRequest.ShowAddServiceButton = false;
-                        appRequest.ShowReAssignEmployeeButton = false;
-                        appRequest.ShowDelayRequestButton = false;
+                        request.ShowCancelRequestButton = false;
+                        request.ShowAddServiceButton = false;
+                        request.ShowReAssignEmployeeButton = false;
+                        request.ShowDelayRequestButton = false;
                     }
                     else
                     {
-                        appRequest.ShowCancelRequestButton = true;
-                        appRequest.ShowAddServiceButton = true;
-                        appRequest.ShowReAssignEmployeeButton = true;
-                        appRequest.ShowDelayRequestButton = true;
+                        request.ShowCancelRequestButton = true;
+                        request.ShowAddServiceButton = true;
+                        request.ShowReAssignEmployeeButton = true;
+                        request.ShowDelayRequestButton = true;
                     }
-                    if (appRequest.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.Value.AddHours(-1))
+                    if (request.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.AddHours(-1))
                     {
-                        appRequest.Employee.ShowContact = true;
-                        appRequest.ShowReAssignEmployeeButton = false;
-                        appRequest.ShowDelayRequestButton = false;
+                        request.Employee.ShowContact = true;
+                        request.ShowReAssignEmployeeButton = false;
+                        request.ShowDelayRequestButton = false;
                     }
                 }
-                return ResultFactory<AppRequestDetailsDto>.CreateSuccessResponse(appRequest);
+                return ResultFactory<AppRequestDetailsDto>.CreateSuccessResponse(request);
             }
             catch (Exception ex)
             {
@@ -355,27 +391,26 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-
         [HttpPost("Cancel")]
-        public async Task<ActionResult<Result<int>>> Cancel(int requestId, string reason)
+        public async Task<ActionResult<Result<RequestCanceledT>>> Cancel(int requestId, string reason)
         {
             try
             {
                 var result = await requestService.CancelAsync(requestId, reason, commonService.GetSystemUserId());
-                return result;
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<int>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<RequestCanceledT>.CreateExceptionResponse(ex));
             }
         }
 
         [HttpPost("ChangeTime")]
-        public async Task<ActionResult<Result<RequestDelayedT>>> ChangeTime(int requestId, string reason, DateTime newTime)
+        public async Task<ActionResult<Result<RequestDelayedT>>> ChangeTime(int requestId, string reason, DateTime newTime, bool skipCheckEmployee = false)
         {
             try
             {
-                var result = await requestService.ChangeTimeAsync(requestId, newTime, reason, commonService.GetSystemUserId());
+                var result = await requestService.ChangeTimeAsync(requestId, newTime, reason, commonService.GetSystemUserId(), skipCheckEmployee);
                 return result;
             }
             catch (Exception ex)
@@ -390,7 +425,7 @@ namespace SanyaaDelivery.API.Controllers
             AppEmployeeDto employee = null;
             try
             {
-                var result = await requestService.ReAssignEmployeeAsync(employeeDto.RequestId, employeeDto.EmployeeId);
+                var result = await requestService.ReAssignEmployeeAsync(employeeDto);
                 
                 if (result.IsSuccess && result.Data.IsNotNull())
                 {
@@ -442,7 +477,7 @@ namespace SanyaaDelivery.API.Controllers
         [HttpPost("AddUpdateService")]
         public async Task<ActionResult<Result<AppRequestDetailsDto>>> AddUpdateService(AddUpdateeRequestServiceDto model)
         {
-            AppRequestDetailsDto appRequest = null;
+            AppRequestDetailsDto request = null;
             Result<RequestServicesT> result;
             try
             {
@@ -456,46 +491,95 @@ namespace SanyaaDelivery.API.Controllers
                 result =  await requestService.AddUpdateServiceAsync(service);
                 if (result.IsFail)
                 {
-                    return result.Convert(appRequest);
+                    return result.Convert(request);
                 }
-                var list = await requestService.GetAppDetails(model.RequestId);
-                if (list.HasItem())
+                request = await requestService.GetAppDetails(model.RequestId);
+                if (request.IsNotNull())
                 {
-                    var request = list.FirstOrDefault();
-                    request.RequestServicesT = request.RequestServicesT.OrderBy(d => d.RequestServiceId).ToList();
-                    appRequest = mapper.Map<AppRequestDetailsDto>(request);
-                    appRequest.InvoiceDetails = new Dictionary<string, decimal>();
-                    appRequest.InvoiceDetails.Add("الاجمالى", Math.Round(request.TotalPrice, 2));
-                    appRequest.InvoiceDetails.Add("انتقالات", Math.Round(request.DeliveryPrice, 2));
-                    appRequest.InvoiceDetails.Add("الخصم", Math.Round(request.TotalDiscount, 2));
-                    appRequest.InvoiceDetails.Add("المطلوب", Math.Round(request.CustomerPrice, 2));
                     if (request.IsCanceled || request.IsCompleted)
                     {
-                        appRequest.ShowCancelRequestButton = false;
-                        appRequest.ShowAddServiceButton = false;
-                        appRequest.ShowReAssignEmployeeButton = false;
-                        appRequest.ShowDelayRequestButton = false;
+                        request.ShowCancelRequestButton = false;
+                        request.ShowAddServiceButton = false;
+                        request.ShowReAssignEmployeeButton = false;
+                        request.ShowDelayRequestButton = false;
                     }
                     else
                     {
-                        appRequest.ShowCancelRequestButton = true;
-                        appRequest.ShowAddServiceButton = true;
-                        appRequest.ShowReAssignEmployeeButton = true;
-                        appRequest.ShowDelayRequestButton = true;
+                        request.ShowCancelRequestButton = true;
+                        request.ShowAddServiceButton = true;
+                        request.ShowReAssignEmployeeButton = true;
+                        request.ShowDelayRequestButton = true;
                     }
-                    if (appRequest.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.Value.AddHours(-1)
+                    if (request.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.AddHours(-1)
                         && request.IsCanceled == false && request.IsCompleted == false)
                     {
-                        appRequest.Employee.ShowContact = true;
-                        appRequest.ShowReAssignEmployeeButton = false;
-                        appRequest.ShowDelayRequestButton = false;
+                        request.Employee.ShowContact = true;
+                        request.ShowReAssignEmployeeButton = false;
+                        request.ShowDelayRequestButton = false;
                     }
                 }
-                return ResultFactory<AppRequestDetailsDto>.CreateSuccessResponse(appRequest);
+                return ResultFactory<AppRequestDetailsDto>.CreateSuccessResponse(request);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<RequestCanceledT>.CreateExceptionResponse(ex));
+            }
+        }
+        [AllowAnonymous]
+        [HttpPost("AddUpdateServiceO")]
+        public async Task<ActionResult<Result<RequestServicesT>>> AddUpdateServiceO(AddUpdateeRequestServiceODto model)
+        {
+           
+            try
+            {
+                var result = await requestService.AddUpdateServiceOAsync(model);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<RequestServicesT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SetReviewed")]
+        public async Task<ActionResult<Result<object>>> SetReviewed(int requestId)
+        {
+            try
+            {
+                var result = await requestUtilityService.SetReviewedAsync(requestId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SetAsUnReviewed")]
+        public async Task<ActionResult<Result<object>>> SetAsUnReviewed(int requestId)
+        {
+            try
+            {
+                var result = await requestUtilityService.SetAsUnReviewedAsync(requestId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("ResetRequest")]
+        public async Task<ActionResult<Result<object>>> ResetRequest(int requestId)
+        {
+            try
+            {
+                var result = await requestUtilityService.ResetRequestAsync(requestId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
 
@@ -525,6 +609,20 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("Get/{requestId}")]
+        public async Task<ActionResult<Result<RequestTrackerDto>>> GetTrack0ing(int requestId)
+        {
+            try
+            {
+                var requestTrackerDto = await requestHelperService.GetTracking(requestId);
+                return ResultFactory<RequestTrackerDto>.CreateSuccessResponse(requestTrackerDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<RequestTrackerDto>.CreateExceptionResponse(ex));
             }
         }
 

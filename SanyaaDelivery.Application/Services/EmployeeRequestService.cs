@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using App.Global.DTOs;
+using App.Global.ExtensionMethods;
+using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
@@ -17,16 +19,18 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IRepository<CityT> cityRepository;
         private readonly IRepository<AddressT> addressRepository;
+        private readonly IRepository<VacationT> vacationRepository;
 
         public EmployeeRequestService(IRepository<RequestT> requestRepository, 
             IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeT> employeeRepository,
-            IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository)
+            IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository, IRepository<VacationT> vacationRepository)
         {
             this.requestRepository = requestRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
             this.employeeRepository = employeeRepository;
             this.cityRepository = cityRepository;
             this.addressRepository = addressRepository;
+            this.vacationRepository = vacationRepository;
         }
 
 
@@ -58,7 +62,7 @@ namespace SanyaaDelivery.Application.Services
             }
             if (getActiveOnly)
             {
-                query = query.Where(d => d.LoginT.LoginAccountState.Value);
+                query = query.Where(d => d.LoginT.LoginAccountState);
             }
             if (getOnlineOnly)
             {
@@ -125,11 +129,85 @@ namespace SanyaaDelivery.Application.Services
                 startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
                 endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
             }
-            var query = GetFreeEmployeeConditionQuery(dateTime, null, null);
+            var query = GetFreeEmployeeConditionQuery(dateTime);
             query = query.Where(d => d.EmployeeId == employeeId);
             query = query.Where(d => d.RequestT.Count(t => t.RequestTimestamp > startTime && t.RequestTimestamp < endTime && t.IsCanceled == false) == 0);
             var requestCount = await query.CountAsync();
-            return requestCount > 0;
+            return requestCount == 0;
+        }
+
+        public async Task<Result<EmployeeT>> ValidateEmployeeForRequest(string employeeId, DateTime dateTime, int branchId, int? departmentId = null, int? requestId = null)
+        {
+            DateTime startTime;
+            DateTime endTime;
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return ResultFactory<EmployeeT>.CreateSuccessResponse();
+            }
+            var employee = await employeeRepository.Where(d => d.EmployeeId == employeeId)
+                .Include(d => d.LoginT)
+                .Include(d => d.FiredStaffT)
+                .Include(d => d.DepartmentEmployeeT)
+                .Include(d => d.EmployeeWorkplacesT)
+                .Include(d => d.OpreationT)
+                .FirstOrDefaultAsync();
+            if (employee.IsNull())
+            {
+                return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not found");
+            }
+            //if (employee.IsApproved == false)
+            //{
+            //    return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not approved");
+            //}
+            //if (employee.IsActive == false)
+            //{
+            //    return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not active");
+            //}
+            if (employee.LoginT.IsNotNull() && employee.LoginT.LoginAccountState == false)
+            {
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("Employee account not active");
+            }
+            if (employee.FiredStaffT.IsNotNull())
+            {
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee is fired");
+            }
+            var isInVacation = await vacationRepository.DbSet.AnyAsync(t => t.Day.Year == dateTime.Year && t.Day.Month == dateTime.Month && t.Day.Day == dateTime.Day);
+            if (isInVacation)
+            {
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee in vacation");
+            }
+            if (departmentId.HasValue && !employee.DepartmentEmployeeT.Any(d => d.DepartmentId == departmentId.Value))
+            {
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee department not matched");
+            }
+            if (!employee.EmployeeWorkplacesT.Any(d => d.BranchId == branchId))
+            {
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee branch not matched");
+            }
+            if (employee.DepartmentEmployeeT.Any(d => d.DepartmentId == GeneralSetting.CleaningDepartmentId))
+            {
+                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
+                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
+            }
+            else
+            {
+                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
+                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
+            }
+            var requestQuery = requestRepository.Where(t => t.EmployeeId == employeeId && t.RequestTimestamp > startTime && t.RequestTimestamp < endTime
+            && t.IsCanceled == false && t.IsCompleted == false);
+            if (requestId.HasValue)
+            {
+                requestQuery = requestQuery.Where(d => d.RequestId != requestId);
+            }
+            var requestIdList = await requestQuery.Select(d => d.RequestId).ToListAsync();
+            if (requestIdList.HasItem())
+            {
+                var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee have request in this time");
+                result.Message += string.Join(", ", requestIdList);
+                return result;
+            }
+            return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);
         }
     }
 }

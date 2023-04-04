@@ -43,6 +43,10 @@ namespace SanyaaDelivery.Application.Services
             {
                 systemUserId = int.Parse(account.AccountReferenceId);
             }
+            else if(account.AccountTypeId == GeneralSetting.EmployeeAccountTypeId)
+            {
+                systemUserId = GeneralSetting.EmployeeAccountTypeId;
+            }
             var claims = new List<Claim>
             {
                 new Claim("AccountId", account.AccountId.ToString()),

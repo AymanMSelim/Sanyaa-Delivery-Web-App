@@ -29,6 +29,8 @@ namespace SanyaaDelivery.Infra.IoC
             IMapper mapper = mapperConfig.CreateMapper();
             services.AddSingleton(mapper);
 
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
             services.AddScoped<IRepository<ClientT>, ClientRepository>();
             services.AddScoped<IRepository<RequestT>, RequestRepository>();
             services.AddScoped<IRepository<LoginT>, EmployeeApplicationAccountRepository>();
@@ -38,6 +40,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<Cleaningsubscribers>, SubscribeRepository>();
             services.AddScoped<IRepository<AccountT>, AccountRepository>();
             services.AddScoped<IRepository<AccountRoleT>, AccountRoleRepository>();
+            services.AddScoped<IRepository<MessagesT>, MessageRepository>();
             services.AddScoped<IRepository<AccountTypeT>, AccountTypeRepository>();
             services.AddScoped<IRepository<RoleT>, RoleRepository>();
             services.AddScoped<IRepository<WorkingAreaT>, WorkingAreaRepository>();
@@ -48,6 +51,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<DepartmentSub1T>, DepartmentSub1Repository>();
             services.AddScoped<IRepository<CountryT>, CountryRepository>();
             services.AddScoped<IRepository<GovernorateT>, GovernorateRepository>();
+            services.AddScoped<IRepository<LandingScreenItemDetailsT>, LandingScreenItemDetailsRepository>();
             services.AddScoped<IRepository<CityT>, CityRepository>();
             services.AddScoped<IRepository<RegionT>, RegionRepository>();
             services.AddScoped<IRepository<AddressT>, AddressRepository>();
@@ -56,6 +60,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<EmployeeSubscriptionT>, EmployeeSubscriptionRepository>();
             services.AddScoped<IRepository<BranchT>, BranchRepository>();
             services.AddScoped<IRepository<TranslatorT>, TranslatorRepository>();
+            services.AddScoped<IRepository<VacationT>, VacationRepository>();
             services.AddScoped<IRepository<EmploymentApplicationsT>, EmployementApplicationRepository>();
             services.AddScoped<IRepository<AppSettingT>, AppSettingRepository>();
             services.AddScoped<IRepository<TokenT>, TokenRepository>();
@@ -88,9 +93,11 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<ClientPointT>, ClientPointRepository>();
             services.AddScoped<IRepository<RequestStatusGroupT>, RequestStatusGroupRepository>();
             services.AddScoped<IRepository<PaymentT>, PaymentRepository>();
+            services.AddScoped<IRepository<OpreationT>, OpreationRepository>();
+            services.AddScoped<IRepository<BroadcastRequestT>, BroadcastRequestRepository>();
+            services.AddScoped<IRepository<RejectRequestT>, RequestRejectedRepository>();
 
 
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IClientService, ClientService>();
             services.AddScoped<IRequestService, RequestService>();
             services.AddScoped<IEmployeeAppAccountService, EmployeeAppAccountService>();
@@ -138,6 +145,9 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<ISubscriptionRequestService, SubscriptionRequestService>();
             services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
             services.AddScoped<IRequestUtilityService, RequestUtiliyService>();
+            services.AddScoped<ILookupService, LookupService>();
+            services.AddScoped<IOperationService, OperationService>();
+            services.AddScoped<IVacationService, VacationService>();
 
             services.AddSingleton<Translator, Translator>();
             services.AddSingleton<IFawryAPIService, FawryAPIService>();
@@ -179,7 +189,8 @@ namespace SanyaaDelivery.Infra.IoC
               .ForMember(dest => dest.StatusName, act => act.MapFrom(src => App.Global.Translation.Translator.STranlate(src.GroupName)));
 
             CreateMap<ClientPointT, ClientPointDto>()
-             .ForMember(dest => dest.CreationDate, act => act.MapFrom(src => src.CreationDate.Value.ToString("dd-MM-yyyy")));
+             .ForMember(dest => dest.CreationDate, act => act.MapFrom(src => src.CreationDate.Value.ToString("dd-MM-yyyy")))
+             .ForMember(dest => dest.PointTypeDescription, act => act.MapFrom(src => ((Domain.Enum.ClientPointType)src.PointType).ToString()));
 
 
 
@@ -213,6 +224,7 @@ namespace SanyaaDelivery.Infra.IoC
                 .ForMember(dest => dest.ServiceDescription, act => act.MapFrom(src => src.Service.ServiceDes))
                 .ForMember(dest => dest.Quantity, act => act.MapFrom(src => src.RequestServicesQuantity))
                 .ForMember(dest => dest.NetPrice, act => act.MapFrom(src => src.ServicePrice - src.ServiceDiscount))
+                .ForMember(dest => dest.Discount, act => act.MapFrom(src => src.ServiceDiscount))
                 .ForMember(dest => dest.Price, act => act.MapFrom(src => src.ServicePrice));
 
             CreateMap<RequestT, AppRequestDetailsDto>()
@@ -252,6 +264,7 @@ namespace SanyaaDelivery.Infra.IoC
 
             CreateMap<ClientSubscriptionT, ClientSubscriptionDto>()
               .ForMember(dest => dest.ServiceName, act => act.MapFrom(src => src.SubscriptionService.Service.ServiceName))
+              .ForMember(dest => dest.ServiceId, act => act.MapFrom(src => src.SubscriptionService.ServiceId))
               .ForMember(dest => dest.Phone, act => act.MapFrom(src => src.Phone.ClientPhone))
               .ForMember(dest => dest.Address, act => act.MapFrom(src => src.Address.AddressCity + ", " + src.Address.AddressRegion))
               .ForMember(dest => dest.VisitCountDescription, act => act.MapFrom(src => $"{src.Subscription.RequestNumberPerMonth} زيارات شهريا"))

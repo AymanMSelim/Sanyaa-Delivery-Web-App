@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using App.Global.ExtensionMethods;
+using SanyaaDelivery.Domain.OtherModels;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -20,11 +21,11 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
         private readonly IRepository<EmploymentApplicationsT> employmentApplicationRepository;
         private readonly IRepository<FollowUpT> followUpRepository;
-        private readonly IDepartmentService departmentService;
+        private readonly IRepository<DepartmentT> departmentRepository1;
 
-        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<DepartmentT> departmentRepository,
-            IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<EmploymentApplicationsT> employmentApplicationRepository,
-           IRepository<FollowUpT> followUpRepository, IDepartmentService departmentService)
+        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, 
+            IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<EmploymentApplicationsT> employmentApplicationRepository,
+           IRepository<FollowUpT> followUpRepository)
         {
             this.employeeRepository = employeeRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
@@ -32,7 +33,6 @@ namespace SanyaaDelivery.Application.Services
             this.employeeWorkplaceRepository = employeeWorkplaceRepository;
             this.employmentApplicationRepository = employmentApplicationRepository;
             this.followUpRepository = followUpRepository;
-            this.departmentService = departmentService;
         }
 
         public Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false, 
@@ -207,35 +207,19 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<decimal> GetEmployeePrecentageAsync(string employeeId, int departmentId)
         {
-            DepartmentT department = await departmentService.GetAsync(departmentId);
-            EmployeeT employee = await GetAsync(employeeId, includeDepartment: true);
-            if (employee.IsNull() || employee.DepartmentEmployeeT.IsEmpty())  
+            var departmentPercentage = await departmentRepository.Where(d => d.DepartmentId == departmentId).Select(d => d.DepartmentPercentage).FirstOrDefaultAsync();
+            var employeeDepartmentPercentage = await employeeDepartmentRepository
+                .Where(d => d.DepartmentId == departmentId && d.EmployeeId == employeeId).Select(d => d.Percentage)
+                .FirstOrDefaultAsync();
+            if (employeeDepartmentPercentage.HasValue)
             {
-                if (department.IsNotNull() && department.DepartmentPercentage.HasValue)
-                {
-                    return department.DepartmentPercentage.Value;
-                }
-                else
-                {
-                    return GeneralSetting.EmployeePercentage;
-                }
+                return employeeDepartmentPercentage.Value;
             }
-            var currentDepartment = employee.DepartmentEmployeeT.FirstOrDefault(d => d.DepartmentId == departmentId);
-            if (currentDepartment.IsNotNull() && currentDepartment.Percentage.HasValue)
+            if (departmentPercentage.HasValue)
             {
-                return currentDepartment.Percentage.Value;
+                return departmentPercentage.Value;
             }
-            else
-            {
-                if (department.IsNotNull() && department.DepartmentPercentage.HasValue)
-                {
-                    return department.DepartmentPercentage.Value;
-                }
-                else
-                {
-                    return GeneralSetting.EmployeePercentage;
-                }
-            }
+            return GeneralSetting.EmployeePercentage;
         }
 
         public async Task<decimal> GetDepartmentPrecentageAsync(string employeeId, int departmentId)
@@ -268,6 +252,51 @@ namespace SanyaaDelivery.Application.Services
         public Task<bool> IsCleaningEmployeeAsync(string employeeId)
         {
             return employeeDepartmentRepository.Where(d => d.EmployeeId == employeeId && d.DepartmentId == GeneralSetting.CleaningDepartmentId).AnyAsync();
+        }
+
+        public Task<bool> IsThisEmployeeExist(string natioalNumber)
+        {
+            return employeeRepository.Where(d => d.EmployeeId == natioalNumber)
+                .AnyAsync();
+        }
+
+        public async Task<AppReviewIndexDto> GetAppReviewIndexAsync(string employeeId)
+        {
+            AppReviewIndexDto model = new AppReviewIndexDto();
+            var employee = await employeeRepository.Where(d => d.EmployeeId == employeeId)
+                .Select(d => new 
+                { 
+                    d.EmployeeId,
+                    d.EmployeeName,
+                    d.Title,
+                    d.DepartmentEmployeeT.FirstOrDefault().DepartmentName,
+                    d.EmployeeImageUrl
+                })
+                .FirstOrDefaultAsync();
+            model.EmployeeId = employee.EmployeeId;
+            model.EmployeeName = employee.EmployeeName;
+            model.Image = employee.EmployeeImageUrl;
+            if (string.IsNullOrEmpty(employee.Title))
+            {
+                model.Title = employee.DepartmentName;
+            }
+            else
+            {
+                model.Title = employee.Title;
+            }
+            var reviewList = await followUpRepository.Where(d => d.Request.EmployeeId == employeeId)
+                .Select(d => new EmployeeReviewDto
+                {
+                    ClientId = d.Request.ClientId,
+                    ClientName = d.Request.Client.ClientName,
+                    Rate = d.Rate.Value,
+                    CreationTime = d.Timestamp,
+                    RequestId = d.RequestId,
+                    Review = d.Review
+                }).ToListAsync();
+            model.Rate = reviewList.Sum(d => d.Rate) / reviewList.Count;
+            model.ReviewList = reviewList;
+            return model;
         }
     }
 }

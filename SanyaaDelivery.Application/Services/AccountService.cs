@@ -7,6 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using App.Global.ExtensionMethods;
+using System.Linq;
+using App.Global.DTOs;
+using SanyaaDelivery.Domain.DTOs;
+using App.Global.DateTimeHelper;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -123,6 +127,51 @@ namespace SanyaaDelivery.Application.Services
             account.IsDeleted = true;
             accountRepository.Update(id, account);
             return await accountRepository.SaveAsync();
+        }
+
+        public async Task<string> GetOTPAsync(int? accountId = null, int? clientId = null, string employeeId = null)
+        {
+            string otp;
+            if (accountId.HasValue)
+            {
+                otp = await accountRepository.Where(d => d.AccountId == accountId)
+                    .Select(d => d.MobileOtpCode).FirstOrDefaultAsync();
+                return otp; 
+            }
+            if (clientId.HasValue)
+            {
+                otp = await accountRepository.Where(d => d.AccountReferenceId == clientId.ToString() && d.AccountTypeId == GeneralSetting.CustomerAccountTypeId)
+                    .Select(d => d.MobileOtpCode).FirstOrDefaultAsync();
+                return otp;
+            }
+            if (!string.IsNullOrEmpty(employeeId))
+            {
+                otp = await accountRepository.Where(d => d.AccountReferenceId == employeeId && d.AccountTypeId == GeneralSetting.EmployeeAccountTypeId)
+                   .Select(d => d.MobileOtpCode).FirstOrDefaultAsync();
+                return otp;
+            }
+            return null;
+        }
+
+        public async Task<Result<bool>> ConfirmOtp(ConfirmOtpDto confirmOtpDto)
+        {
+            var account = await accountRepository.GetAsync(confirmOtpDto.AccountId);
+            if (account.IsNull())
+            {
+                return ResultFactory<bool>.CreateErrorResponseMessageFD("Account not found");
+            }
+            if(account.MobileOtpCode != confirmOtpDto.OTPCode)
+            {
+                return ResultFactory<bool>.CreateErrorResponseMessageFD("Invalid OTP code");
+            }
+            if(DateTime.Now.EgyptTimeNow() > account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes))
+            {
+                return ResultFactory<bool>.CreateErrorResponseMessageFD("Thid code is expired, please request new one");
+            }
+            account.IsMobileVerfied = true;
+            accountRepository.Update(account.AccountId, account);
+            await accountRepository.SaveAsync();
+            return ResultFactory<bool>.CreateSuccessResponse(true); 
         }
     }
 }

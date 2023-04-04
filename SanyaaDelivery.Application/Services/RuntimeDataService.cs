@@ -160,6 +160,7 @@ namespace SanyaaDelivery.Application.Services
                     }).ToListAsync(),
                     SubsctiptionLighttList = await subscriptionRepository.DbSet.Select(d => new Domain.LightModels.SubscriptionLight
                     {
+                        DepartmentId = d.DepartmentId,
                         SubscriptionId = d.SubscriptionId,
                         SubscriptionName = d.SubscriptionName
                     }).ToListAsync(),

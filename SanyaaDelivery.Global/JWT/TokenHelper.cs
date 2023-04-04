@@ -37,6 +37,16 @@ namespace App.Global.JWT
             return int.Parse(value);
         }
 
+        public static string GetReferenceIdString(ClaimsIdentity identity)
+        {
+            var value = GetClaimValue(identity, "ReferenceId");
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+            return value;
+        }
+
         public static int? GetSystemUserId(ClaimsIdentity identity)
         {
             var value = GetClaimValue(identity, "SystemUserId");

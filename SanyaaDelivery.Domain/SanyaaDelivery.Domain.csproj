@@ -7,13 +7,10 @@
   <ItemGroup>
     <Compile Remove="App\ModelsPartial\**" />
     <Compile Remove="Modelsss\**" />
-    <Compile Remove="Modelss\**" />
     <EmbeddedResource Remove="App\ModelsPartial\**" />
     <EmbeddedResource Remove="Modelsss\**" />
-    <EmbeddedResource Remove="Modelss\**" />
     <None Remove="App\ModelsPartial\**" />
     <None Remove="Modelsss\**" />
-    <None Remove="Modelss\**" />
   </ItemGroup>
 
   <ItemGroup>

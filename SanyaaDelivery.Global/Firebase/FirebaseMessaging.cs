@@ -29,7 +29,8 @@ namespace App.Global.Firebase
                 Notification = new FirebaseAdmin.Messaging.Notification
                 {
                     Title = title,
-                    Body = body
+                    Body = body,
+                    ImageUrl = "https://api.sane3ydelivery.com/Public/LandingScreen/5/5e3ab51c-49da-493e-98b7-06e84697b0f5.jpg"
                 }
             });
         }

@@ -53,15 +53,9 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(ResultFactory<EmployeeT>.CreateModelNotValidResponse("Employee can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
                 }
-                var result = await employeeService.AddAsync(employee);
-                if (result > 0)
-                {
-                    return Ok(ResultFactory<EmployeeT>.CreateSuccessResponse(employee));
-                }
-                else
-                {
-                    return Ok(ResultFactory<EmployeeT>.CreateErrorResponse());
-                }
+                employee.SystemId = commonService.GetSystemUserId();
+                var affectedRows = await employeeService.AddAsync(employee);
+                return Ok(ResultFactory<EmployeeT>.CreateAffectedRowsResult(affectedRows, data: employee));
             }
             catch (Exception ex)
             {
@@ -301,10 +295,18 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetAppReviewList/{employeeId?}")]
-        public async Task<ActionResult<Result<AppEmployeeDto>>> GetAppReviewList(string employeeId)
+        public async Task<ActionResult<Result<AppEmployeeDto>>> GetAppReviewList(string employeeId = null)
         {
             try
             {
+                if (commonService.IsViaApp())
+                {
+                    employeeId = commonService.GetEmployeeId(employeeId);
+                }
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<object>.ReturnEmployeeError());
+                }
                 var clientId = commonService.GetClientId();
                 var employee = await employeeService.GetAsync(employeeId, includeReview: true, includeReviewClient: true, includeFavourite: true, includeWorkplace: true);
                 var employeeDto = mapper.Map<AppEmployeeDto>(employee);
@@ -321,6 +323,28 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<AppEmployeeDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetAppReviewIndex/{employeeId?}")]
+        public async Task<ActionResult<Result<AppReviewIndexDto>>> GetAppReviewIndex(string employeeId = null)
+        {
+            try
+            {
+                if (commonService.IsViaApp())
+                {
+                    employeeId = commonService.GetEmployeeId(employeeId);
+                }
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<AppReviewIndexDto>.ReturnEmployeeError());
+                }
+                var model = await employeeService.GetAppReviewIndexAsync(employeeId);
+                return Ok(ResultFactory<AppReviewIndexDto>.CreateSuccessResponse(model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppReviewIndexDto>.CreateExceptionResponse(ex));
             }
         }
 
@@ -430,6 +454,24 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<List<AppEmployeeDto>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("IsThisEmployeeExist/{nationalNumber}")]
+        public async Task<ActionResult<bool>> IsThisEmployeeExist(string nationalNumber)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(nationalNumber))
+                {
+                    return Ok(ResultFactory<bool>.CreateErrorResponse(message: "Empty natioal number", resultStatusCode: App.Global.Enums.ResultStatusCode.EmptyData));
+                }
+                var result = await employeeService.IsThisEmployeeExist(nationalNumber);
+                return Ok(ResultFactory<bool>.CreateSuccessResponse(result));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
             }
         }
     }

@@ -22,6 +22,7 @@ namespace SanyaaDelivery.Domain.Models
         public decimal? MaterialCost { get; set; }
         public int? ServicePoints { get; set; }
         public bool? NoDiscount { get; set; }
+        public bool NoMinimumCharge { get; set; }
         public decimal? ServiceDiscount { get; set; }
         public int? DiscountServiceCount { get; set; }
         public decimal? CompanyDiscountPercentage { get; set; }

@@ -1,0 +1,7 @@
+Time 4/4/2023 4:19:58 PM Request #0 /api/request/getapplist Start
+Time 4/4/2023 4:20:01 PM Request #0 /api/request/getapplist End, Elapsed 2984 Milliseconds
+Time 4/4/2023 4:54:05 PM Request #0 /api/request/GetAppDetails/27231 Start
+Time 4/4/2023 4:54:08 PM Request #0 /api/request/GetAppDetails/27231 End, Elapsed 2539 Milliseconds
+Time 4/4/2023 4:54:20 PM Request #1 /api/request/GetAppDetails/27231 Start
+Time 4/4/2023 4:56:28 PM Request #0 /api/request/GetAppDetails/27231 Start
+Time 4/4/2023 4:56:41 PM Request #0 /api/request/GetAppDetails/27231 End, Elapsed 12276 Milliseconds

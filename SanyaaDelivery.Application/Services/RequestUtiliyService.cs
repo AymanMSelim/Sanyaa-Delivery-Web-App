@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using App.Global.DateTimeHelper;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Infra.Data.Context;
+using App.Global.ExtensionMethods;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -19,22 +20,35 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly IRepository<RequestT> requestRepository;
         private readonly IRepository<PaymentT> paymentRepository;
+        private readonly ITranslationService translationService;
         private readonly IRepository<FollowUpT> followUpRepository;
+        private readonly IRepository<ClientPointT> pointRepository;
+        private readonly IRepository<ClientT> clientRepository;
+        private readonly IRepository<MessagesT> messageRepository;
+        private readonly IEmployeeAppAccountService employeeAppAccountService;
         private readonly IUnitOfWork unitOfWork;
 
-        public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository,
-            IRepository<FollowUpT> followUpRepository, IUnitOfWork unitOfWork)
+        public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService,
+            IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IRepository<ClientT> clientRepository,
+            IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
             this.paymentRepository = paymentRepository;
+            this.translationService = translationService;
             this.followUpRepository = followUpRepository;
+            this.pointRepository = pointRepository;
+            this.clientRepository = clientRepository;
+            this.messageRepository = messageRepository;
+            this.employeeAppAccountService = employeeAppAccountService;
             this.unitOfWork = unitOfWork;
         }
 
         public async Task<Result<object>> CompleteAsync(int requestId, int systemUserId)
         {
+            bool isRootTransaction = false;
             try
             {
+                isRootTransaction = unitOfWork.StartTransaction();
                 var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
                     .Include(d => d.RequestStagesT).FirstOrDefaultAsync();
                 if (request.IsCompleted)
@@ -45,25 +59,92 @@ namespace SanyaaDelivery.Application.Services
                 {
                     return ResultFactory<object>.CreateErrorResponseMessageFD("This request is canceled");
                 }
+                if (string.IsNullOrEmpty(request.EmployeeId))
+                {
+                    return ResultFactory<object>.CreateErrorResponseMessageFD("This request not assign to any employee, can't be set done");
+                }
                 request.IsCompleted = true;
                 request.RequestStagesT.FinishTimestamp = DateTime.Now.EgyptTimeNow();
                 request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "Done").RequestStatusId;
+                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "done").RequestStatusId;
                 requestRepository.Update(requestId, request);
-                var affectedRows = await requestRepository.SaveAsync();
-
+                if (request.RequestPoints > 0)
+                {
+                    await pointRepository.AddAsync(new ClientPointT
+                    {
+                        ClientId = request.ClientId,
+                        CreationDate = DateTime.Now.EgyptTimeNow(),
+                        Points = request.RequestPoints,
+                        Reason = App.Global.Translation.Translator.STranlate("Complete Request") + $" #{requestId}",
+                        PointType = (int)Domain.Enum.ClientPointType.Add,
+                        SystemUserId = systemUserId
+                    });
+                    var client = await clientRepository.GetAsync(request.ClientId);
+                    client.ClientPoints += request.RequestPoints;
+                    clientRepository.Update(client.ClientId, client);
+                }
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
                 return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<object>(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
+           
+        }
+
+        public async Task<Result<object>> SetReviewedAsync(int requestId)
+        {
+            var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId).FirstOrDefaultAsync();
+            request.IsReviewed = true;
+            requestRepository.Update(request.RequestId, request);
+            var affectedRows = await requestRepository.SaveAsync();
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+        }
+
+        public async Task<Result<object>> SetAsUnReviewedAsync(int requestId)
+        {
+            var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId).FirstOrDefaultAsync();
+            request.IsReviewed = false;
+            requestRepository.Update(request.RequestId, request);
+            var affectedRows = await requestRepository.SaveAsync();
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+        }
+
+        public async Task<Result<object>> ResetRequestAsync(int requestId)
+        {
+            var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
+                .Include(d => d.RequestStagesT).FirstOrDefaultAsync();
+            request.RequestStatus = GeneralSetting.RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == "waiting").RequestStatusId;
+            request.RequestStagesT.AcceptTimestamp = null;
+            request.RequestStagesT.ReceiveTimestamp = null;
+            request.RequestStagesT.FinishTimestamp = null;
+            request.RequestStagesT.SentTimestamp = DateTime.Now.EgyptTimeNow();
+            request.IsCanceled = false;
+            request.IsCompleted = false;
+            requestRepository.Update(request.RequestId, request);
+            var affectedRows = await requestRepository.SaveAsync();
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
         }
 
         public async Task<Result<object>> FollowAsync(FollowUpT followUp)
         {
+            bool isRootTransaction = false;
             try
             {
+                unitOfWork.StartTransaction();
                 var request = await requestRepository.DbSet.FirstOrDefaultAsync(d => d.RequestId == followUp.RequestId);
                 if (request.IsCompleted is false && request.IsCanceled is false)
                 {
@@ -79,12 +160,24 @@ namespace SanyaaDelivery.Application.Services
                 requestRepository.Update(request.RequestId, request);
                 followUp.Timestamp = DateTime.Now.EgyptTimeNow();
                 await followUpRepository.AddAsync(followUp);
-                var affectedRows = await requestRepository.SaveAsync();
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
                 return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<object>(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
         }
 
@@ -95,12 +188,11 @@ namespace SanyaaDelivery.Application.Services
                 .Select(d => new EmployeeNotPaidRequestDto
                 {
                     CompanyPercentage = d.CompanyPercentageAmount,
-                    DueTime = d.RequestStagesT.FinishTimestamp.Value.AddDays(3),
+                    DueTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault(),
                     EmployeePercentage = d.EmployeePercentageAmount,
-                    FinishTime = d.RequestStagesT.FinishTimestamp.Value,
+                    FinishTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault(),
                     Price = d.CustomerPrice,
                     RequestId = d.RequestId,
-                    Note = DateTime.Now > d.RequestStagesT.FinishTimestamp.Value.AddDays(3) ? "متأخر الدفع" : ""
                 }).ToListAsync();
             return data;
         }
@@ -136,7 +228,7 @@ namespace SanyaaDelivery.Application.Services
                      EmployeeId = d.Key.EmployeeId,
                      EmployeeName = d.Key.EmployeeName,
                      EmployeePhone = d.Key.EmployeePhone,
-                     AccountState = d.Key.AccountState.Value,
+                     AccountState = d.Key.AccountState,
                      //IncreaseDiscountTotal = d.IncreaseDiscountT.Sum(s => s.IncreaseDiscountValue),
                      TotalUnPaidRequestCount = d.Count(),
                      TotalCompanyPercentage = d.Sum(s => s.CompanyPercentageAmount),
@@ -144,62 +236,72 @@ namespace SanyaaDelivery.Application.Services
                      TotalUnPaidRequestCost = d.Sum(s => s.CustomerPrice)
                  }).ToListAsync();
             return data;
-            //return employeeRepository.DbSet.Where(d => d.RequestT.Any(r => r.IsCanceled == false && r.IsCompleted && r.IsPaid == false))
-            //    .Include(d => d.LoginT)
-            //    .Include(d => d.IncreaseDiscountT)
-            //    .Include(d => d.RequestT)
-            //    .Select(d => new { Employee = d, RequestT = d.RequestT.Where(r => r.IsCanceled == false && r.IsCompleted && r.IsPaid == false) })
-            //    .Select(d => new EmployeeNotPaidRequestSummaryDto
-            //    {
-            //        EmployeeId = d.Employee.EmployeeId,
-            //        EmployeeName = d.Employee.EmployeeName,
-            //        EmployeePhone = d.Employee.EmployeePhone,
-            //        AccountState = d.Employee.LoginT.LoginAccountState.Value,
-            //        //IncreaseDiscountTotal = d.IncreaseDiscountT.Sum(s => s.IncreaseDiscountValue),
-            //        TotalUnPaidRequestCount = d.RequestT.Count(),
-            //        TotalCompanyPercentage = d.RequestT.Sum(s => s.CompanyPercentageAmount),
-            //        TotalEmployeePercentage = d.RequestT.Sum(s => s.EmployeePercentageAmount),
-            //        TotalUnPaidRequestCost = d.RequestT.Sum(s => s.CustomerPrice)
-            //    }).ToListAsync();
         }
 
         public async Task<Result<List<PaymentT>>> PayAllAsync(string employeeId, int systemUserId, decimal? amount = null)
         {
             List<PaymentT> paymentList;
+            bool isRootTransaction = false;
             try
             {
                 paymentList = new List<PaymentT>();
-                unitOfWork.StartTransaction();
+                isRootTransaction = unitOfWork.StartTransaction();
                 var requestList = await GetNotPaidAsync(employeeId);
-                if(requestList is null || requestList.Count == 0)
+                if (requestList is null || requestList.Count == 0)
                 {
                     return ResultFactory<List<PaymentT>>.CreateErrorResponseMessageFD("This employee have no un paid requests");
                 }
                 foreach (var request in requestList)
                 {
-                    var result = await PayAsync(request.RequestId, systemUserId, request.CompanyPercentage);
+                    var result = await PayAsync(request.RequestId, systemUserId, request.CompanyPercentage, false);
                     if (result.IsFail)
                     {
                         return result.Convert(paymentList);
                     }
                     paymentList.Add(result.Data);
                 }
-                var affectedRows = await unitOfWork.CommitAsync();
+                bool haveUnPaidRequest = await IsHaveUnPaidRequestExceed3Days(employeeId);
+                if (haveUnPaidRequest == false)
+                {
+                    await employeeAppAccountService.ActiveAccountAsync(employeeId);
+                }
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
                 return ResultFactory<List<PaymentT>>.CreateAffectedRowsResult(affectedRows, data: paymentList);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<PaymentT>>(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
         }
 
-        public async Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null)
+        public Task<bool> IsHaveUnPaidRequestExceed3Days(string employeeId)
         {
+            return requestRepository.DbSet
+                .AnyAsync(d => d.EmployeeId == employeeId && d.IsPaid == false && d.RequestTimestamp.Value <= DateTime.Now.EgyptTimeNow().AddHours(-3));
+        }
+
+        public async Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null, bool activeEmployeeAccount = true)
+        {
+            bool isRootTransaction = false;
             try
             {
-                unitOfWork.StartTransaction();
+                isRootTransaction = unitOfWork.StartTransaction();
                 var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
-                    .Include(d => d.RequestStagesT).FirstOrDefaultAsync();
+                    .Include(d => d.RequestStagesT)
+                    .Include(d => d.PaymentT)
+                    .FirstOrDefaultAsync();
                 if (request.IsCompleted is false)
                 {
                     return ResultFactory<PaymentT>.CreateErrorResponseMessageFD("This request not complete");
@@ -210,26 +312,93 @@ namespace SanyaaDelivery.Application.Services
                 }
                 if (request.IsPaid.HasValue && request.IsPaid.Value)
                 {
-                    return ResultFactory<PaymentT>.CreateErrorResponseMessageFD("This request is already paid");
+                    return ResultFactory<PaymentT>.CreateSuccessResponse(message: "This request is already paid");
                 }
                 request.IsPaid = true;
                 request.RequestStagesT.PaymentFlag = true;
                 requestRepository.Update(requestId, request);
-                var payment = new PaymentT
+                await unitOfWork.SaveAsync();
+                PaymentT payment = request.PaymentT;
+                if (payment.IsNull())
                 {
-                    Payment = amount.HasValue ? (double)amount : (double)request.CompanyPercentageAmount,
-                    PaymentTimestamp = DateTime.Now.EgyptTimeNow(),
-                    RequestId = request.RequestId,
-                    SystemUserId = systemUserId
+                    payment = new PaymentT
+                    {
+                        Payment = amount.HasValue ? (double)amount : (double)request.CompanyPercentageAmount,
+                        PaymentTimestamp = DateTime.Now.EgyptTimeNow(),
+                        RequestId = request.RequestId,
+                        SystemUserId = systemUserId
+                    };
+                    await paymentRepository.AddAsync(payment);
+                }
+                var message = new MessagesT
+                {
+                    
+                    Title = "دفع طلب #" + requestId,
+                    Body = "تم دفع الطلب #" + requestId,
+                    EmployeeId = request.EmployeeId,
+                    IsRead = 0,
+                    MessageTimestamp = DateTime.Now.EgyptTimeNow()
                 };
-                await paymentRepository.AddAsync(payment);
-                var affectedRows = await unitOfWork.CommitAsync();
+                await messageRepository.AddAsync(message);
+                if (activeEmployeeAccount)
+                {
+                    bool haveUnPaidRequest = await IsHaveUnPaidRequestExceed3Days(request.EmployeeId);
+                    if (haveUnPaidRequest == false)
+                    {
+                        await employeeAppAccountService.ActiveAccountAsync(request.EmployeeId);
+                    }
+                }
+                int affectedRows = 0;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
                 return ResultFactory<PaymentT>.CreateAffectedRowsResult(affectedRows, data: payment);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<PaymentT>(ex);
             }
             finally
             {
-                unitOfWork.Dispose();
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
+        }
+
+        public async Task<EmployeeAppPaymentIndexDto> GetEmployeeAppPaymentIndex(string employeeId)
+        {
+            DateTime startMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS();
+            DateTime endMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS();
+            var monthlyRequest = await requestRepository
+                .Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.RequestTimestamp >= startMonthDate && d.RequestTimestamp <= endMonthDate)
+                .Select(d => new { d.NetPrice, d.EmployeePercentageAmount })
+                .ToListAsync();
+            var unPaidRequest = await requestRepository.Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.IsPaid == false)
+                .Select(d => new EmployeeAppPaymentRequestItemDto
+                {
+                    Address = d.RequestedAddress.City.CityName + ", " + d.RequestedAddress.Region.RegionName,
+                    ClientName = d.Client.ClientName,
+                    RequestId = d.RequestId,
+                    RequestCaption = translationService.Translate("Request") + " #" + d.RequestId,
+                    EmployeeAmountPercentageDescription = translationService.Translate("Maxsab") + " " + d.EmployeePercentageAmount + " ج",
+                    CompanyAmountPercentageDescription = translationService.Translate("CompanyPercentage") + " " + d.CompanyPercentageAmount + " ج",
+                    RequestTimestamp = d.RequestTimestamp.Value
+                }).ToListAsync();
+            foreach (var item in unPaidRequest)
+            {
+                item.DuoDateDecription = translationService.Translate("LastDuoDate") + " " + item.RequestTimestamp.AddDays(3).ToShortDateString();
+            }
+            return new EmployeeAppPaymentIndexDto
+            {
+                EmployeeAmountPercentage = monthlyRequest.Sum(d => d.EmployeePercentageAmount).ToString() + " ج",
+                EmployeeAmountPercentageCaption = translationService.Translate("Your percentage this month is"),
+                EmployeeAmountPercentageDescription = $"لقد قمت بـ {monthlyRequest.Count} مهام بتكلفة كلية {monthlyRequest.Sum(d => d.NetPrice)}ج",
+                RequestList = unPaidRequest
+            };
         }
     }
 }

@@ -17,13 +17,16 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<OpeningSoonDepartmentT> openingSoonDepartmentRepository;
         private readonly IClientService clientService;
         private readonly ICityService cityService;
+        private readonly IRepository<LandingScreenItemDetailsT> landingScreenDetailsRepository;
 
-        public AppLandingScreenService(IRepository<AppLandingScreenItemT> landingScreenRepository, IRepository<OpeningSoonDepartmentT> openingSoonDepartmentRepository, IClientService clientService, ICityService cityService)
+        public AppLandingScreenService(IRepository<AppLandingScreenItemT> landingScreenRepository, IRepository<OpeningSoonDepartmentT> openingSoonDepartmentRepository,
+            IClientService clientService, ICityService cityService, IRepository<LandingScreenItemDetailsT> landingScreenDetailsRepository)
         {
             this.landingScreenRepository = landingScreenRepository;
             this.openingSoonDepartmentRepository = openingSoonDepartmentRepository;
             this.clientService = clientService;
             this.cityService = cityService;
+            this.landingScreenDetailsRepository = landingScreenDetailsRepository;
         }
         public async Task<List<AppLandingScreenItemT>> GetDepartmentListAsync(int? clientId = null)
         {
@@ -89,6 +92,69 @@ namespace SanyaaDelivery.Application.Services
                 .Where(d => d.ItemId == itemId)
                 .Include(d => d.LandingScreenItemDetailsT)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<int> AddAsync(AppLandingScreenItemT model)
+        {
+            await landingScreenRepository.AddAsync(model);
+            return await landingScreenRepository.SaveAsync();
+        }
+
+        public Task<List<AppLandingScreenItemT>> GetListAsync(string searchValue = null, int? type = null)
+        {
+            var query = landingScreenRepository.DbSet.AsQueryable();
+            if(string.IsNullOrEmpty(searchValue) is false)
+            {
+                query = query.Where(d => d.Caption.Contains(searchValue));
+            }
+            if (type.HasValue)
+            {
+                query = query.Where(d => d.ItemType == type);
+            }
+            return query.ToListAsync();
+        }
+
+        public Task<int> UpdateAsync(AppLandingScreenItemT model)
+        {
+            landingScreenRepository.Update(model.ItemId, model);
+            return landingScreenRepository.SaveAsync();
+        }
+
+        public async Task<int> DeleteAsync(int id)
+        {
+            await landingScreenRepository.DeleteAsync(id);
+            return await landingScreenRepository.SaveAsync();
+        }
+
+        public Task<LandingScreenItemDetailsT> GetDetailsAsync(int id)
+        {
+            return landingScreenDetailsRepository
+                .Where(d => d.ItemId == id)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<int> AddDetailsAsync(LandingScreenItemDetailsT model)
+        {
+            await landingScreenDetailsRepository.AddAsync(model);
+            return await landingScreenDetailsRepository.SaveAsync();
+        }
+
+        public Task<List<LandingScreenItemDetailsT>> GetDetailsListAsync(int itemId)
+        {
+            return landingScreenDetailsRepository.Where(d => d.ItemId == itemId)
+                .ToListAsync();
+        }
+
+        public Task<int> UpdateDetailsAsync(LandingScreenItemDetailsT model)
+        {
+            landingScreenDetailsRepository.Update(model.ItemId, model);
+            return landingScreenDetailsRepository.SaveAsync();
+        }
+
+        public async Task<int> DeleteDetailsAsync(int id)
+        {
+            await landingScreenDetailsRepository.DeleteAsync(id);
+            return await landingScreenDetailsRepository.SaveAsync();
         }
     }
 }

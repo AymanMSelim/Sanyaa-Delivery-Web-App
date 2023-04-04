@@ -17,5 +17,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> DeletetAsync(int id);
         Task<int> UpdateAsync(CityT city);
         Task<BranchT> GetCityBranchAsync(int cityId);
+        Task<int> GetCityBranchIdAsync(int cityId);
     }
 }
