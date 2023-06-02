@@ -10,8 +10,8 @@ namespace SanyaaDelivery.Domain.DTOs
         public DateTime RequestTimestamp { get; set; }
         public string RequestNote { get; set; }
         public string BranchName { get; set; }
-        public string BranchId { get; set; }
-        public string CityId { get; set; }
+        public int BranchId { get; set; }
+        public int? CityId { get; set; }
         public int ClientId { get; set; }
         public string ClientName { get; set; }
         public string ClientPhone { get; set; }
@@ -28,7 +28,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public decimal CompanyPercentageAmount { get; set; }
         public string SystemUserName { get; set; }
         public int SystemUserId { get; set; }
-        public int SubscriptionId { get; set; }
+        public int? SubscriptionId { get; set; }
         public string SubscriptionName { get; set; }
         public int DepartmentId { get; set; }
         public string DeparmentName { get; set; }

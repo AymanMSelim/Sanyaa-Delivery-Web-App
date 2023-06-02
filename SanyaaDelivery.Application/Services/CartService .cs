@@ -28,13 +28,14 @@ namespace SanyaaDelivery.Application.Services
         private readonly ISubscriptionRequestService subscriptionRequestService;
         private readonly IRepository<ServiceT> serviceRepository;
         private readonly IRepository<DepartmentT> departmentRepository;
+        private readonly IHelperService helperService;
         private readonly IRepository<SubscriptionServiceT> subscriptionServiceRepository;
         private readonly IUnitOfWork unitOfWork;
 
         public CartService(IRepository<CartT> cartRepo, IRepository<CartDetailsT> cartDetailsRepo, IPromocodeService promocodeService,
             ICityService cityService, IClientService clientService, IServiceRatioService serviceRatioService, IAttachmentService attachmentService,
             IEmployeeService employeeService, ISubscriptionRequestService subscriptionRequestService, IRepository<ServiceT> serviceRepository,
-            IRepository<DepartmentT> departmentRepository,
+            IRepository<DepartmentT> departmentRepository, IHelperService helperService,
             IRepository<SubscriptionServiceT> subscriptionServiceRepository, IUnitOfWork unitOfWork)
         {
             this.cartRepo = cartRepo;
@@ -48,6 +49,7 @@ namespace SanyaaDelivery.Application.Services
             this.subscriptionRequestService = subscriptionRequestService;
             this.serviceRepository = serviceRepository;
             this.departmentRepository = departmentRepository;
+            this.helperService = helperService;
             this.subscriptionServiceRepository = subscriptionServiceRepository;
             this.unitOfWork = unitOfWork;
         }
@@ -163,18 +165,23 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<PromocodeT>> ApplyPromocodeAsync(int cartId, string code)
         {
-            var promocode = await promocodeService.GetAsync(code, true, false);
+            bool isHaveServiceWithNoPromocodeDiscount = await cartDetailsRepo.DbSet.AnyAsync(d => d.CartId == cartId && d.Service.NoPromocodeDiscount);
+            if (isHaveServiceWithNoPromocodeDiscount)
+            {
+                return ResultFactory<PromocodeT>.CreateErrorResponseMessageFD("Promocode discount not avalible for this service");
+            }
+            var promocode = await promocodeService.GetAsync(code, true);
             if (promocode.IsNull())
             {
                 return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.NotFound, "Promocode not found");
             }
             var cart = await GetAsync(cartId, true, true, true);
-            var defaultAddress = await clientService.GetDefaultAddressAsync(cart.ClientId);
-            if (defaultAddress.IsNull() || defaultAddress.CityId.IsNull())
+            var defaultCityId = await clientService.GetDefaultAddressCityIdAsync(cart.ClientId);
+            if (defaultCityId.IsNull())
             {
                 return ResultFactory<PromocodeT>.CreateErrorResponse(null, ResultStatusCode.IncompleteClientData, "Client address not complete");
             }
-            if (promocode.PromocodeDepartmentT.Any(d => d.DepartmentId == cart.DepartmentId) && promocode.PromocodeCityT.Any(d => d.CityId == defaultAddress.CityId))
+            if (promocode.PromocodeDepartmentT.Any(d => d.DepartmentId == cart.DepartmentId) && promocode.PromocodeCityT.Any(d => d.CityId == defaultCityId.Value))
             {
                 if(promocode.MinimumCharge > cart.CartDetailsT.Sum(d => d.ServiceQuantity * d.Service.ServiceCost))
                 {
@@ -198,7 +205,7 @@ namespace SanyaaDelivery.Application.Services
             return await UpdateAsync(cart);
         }
 
-        public async Task<int> ChangeUsePointStatusAsync(int cartId)
+        public async Task<Result<object>> ChangeUsePointStatusAsync(int cartId)
         {
             var cart = await GetAsync(cartId);
             if (cart.UsePoint.IsNull())
@@ -208,6 +215,14 @@ namespace SanyaaDelivery.Application.Services
             cart.UsePoint = !cart.UsePoint;
             if (cart.UsePoint)
             {
+                bool isHaveServiceWithNoPointDiscount = await cartDetailsRepo.DbSet.AnyAsync(d => d.CartId == cartId && d.Service.NoPointDiscount);
+                if (isHaveServiceWithNoPointDiscount)
+                {
+                    return ResultFactory<object>.CreateErrorResponseMessageFD("Point discount not avalible for this service");
+                }
+            }
+            if (cart.UsePoint)
+            {
                 var customCart = await GetCartForAppAsync(cartId);
                 if(customCart.MinimumCharge > customCart.TotalPrice)
                 {
@@ -215,7 +230,8 @@ namespace SanyaaDelivery.Application.Services
                 }
                 cart.PromocodeId = null;
             }
-            return await UpdateAsync(cart);
+            var affectedRows = await UpdateAsync(cart);
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
         }
 
         public async Task<int> DeleteAsync(int id)
@@ -287,7 +303,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<CartDto> GetCartForAppAsync(int cartId, int? cityId = null, int? clientSubscriptionId = null, DateTime? requestTime = null, RequestT request = null)
         {
-            CityT city;
+            AddressT address;
             CartDto cartDto = new CartDto();
             var cart = await GetAsync(cartId, true, true);
             if (cart.IsNull())
@@ -311,40 +327,25 @@ namespace SanyaaDelivery.Application.Services
             cartDto.EmployeeDepartmentPercentage = await employeeService.GetEmployeePrecentageAsync(cartDto.EmployeeId, cartDto.DepartmentId);
             if (cityId.IsNull())
             {
-                city = await clientService.GetDefaultCityAsync(cart.ClientId);
+                address = await clientService.GetDefaultAddressAsync(cart.ClientId);
+                //address = await clientService.getaddress(cart.ClientId);
             }
             else
             {
-                city = await cityService.GetAsync(cityId.Value);
+                address = await clientService.GetDefaultAddressAsync(cart.ClientId);    
             }
-            cartDto.MinimumCharge = GeneralSetting.MinimumCharge;
-            cartDto.DeliveryPrice = GeneralSetting.DeliveryPrice;
-            if (city.IsNotNull())
+            var defaultAddress = await clientService.GetDefaultAddressAsync(cart.ClientId);
+            if (departmentDetails.IncludeDeliveryPrice)
             {
-                cartDto.CityId = city.CityId;
-                if (city.MinimumCharge.HasValue)
-                {
-                    cartDto.MinimumCharge = city.MinimumCharge.Value;
-                }
-                if (departmentDetails.IncludeDeliveryPrice)
-                {
-                    if (city.DeliveryPrice.HasValue)
-                    {
-                        cartDto.DeliveryPrice = city.DeliveryPrice.Value;
-                    }
-                }
-                else
-                {
-                    cartDto.DeliveryPrice = 0;
-                }
-            }
-            if(cart.CartDetailsT.All(d => d.Service.NoMinimumCharge))
-            {
-                cartDto.MinimumCharge = 0;
+                cartDto.DeliveryPrice = await helperService.GetDeliveryPriceAsync(address.CityId, address.RegionId, cart.DepartmentId);
             }
             if (departmentDetails.MaximumDiscountPercentage.HasValue)
             {
                 cartDto.MaxDiscountPercentage = departmentDetails.MaximumDiscountPercentage.Value;
+            }
+            if (cart.CartDetailsT.Any(d => d.Service.NoMinimumCharge == false))
+            {
+                cartDto.MinimumCharge = await helperService.GetMinimumChargeAsync(address.CityId, cart.DepartmentId);
             }
             cartDto.TotalPoints =  await clientService.GetPointAsync(cart.ClientId);
             cartDto.PointsPerEGP = GeneralSetting.PointsPerEGP;

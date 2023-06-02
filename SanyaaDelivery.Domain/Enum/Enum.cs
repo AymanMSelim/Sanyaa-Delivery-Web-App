@@ -27,6 +27,12 @@ namespace SanyaaDelivery.Domain.Enum
         Add = 2
     }
 
+    public enum InsurancePaymentType
+    {
+        Withdraw = 1,
+        Add = 2
+    }
+
     public enum LandingScreenItemType
     {
         Banner = 1,
@@ -64,7 +70,8 @@ namespace SanyaaDelivery.Domain.Enum
     {
         Manual,
         Auto,
-        App
+        App,
+        Favourite
     }
 
     public enum PromocodeType
@@ -80,6 +87,8 @@ namespace SanyaaDelivery.Domain.Enum
         Delayed = 1,
         Rejected = 2,
         Accepted = 3,
+        Broadcast = 4,
+        WaitingApprove = 5,
         NotSet = 10,
         Waiting = 11,
         Revieved = 12,
@@ -88,4 +97,11 @@ namespace SanyaaDelivery.Domain.Enum
         FollowUp = 20
     }
 
+    public enum EmployeeRequestTrackingItem
+    {
+        Waiting = 1,
+        GoToClient = 2,
+        InExcution = 3,
+        DoneOrCanceled = 4,
+    }
 }

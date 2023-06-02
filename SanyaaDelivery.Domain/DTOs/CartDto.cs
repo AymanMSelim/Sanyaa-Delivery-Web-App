@@ -14,6 +14,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public string Note { get; set; }
         public bool IsPromoCodeApplied { get; set; }
         public bool IsLessThanMinimumCharge { get; set; }
+        public decimal MinimumChargeAdditionAmount { get; private set; }
         public int? PromoCodeId { get; set; }
         public string PromoCode { get; set; }
         public decimal PromoCodeDiscount { get; set; }
@@ -105,7 +106,7 @@ namespace SanyaaDelivery.Domain.DTOs
                     item.ServiceName = item.Service.ServiceName;
                     item.OriginalPrice = item.Service.ServiceCost;
                     item.Price = (decimal)item.Service.ServiceCost * ServiceRatio;
-                    if(item.Service.NoDiscount.HasValue && item.Service.NoDiscount.Value == false 
+                    if(item.Service.NoDiscount == false 
                         && item.Service.ServiceDiscount.HasValue 
                         && item.ServiceQuantity >= item.Service.DiscountServiceCount
                         && IgnoreServiceDiscount == false)
@@ -272,6 +273,7 @@ namespace SanyaaDelivery.Domain.DTOs
             if(NetPrice < MinimumCharge)
             {
                 IsLessThanMinimumCharge = true;
+                MinimumChargeAdditionAmount = NetPrice - MinimumCharge;
                 NetPrice = MinimumCharge;
             }
         }
@@ -344,12 +346,12 @@ namespace SanyaaDelivery.Domain.DTOs
 
         public void CalculateAmountPercentage()
         {
-            var finalAmount = TotalPrice - MaterialCost;
-            if((NetPrice - DeliveryPrice) > finalAmount)
-            {
-                finalAmount = NetPrice - DeliveryPrice;
-            }
-            EmployeePercentageAmount = finalAmount * (EmployeeDepartmentPercentage / 100)  + MaterialCost + DeliveryPrice - EmployeeDiscount;
+            var finalAmount = MinimumChargeAdditionAmount + TotalPrice - MaterialCost;
+            //if((NetPrice - DeliveryPrice) > finalAmount)
+            //{
+            //    finalAmount = NetPrice - DeliveryPrice;
+            //}
+            EmployeePercentageAmount = finalAmount * (EmployeeDepartmentPercentage / 100) + MaterialCost + DeliveryPrice - EmployeeDiscount;
             CompanyePercentageAmount = finalAmount * (1 - (EmployeeDepartmentPercentage / 100)) - CompanyDiscount;
         }
     }

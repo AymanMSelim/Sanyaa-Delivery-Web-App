@@ -12,5 +12,8 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<DepartmentLookupDto>> Department();
         Task<List<LookupDto>> Governorate();
         Task<List<LookupDto>> City(int governorateId);
+        Task<List<LookupDto>> DepatmentSub0(int departmentId);
+        Task<List<LookupDto>> DepatmentSub1(int departmentSub0Id);
+        Task<List<LookupDto>> Service(int departmentSub1Id);
     }
 }

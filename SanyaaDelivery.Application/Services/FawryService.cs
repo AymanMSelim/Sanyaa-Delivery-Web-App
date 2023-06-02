@@ -48,6 +48,7 @@ namespace SanyaaDelivery.Application.Services
             this.messageRepository = messageRepository;
             this.employeeAppAccountService = employeeAppAccountService;
             this.fawryAPIService = fawryAPIService;
+            fawryAPIService.InitialAPI(configuration["FawryAPI"].ToString(), GeneralSetting.SendFawrySMS);
         }
 
         
@@ -212,9 +213,17 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<FawryRefNumberResponse>> SendUnpaidRequestAsync(GenerateRefNumberForRequestDto model)
         {
+            if (model.RequestList.IsEmpty())
+            {
+                return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("No requests selected");
+            }
             var requestList = await requestRepository
                 .Where(d => model.RequestList.Contains(d.RequestId) && d.IsPaid == false && d.IsCompleted && d.IsCanceled == false)
                 .ToListAsync();
+            if(requestList.Any(d => d.EmployeeId != model.EmployeeId))
+            {
+                return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("One or more request not belong to this employee");
+            }
             if (requestList.IsEmpty())
             {
                 return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("No unpaid request found");
@@ -340,8 +349,21 @@ namespace SanyaaDelivery.Application.Services
             }
         }
 
+        private bool IsNotified(FawryChargeT charge)
+        {
+            if(charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.NEW.ToString() ||
+                charge.ChargeStatus == App.Global.Enums.FawryRequestStatus.UNPAID.ToString())
+            {
+                return false;
+            }
+            return true;
+        }
         public async Task<int> CallbackNotification(FawryNotificationCallback model)
         {
+            if(Convert.ToInt32(model.MerchantRefNumber) < 14000)
+            {
+                return (int)App.Global.Enums.ResultStatusCode.Success;
+            }
             bool isRootTransaction = false;
             try
             {
@@ -349,6 +371,10 @@ namespace SanyaaDelivery.Application.Services
                 var charge = await fawryChargeRepository.Where(d => d.SystemId == (Convert.ToInt32(model.MerchantRefNumber)))
                     .Include(d => d.FawryChargeRequestT)
                     .FirstOrDefaultAsync();
+                if (IsNotified(charge))
+                {
+                    return (int)App.Global.Enums.ResultStatusCode.Success;
+                }
                 charge.ChargeStatus = model.OrderStatus;
                 if (charge.ChargeStatus.ToLower() == App.Global.Enums.FawryRequestStatus.PAID.ToString().ToLower())
                 {

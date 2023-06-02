@@ -19,14 +19,16 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IConfiguration configuration;
         private readonly IRequestService orderService;
         private readonly IEmployeeService employeeService;
+        private readonly CommonService commonService;
 
         public FawryController(IFawryService fawryService, IConfiguration configuration,
-            IRequestService orderService, IEmployeeService employeeService)
+            IRequestService orderService, IEmployeeService employeeService, CommonService commonService)
         {
             this.fawryService = fawryService;
             this.configuration = configuration;
             this.orderService = orderService;
             this.employeeService = employeeService;
+            this.commonService = commonService;
         }
 
         [HttpGet("GenerateRefNumber/{employeeId}")]
@@ -48,6 +50,11 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
+                model.EmployeeId = commonService.GetEmployeeId(model.EmployeeId);
+                if (string.IsNullOrEmpty(model.EmployeeId))
+                {
+                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.ReturnEmployeeError());
+                }
                 var result = await fawryService.SendUnpaidRequestAsync(model);
                 return Ok(result);
             }

@@ -7,8 +7,12 @@ using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using App.Global.DateTimeHelper;
+using SanyaaDelivery.Infra.Data;
+using App.Global.SMS;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -16,30 +20,35 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly ISystemUserService systemUserService;
         private readonly IRepository<AccountT> accountRepository;
+        private readonly IRepository<ClientT> clientRepository;
+        private readonly IRepository<ClientPhonesT> clientPhoneRepository;
+        private readonly IUnitOfWork unitOfWork;
+        private readonly ISMSService smsService;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly ITokenService tokenService;
         private readonly IRegisterService registerService;
 
-        public LoginService(ISystemUserService systemUserService, IRepository<AccountT> accountRepository,
+        public LoginService(ISystemUserService systemUserService, IRepository<AccountT> accountRepository, IRepository<ClientT> clientRepository,
+            IRepository<ClientPhonesT> clientPhoneRepository, IUnitOfWork unitOfWork, ISMSService smsService,
             IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IRegisterService registerService)
         {
             this.systemUserService = systemUserService;
             this.accountRepository = accountRepository;
+            this.clientRepository = clientRepository;
+            this.clientPhoneRepository = clientPhoneRepository;
+            this.unitOfWork = unitOfWork;
+            this.smsService = smsService;
             this.employeeRepository = employeeRepository;
             this.tokenService = tokenService;
             this.registerService = registerService;
         }
 
-        public async Task<Result<EmployeeLoginResponseDto>> LoginEmployee(LoginEmployeeDto model)
+        public async Task<Result<EmployeeLoginResponseDto>> LoginEmployeeAsync(LoginEmployeeDto model)
         {
             EmployeeLoginResponseDto response = new EmployeeLoginResponseDto();
-            if (model.IsNull())
+            if (model.IsNull() || string.IsNullOrEmpty(model.UserName) || string.IsNullOrEmpty(model.Password))
             {
-                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("Empty data");
-            }
-            if (string.IsNullOrEmpty(model.UserName) || string.IsNullOrEmpty(model.Password))
-            {
-                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("Empty username or password");
+                return ResultFactory<EmployeeLoginResponseDto>.CreateEmptyDataErrorMessageFD();
             }
             var account = await accountRepository.DbSet.FirstOrDefaultAsync(d => d.AccountUsername == model.UserName);
             var validationCredentialResult = ValidateAccountCredential(account, model.Password);
@@ -50,9 +59,9 @@ namespace SanyaaDelivery.Application.Services
             var employee = await employeeRepository.GetAsync(account.AccountReferenceId);
             if (employee.IsNull())
             {
-                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("This employee not found");
+                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("We cannot find this employee's data, please contact us");
             }
-            var registerStep = await registerService.GetEmployeeRegisterStep(account.AccountReferenceId);
+            var registerStep = await registerService.GetEmployeeRegisterStepAsync(account.AccountReferenceId);
             response.NextRegisterStep = registerStep.Data.NextStep;
             response.NextRegisterStepDescription = registerStep.Data.NextStepDescription;
             if (string.IsNullOrEmpty(model.FCMToken) == false && account.FcmToken != model.FCMToken)
@@ -70,7 +79,8 @@ namespace SanyaaDelivery.Application.Services
                 }
                 if (employee.IsApproved == false)
                 {
-                    return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("This employee not approved yet");
+                    return ResultFactory<EmployeeLoginResponseDto>
+                        .CreateErrorResponseMessageFD("This employee's data has not yet been reviewed and approved, please try again after a while or contact the administration");
                 }
             }
             response.IsDataComplete = employee.IsDataComplete;
@@ -88,7 +98,7 @@ namespace SanyaaDelivery.Application.Services
             return ResultFactory<EmployeeLoginResponseDto>.CreateSuccessResponse(response);
         }
 
-        private Result<AccountT> ValidateAccountCredential(AccountT account, string password = null)
+        private Result<AccountT> ValidateAccountCredential(AccountT account, string password = null, string otp = null)
         {
             if (account.IsNull() || account.IsDeleted)
             {
@@ -102,35 +112,161 @@ namespace SanyaaDelivery.Application.Services
                     return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "Invalid username or password", resultStatusCode: App.Global.Enums.ResultStatusCode.InvalidUserOrPassword);
                 }
             }
-            return ResultFactory<AccountT>.CreateSuccessResponse();
-        }
-        private Result<AccountT> ValidateAccount(AccountT account, string password = null)
-        {
-            var vaildateCredentialResult = ValidateAccountCredential(account, password);
-            if (vaildateCredentialResult.IsFail) { return vaildateCredentialResult; }
-            if (account.IsMobileVerfied == false)
+            if (otp.IsNotNull())
             {
-                return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "This phone number not verfied", resultStatusCode: App.Global.Enums.ResultStatusCode.MobileVerificationRequired);
-            }
-            if (account.IsActive == false)
-            {
-                return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "This account is suspended", resultStatusCode: App.Global.Enums.ResultStatusCode.AccountSuspended);
+                if (account.MobileOtpCode != otp)
+                {
+                    return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "Invalid OTP Code", resultStatusCode: App.Global.Enums.ResultStatusCode.InvalidOTP);
+                }
             }
             return ResultFactory<AccountT>.CreateSuccessResponse();
         }
 
-        public async Task<Result<SystemUserT>> SystemUserLogin(string userName, string password)
+        private Result<AccountT> ValidateAccount(AccountT account, string password = null, string otp = null)
+        {
+            var vaildateCredentialResult = ValidateAccountCredential(account, password, otp);
+            if (vaildateCredentialResult.IsFail) { return vaildateCredentialResult; }
+            if (account.IsMobileVerfied == false)
+            {
+                return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "This mobile number has not been confirmed, please log in by sending a code to your number", resultStatusCode: App.Global.Enums.ResultStatusCode.MobileVerificationRequired);
+            }
+            if (account.IsActive == false)
+            {
+                return ResultFactory<AccountT>.CreateErrorResponseMessageFD(message: "Your account has been suspended, please contact us to recover it", resultStatusCode: App.Global.Enums.ResultStatusCode.AccountSuspended);
+            }
+            return ResultFactory<AccountT>.CreateSuccessResponse();
+        }
+
+        public async Task<Result<SystemUserT>> SystemUserLoginAsync(string userName, string password)
         {
             var systemUser = await systemUserService.Get(userName);
             if (systemUser.IsNull())
             {
                 return ResultFactory<SystemUserT>.CreateNotFoundResponse("This user not found");
             }
-            if(systemUser.SystemUserPass != password)
+            if (systemUser.SystemUserPass != password)
             {
                 return ResultFactory<SystemUserT>.CreateErrorResponseMessage("User or password incorrect");
             }
             return ResultFactory<SystemUserT>.CreateSuccessResponse(systemUser);
+        }
+
+        public async Task<Result<SystemUserDto>> LoginClientAsync(string username, string password = null, string otp = null)
+        {
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (string.IsNullOrEmpty(username) || (string.IsNullOrEmpty(otp) && string.IsNullOrEmpty(password)))
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponseMessageFD("Please enter the mobile number and OTP/password first", App.Global.Enums.ResultStatusCode.EmptyData);
+                }
+
+                var client = await clientPhoneRepository.Where(d => d.ClientPhone == username)
+                    .Select(d => d.Client)
+                    .FirstOrDefaultAsync();
+
+                if (client.IsNull())
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponseMessageFD("This number is not registered, please register first", App.Global.Enums.ResultStatusCode.NotFound);
+                }
+
+                var account = await accountRepository
+                    .Where(d => d.AccountTypeId == GeneralSetting.CustomerAccountTypeId && d.AccountReferenceId == client.ClientId.ToString())
+                    .Include(d => d.AccountRoleT).ThenInclude(d => d.Role)
+                    .FirstOrDefaultAsync();
+
+                if (account.IsNull())
+                {
+                    account = await registerService.RegisterAccountAsync(client.ClientId.ToString(), username, null, GeneralSetting.CustomerAccountTypeId, GeneralSetting.CustomerAppSystemUserId,
+                        GeneralSetting.CustomerAppDefaultRoleId);
+                    await unitOfWork.SaveAsync();
+                }
+                if (string.IsNullOrEmpty(otp) is false)
+                {
+                    account.IsMobileVerfied = true;
+                    accountRepository.Update(account.AccountId, account);
+                }
+                var accountValidationResult = ValidateAccount(account, password, otp);
+                if (accountValidationResult.IsFail)
+                {
+                    return accountValidationResult.Convert(new SystemUserDto(), true);
+                }
+                string token = tokenService.CreateToken(account);
+                await tokenService.AddAsync(new TokenT { AccountId = account.AccountId, CreationTime = DateTime.Now.EgyptTimeNow(), Token = token });
+                var systemUserDto = new SystemUserDto
+                {
+                    Username = username,
+                    Token = token,
+                    TokenExpireDate = DateTime.Now.EgyptTimeNow().AddDays(GeneralSetting.TokenExpireInDays),
+                    UserData = client,
+                    AccountId = account.AccountId,
+                    FCMToken = account.FcmToken
+                };
+                if (isRootTransaction)
+                {
+                    var affectedRows = await unitOfWork.CommitAsync(false);
+                    return ResultFactory<SystemUserDto>.CreateAffectedRowsResult(affectedRows, data: systemUserDto);
+                }
+                return ResultFactory<SystemUserDto>.CreateSuccessResponse(systemUserDto);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<SystemUserDto>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
+        }
+
+        public async Task<Result<OTPCodeDto>> RequestOTPForLoginAsync(string clientPhone)
+        {
+            var client = await clientPhoneRepository.Where(d => d.ClientPhone == clientPhone)
+                .Select(d => d.Client)
+                .FirstOrDefaultAsync();
+            if (client.IsNull())
+            {
+                return ResultFactory<OTPCodeDto>.CreateNotFoundResponse("This number is not registered, please register first");
+            }
+            var account = await accountRepository
+                .Where(d => d.AccountTypeId == GeneralSetting.CustomerAccountTypeId && d.AccountReferenceId == client.ClientId.ToString())
+                .Include(d => d.AccountRoleT).ThenInclude(d => d.Role)
+                .FirstOrDefaultAsync();
+            if (account.IsNull())
+            {
+                account = await registerService.RegisterClientAccountAsync(client, new ClientRegisterDto { Phone = clientPhone, Email = client.ClientEmail, Name = client.ClientName, Password = clientPhone });
+            }
+
+            if (account.IsDeleted)
+            {
+                return ResultFactory<OTPCodeDto>.CreateErrorResponseMessageFD("This number is not registered, please register first", App.Global.Enums.ResultStatusCode.NotFound);
+            }
+           
+            if (account.LastOtpCreationTime.HasValue && DateTime.Now.EgyptTimeNow() < account.LastOtpCreationTime.Value.AddSeconds(60))
+            {
+                return ResultFactory<OTPCodeDto>.CreateErrorResponseMessageFD("You can't request 2 otp code at the same time, please wait 1 minute at least", App.Global.Enums.ResultStatusCode.MaximumCountReached);
+            }
+
+            if (DateTime.Now.EgyptTimeNow().Date == account.LastOtpCreationTime.Value.Date)
+            {
+                account.OtpCountWithinDay++;
+            }
+            account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
+            account.LastOtpCreationTime = DateTime.Now.EgyptTimeNow();
+            accountRepository.Update(account.AccountId, account);
+            _ = smsService.SendOTPAsync(clientPhone, account.MobileOtpCode);
+            var affectedRows = await accountRepository.SaveAsync();
+            return ResultFactory<OTPCodeDto>.CreateAffectedRowsResult(affectedRows, data: new OTPCodeDto
+            {
+                OTPCode = account.MobileOtpCode,
+                OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes)
+            }, aleartType: App.Global.Enums.ResultAleartType.SuccessToast);
         }
     }
 }

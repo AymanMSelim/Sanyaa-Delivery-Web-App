@@ -13,75 +13,98 @@ using System.Threading.Tasks;
 using App.Global.DateTimeHelper;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
+using App.Global.SMS;
 
 namespace SanyaaDelivery.Application.Services
 {
     public class RegisterService : IRegisterService
     {
         private readonly IClientService clientService;
-        private readonly IAccountService accountService;
         private readonly IGeneralSetting generalSetting;
+        private readonly IRepository<AccountT> accountRepository;
+        private readonly IRepository<ClientT> clientRepository;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly ITokenService tokenService;
         private readonly IAttachmentService attachmentService;
+        private readonly ISMSService smsService;
         private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IRepository<CityT> cityRepository;
         private readonly IUnitOfWork unitOfWork;
 
-        public RegisterService(IClientService clientService, IAccountService accountService, IGeneralSetting generalSetting,
-            IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IAttachmentService attachmentService,
+        public RegisterService(IClientService clientService, IGeneralSetting generalSetting, IRepository<AccountT> accountRepository,
+            IRepository<ClientT> clientRepository,
+            IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IAttachmentService attachmentService, ISMSService smsService,
             IRepository<DepartmentT> departmentRepository, IRepository<CityT> cityRepository, IUnitOfWork unitOfWork)
         {
             this.clientService = clientService;
-            this.accountService = accountService;
             this.generalSetting = generalSetting;
+            this.accountRepository = accountRepository;
+            this.clientRepository = clientRepository;
             this.employeeRepository = employeeRepository;
             this.tokenService = tokenService;
             this.attachmentService = attachmentService;
+            this.smsService = smsService;
             this.departmentRepository = departmentRepository;
             this.cityRepository = cityRepository;
             this.unitOfWork = unitOfWork;
         }
-        public async Task<ClientRegisterResponseDto> RegisterClient(ClientRegisterDto clientRegisterDto)
+        public async Task<Result<ClientRegisterResponseDto>> RegisterClientAsync(ClientRegisterDto clientRegisterDto)
         {
-            unitOfWork.StartTransaction();
-            ClientT client = new ClientT
+            bool isRootTransaction = false;
+            try
             {
-                ClientName = clientRegisterDto.Name,
-                ClientEmail = clientRegisterDto.Email,
-                CurrentPhone = clientRegisterDto.Phone,
-                SystemUserId = GeneralSetting.CustomerAppSystemUserId,
-                ClientRegDate = DateTime.Now,
-                ClientPhonesT = new List<ClientPhonesT>
+                isRootTransaction = unitOfWork.StartTransaction();
+                ClientT client = new ClientT
                 {
-                    new ClientPhonesT
+                    ClientName = clientRegisterDto.Name,
+                    ClientEmail = clientRegisterDto.Email,
+                    CurrentPhone = clientRegisterDto.Phone,
+                    SystemUserId = GeneralSetting.CustomerAppSystemUserId,
+                    ClientRegDate = DateTime.Now.EgyptTimeNow(),
+                    ClientPhonesT = new List<ClientPhonesT>
                     {
-                        ClientPhone = clientRegisterDto.Phone,
-                        IsDefault = true
+                        new ClientPhonesT
+                        {
+                            ClientPhone = clientRegisterDto.Phone,
+                            IsDefault = true
+                        }
                     }
+                };
+                await clientRepository.AddAsync(client);
+                await unitOfWork.SaveAsync();
+                var account = await RegisterClientAccountAsync(client, clientRegisterDto);
+                if (account.IsNull())
+                {
+                    return ResultFactory<ClientRegisterResponseDto>.CreateErrorResponse();
                 }
-            };
-            await clientService.Add(client);
-            var affectedRows = await unitOfWork.SaveAsync();
-            if (affectedRows <= 0)
-            {
-                return null;
+                await unitOfWork.SaveAsync();
+                if (isRootTransaction)
+                {
+                    await unitOfWork.CommitAsync(false);
+                }
+                var res = new ClientRegisterResponseDto
+                {
+                    Client = client,
+                    OtpCode = account.MobileOtpCode,
+                    OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes),
+                    SecurityCode = account.AccountSecurityCode
+                };
+                return ResultFactory<ClientRegisterResponseDto>.CreateSuccessResponse(res, App.Global.Enums.ResultStatusCode.ClientRegisterdSuccessfully);
             }
-            var account = await RegisterClientAccount(client, clientRegisterDto);
-            if (account.IsNull())
+            catch (Exception ex)
             {
-                return null;
+                unitOfWork.RollBack();
+                return ResultFactory<ClientRegisterResponseDto>.CreateExceptionResponse(ex);
             }
-            await unitOfWork.CommitAsync();
-            return new ClientRegisterResponseDto
+            finally
             {
-                Client = client,
-                OtpCode = account.MobileOtpCode,
-                OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes),
-                SecurityCode = account.AccountSecurityCode
-            };
-        }
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
 
+        }
         public async Task<GuestClientRegisterResponseDto> RegisterGuest(ClientRegisterDto clientRegisterDto)
         {
             unitOfWork.StartTransaction();
@@ -120,7 +143,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 return null;
             }
-            var account = await RegisterAccount(client.ClientId.ToString(), clientRegisterDto.Phone, clientRegisterDto.Password, GeneralSetting.CustomerAccountTypeId,
+            var account = await RegisterAccountAsync(client.ClientId.ToString(), clientRegisterDto.Phone, clientRegisterDto.Password, GeneralSetting.CustomerAccountTypeId,
                 GeneralSetting.CustomerAppSystemUserId, GeneralSetting.GuestRoleId, clientRegisterDto.FCMToken, true);
             if (account.IsNull())
             {
@@ -133,23 +156,27 @@ namespace SanyaaDelivery.Application.Services
                 Account = account
             };
         }
-
-
-        public Task<AccountT> RegisterClientAccount(ClientT client, ClientRegisterDto clientRegisterDto)
+        public Task<AccountT> RegisterClientAccountAsync(ClientT client, ClientRegisterDto clientRegisterDto)
         {
-            return RegisterAccount(client.ClientId.ToString(), clientRegisterDto.Phone, clientRegisterDto.Password, GeneralSetting.CustomerAccountTypeId,
+            return RegisterAccountAsync(client.ClientId.ToString(), clientRegisterDto.Phone, clientRegisterDto.Password, GeneralSetting.CustomerAccountTypeId,
                 GeneralSetting.CustomerAppSystemUserId, GeneralSetting.CustomerRoleId, clientRegisterDto.FCMToken);
         }
-
-        public async Task<AccountT> RegisterAccount(string id, string userName, string password, int accountTypeId, int systemUserId, int roleId, string fcmToken = null, bool isGuest = false, bool isActive = true)
+        public async Task<AccountT> RegisterAccountAsync(string id, string userName, string password, int accountTypeId, int systemUserId, int roleId,
+            string fcmToken = null, bool isGuest = false, bool isActive = true, bool requireConfirmMobile = true)
         {
+            AccountT account = await accountRepository
+                .Where(d => d.AccountReferenceId == id && d.AccountTypeId == accountTypeId)
+                .Include(d => d.AccountRoleT).ThenInclude(d => d.Role)
+                .FirstOrDefaultAsync();
+
+            if (account.IsNotNull())
+            {
+                return account;
+            }
+
             bool resetPassword = false;
-            //if (string.IsNullOrEmpty(password))
-            //{
-            //    resetPassword = true;
-            //}
             string passwordSlat = Guid.NewGuid().ToString().Replace("-", "");
-            AccountT account = new AccountT
+            account = new AccountT
             {
                 AccountHashSlat = passwordSlat,
                 AccountPassword = password.IsNull() ? "" : App.Global.Encreption.Hashing.ComputeHMACSHA512Hash(passwordSlat, password),
@@ -163,7 +190,7 @@ namespace SanyaaDelivery.Application.Services
                 MobileOtpCode = App.Global.Generator.GenerateOTPCode(4),
                 IsMobileVerfied = isGuest ? true : false,
                 IsEmailVerfied = isGuest ? true : false,
-                LastOtpCreationTime = DateTime.Now.EgyptTimeNow(),
+                LastOtpCreationTime = DateTime.Now.EgyptTimeNow().AddMinutes(-2),
                 AccountRoleT = new List<AccountRoleT>
                 {
                     new AccountRoleT
@@ -174,144 +201,184 @@ namespace SanyaaDelivery.Application.Services
                 IsPasswordReseted = resetPassword,
                 FcmToken = fcmToken
             };
-            var affectedRows = await accountService.Add(account);
-            if (affectedRows <= 0)
+            if(requireConfirmMobile == false)
             {
-                return null;
+                account.IsMobileVerfied = true;
             }
+            await accountRepository.AddAsync(account);
+            await accountRepository.SaveAsync();
             return account;
         }
 
-        public async Task<Result<ClientRegisterResponseDto>> CRegisterClient(ClientRegisterDto clientRegisterDto)
+        public async Task<Result<ClientRegisterResponseDto>> RegisterClientCompleteAsync(ClientRegisterDto model)
         {
-            ClientRegisterResponseDto clientRegisterResponseDto = null;
-            var client = await clientService.GetByPhone(clientRegisterDto.Phone);
-            if (client != null)
+            Result<ClientRegisterResponseDto> result;
+            bool isRootTransaction = false;
+            try
             {
-                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, client.ClientId.ToString());
-                if (account == null)
+                isRootTransaction = unitOfWork.StartTransaction();
+                var client = await clientService.GetByPhone(model.Phone);
+                if (client.IsNull())
                 {
-                    account = await RegisterClientAccount(client, clientRegisterDto);
+                    result = await RegisterClientAsync(model);
                 }
-                if (account.IsDeleted)
+                else
                 {
-                    account.IsDeleted = false;
-                    await accountService.Update(account);
+                    var account = await RegisterClientAccountAsync(client, model);
+                    if (account.IsDeleted)
+                    {
+                        account.IsDeleted = false;
+                        accountRepository.Update(account.AccountId, account);
+                    }
+                    //var res  = new ClientRegisterResponseDto
+                    //{
+                    //    Client = client,
+                    //    OtpCode = account.MobileOtpCode,
+                    //    OTPExpireTime = account.LastOtpCreationTime.Value,
+                    //    SecurityCode = account.AccountSecurityCode
+                    //};
+                    result = ResultFactory<ClientRegisterResponseDto>.CreateErrorResponseMessageFD("This number is already registered with us, please login", App.Global.Enums.ResultStatusCode.AlreadyExist);
                 }
+                if (result.IsSuccess)
+                {
+                    _ = smsService.SendOTPAsync(model.Phone, result.Data.OtpCode);
+                }
+                if (isRootTransaction)
+                {
+                    await unitOfWork.CommitAsync(false);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<ClientRegisterResponseDto>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
 
-                clientRegisterResponseDto = new ClientRegisterResponseDto
+        }
+        public async Task<Result<EmployeeRegisterResponseDto>> RegisterEmployeeAsync(EmployeeRegisterDto model, int systemUserId)
+        {
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                var isExist = employeeRepository
+                    .Where(d => d.EmployeeId == model.NationalId)
+                    .Any();
+                if (isExist)
                 {
-                    Client = client,
-                    OtpCode = account.MobileOtpCode,
-                    OTPExpireTime = account.LastOtpCreationTime.Value,
-                    SecurityCode = account.AccountSecurityCode
+                    return ResultFactory<EmployeeRegisterResponseDto>.CreateErrorResponseMessageFD("This national number is already register, please login");
+                }
+                bool accountExist = await accountRepository.Where(d => d.AccountTypeId == GeneralSetting.EmployeeAccountTypeId && d.AccountUsername == model.PhoneNumber)
+                    .AnyAsync();
+                if (accountExist)
+                {
+                    return ResultFactory<EmployeeRegisterResponseDto>.CreateErrorResponseMessageFD("This phone number is already register, please login");
+                }
+                EmployeeT employee = new EmployeeT
+                {
+                    IsNewEmployee = true,
+                    EmployeePhone = model.PhoneNumber,
+                    EmployeeName = model.Name,
+                    SystemId = systemUserId,
+                    EmployeeId = model.NationalId,
+                    EmployeeFlatNum = 0,
+                    EmployeeBlockNum = 0,
+                    EmployeeFileNum = model.NationalId.Substring(0, 10)
                 };
-                return ResultFactory<ClientRegisterResponseDto>
-                    .CreateSuccessResponseSD(clientRegisterResponseDto, App.Global.Enums.ResultStatusCode.AlreadyExist, "This phone is already token!, please login");
-            }
-            clientRegisterResponseDto = await RegisterClient(clientRegisterDto);
-            if (clientRegisterResponseDto == null)
-            {
-                return ResultFactory<ClientRegisterResponseDto>.CreateErrorResponse();
-            }
-            _ = App.Global.SMS.SMSMisrService.SendOTPAsync(clientRegisterDto.Phone, clientRegisterResponseDto.OtpCode);
-            return ResultFactory<ClientRegisterResponseDto>.CreateSuccessResponse(clientRegisterResponseDto, App.Global.Enums.ResultStatusCode.ClientRegisterdSuccessfully);
-        }
-
-        public async Task<Result<ClientRegisterResponseDto>> CRegisterGuestClient(int guestClientId, ClientRegisterDto clientRegisterDto)
-        {
-            ClientRegisterResponseDto clientRegisterResponseDto = null;
-            var client = await clientService.GetByPhone(clientRegisterDto.Phone);
-            if (client.IsNotNull())
-            {
-                var account = await accountService.Get(GeneralSetting.CustomerAccountTypeId, client.ClientId.ToString());
-                if (account == null)
+                await employeeRepository.AddAsync(employee);
+                var account = await RegisterAccountAsync(employee.EmployeeId, employee.EmployeePhone,
+                    model.Password, GeneralSetting.EmployeeAccountTypeId, systemUserId, GeneralSetting.EmployeeAppDefaultRoleId,
+                    model.FCMToken, isActive: true, requireConfirmMobile: false);
+                int affectedRows = 0;
+                if (isRootTransaction)
                 {
-                    account = await RegisterClientAccount(client, clientRegisterDto);
+                     affectedRows = await unitOfWork.CommitAsync(false);
                 }
-                clientRegisterResponseDto = new ClientRegisterResponseDto
+                var response = new EmployeeRegisterResponseDto
                 {
-                    Client = client,
+                    Employee = employee,
                     OtpCode = account.MobileOtpCode,
-                    OTPExpireTime = account.LastOtpCreationTime.Value,
-                    SecurityCode = account.AccountSecurityCode
+                    OTPExpireTime = DateTime.Now.ToEgyptTime().AddMinutes(GeneralSetting.OTPExpireMinutes),
+                    SecurityCode = account.AccountSecurityCode,
+                    NextRegisterStep = (int)Domain.Enum.EmployeeRegisterStep.CompleteNationalAndRelative,
+                    NextRegisterStepDescription = Domain.Enum.EmployeeRegisterStep.ConfirmMobile.ToString(),
+                    IsDataComplete = false,
+                    Token = tokenService.CreateToken(account),
+                    AccountId = account.AccountId
                 };
-                return ResultFactory<ClientRegisterResponseDto>
-                    .CreateSuccessResponseSD(clientRegisterResponseDto, App.Global.Enums.ResultStatusCode.AlreadyExist, "This phone is already token!, please login");
+                return ResultFactory<EmployeeRegisterResponseDto>.CreateAffectedRowsResult(affectedRows, data: response);
             }
-            clientRegisterResponseDto = await RegisterClient(clientRegisterDto);
-            if (clientRegisterResponseDto == null)
+            catch (Exception ex)
             {
-                return ResultFactory<ClientRegisterResponseDto>.CreateErrorResponse();
+                unitOfWork.RollBack();
+                return ResultFactory<EmployeeRegisterResponseDto>.CreateExceptionResponse(ex);
             }
-            _ = App.Global.SMS.SMSMisrService.SendOTPAsync(clientRegisterDto.Phone, clientRegisterResponseDto.OtpCode);
-            return ResultFactory<ClientRegisterResponseDto>.CreateSuccessResponse(clientRegisterResponseDto, App.Global.Enums.ResultStatusCode.ClientRegisterdSuccessfully);
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+            
         }
-
-        public async Task<Result<EmployeeRegisterResponseDto>> RegisterEmployee(EmployeeRegisterDto model, int systemUserId)
+        public async Task<Result<string>> CompleteEmployeePersonalDataAsync(string phoneNumber, string nationalId, string relativeName, string realtivePhone,
+            byte[] profilePic, string profileExtention,
+            byte[] nationalIdFront, string nationalFrontExtention,
+            byte[] nationalIdBack, string nationalBackExtention)
         {
-            unitOfWork.StartTransaction();
-            var isExist = employeeRepository
-                .Where(d => d.EmployeeId == model.NationalId)
-                .Any();
-            if (isExist)
+            bool isRootTransaction = false;
+            try
             {
-                return ResultFactory<EmployeeRegisterResponseDto>.CreateErrorResponseMessageFD("This national number is already register, please login");
+                isRootTransaction = unitOfWork.StartTransaction();
+                var employee = await employeeRepository
+                    .Where(d => d.EmployeeId == nationalId)
+                    .FirstOrDefaultAsync();
+                if (employee.IsNull())
+                {
+                    return ResultFactory<string>.CreateNotFoundResponse("Employee not found");
+                }
+                employee.EmployeeRelativeName = relativeName;
+                employee.EmployeeRelativePhone = realtivePhone;
+                var profilePicAttachment = await attachmentService.SaveFileAsync(profilePic, (int)Domain.Enum.AttachmentType.ProfilePicture, nationalId, profileExtention);
+                await attachmentService.SaveFileAsync(nationalIdBack, (int)Domain.Enum.AttachmentType.NationalIdBack, nationalId, nationalFrontExtention);
+                await attachmentService.SaveFileAsync(nationalIdFront, (int)Domain.Enum.AttachmentType.NationalIdFront, nationalId, nationalBackExtention);
+                employee.EmployeeImageUrl = profilePicAttachment.FilePath;
+                employeeRepository.Update(employee.EmployeeId, employee);
+                var affectedRows = 0;
+                if (isRootTransaction)
+                {
+                     affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return ResultFactory<string>.CreateAffectedRowsResult(affectedRows);
             }
-            EmployeeT employee = new EmployeeT
+            catch (Exception ex)
             {
-                IsNewEmployee = true,
-                EmployeePhone = model.PhoneNumber,
-                EmployeeName = model.Name,
-                SystemId = systemUserId,
-                EmployeeId = model.NationalId,
-                EmployeeFlatNum = 0,
-                EmployeeBlockNum = 0,
-                EmployeeFileNum = model.NationalId.Substring(0, 10)
-            };
-            await employeeRepository.AddAsync(employee);
-            var account = await RegisterAccount(employee.EmployeeId, employee.EmployeePhone,
-                model.Password, GeneralSetting.EmployeeAccountTypeId, systemUserId, GeneralSetting.EmployeeAppDefaultRoleId, model.FCMToken, isActive: true);
-            var affectedRows = await unitOfWork.CommitAsync();
-            var response = new EmployeeRegisterResponseDto
+                unitOfWork.RollBack();
+                return ResultFactory<string>.CreateExceptionResponse(ex);
+            }
+            finally
             {
-                Employee = employee,
-                OtpCode = account.MobileOtpCode,
-                OTPExpireTime = DateTime.Now.ToEgyptTime().AddMinutes(GeneralSetting.OTPExpireMinutes),
-                SecurityCode = account.AccountSecurityCode,
-                NextRegisterStep = (int)Domain.Enum.EmployeeRegisterStep.ConfirmMobile,
-                NextRegisterStepDescription = Domain.Enum.EmployeeRegisterStep.ConfirmMobile.ToString(),
-                IsDataComplete = false,
-                Token = tokenService.CreateToken(account),
-                AccountId = account.AccountId
-            };
-            return ResultFactory<EmployeeRegisterResponseDto>.CreateAffectedRowsResult(affectedRows, data: response);
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
         }
 
-        public async Task<Result<string>> CompleteEmployeePersonalData(string phoneNumber, string nationalId, string relativeName, string realtivePhone,
-            byte[] profilePic, byte[] nationalIdFront, byte[] nationalIdBack)
-        {
-            unitOfWork.StartTransaction();
-            var employee = await employeeRepository
-                .Where(d => d.EmployeeId == nationalId)
-                .FirstOrDefaultAsync();
-            if (employee.IsNull())
-            {
-                return ResultFactory<string>.CreateNotFoundResponse("Employee Not Found");
-            }
-            employee.EmployeeRelativeName = relativeName;
-            employee.EmployeeRelativePhone = realtivePhone;
-            await attachmentService.SaveFileAsync(profilePic, (int)Domain.Enum.AttachmentType.ProfilePicture, nationalId, ".jpg");
-            await attachmentService.SaveFileAsync(nationalIdBack, (int)Domain.Enum.AttachmentType.NationalIdBack, nationalId, ".jpg");
-            await attachmentService.SaveFileAsync(nationalIdFront, (int)Domain.Enum.AttachmentType.NationalIdFront, nationalId, ".jpg");
-            var affectedRows = await unitOfWork.CommitAsync();
-            return ResultFactory<string>.CreateAffectedRowsResult(affectedRows);
-        }
-
-        public async Task<int> CompleteEmployeeAddress(EmployeeAddressDto model)
+        public async Task<int> CompleteEmployeeAddressAsync(EmployeeAddressDto model)
         {
             var employee = await employeeRepository
                   .Where(d => d.EmployeeId == model.NationalId)
+                  .Include(d => d.EmployeeLocation)
                   .FirstOrDefaultAsync();
             if (employee.IsNull())
             {
@@ -324,57 +391,75 @@ namespace SanyaaDelivery.Application.Services
             employee.EmployeeBlockNum = model.BlockNumber;
             employee.EmployeeDes = model.Description;
             employee.EmployeeStreet = model.Street;
-            employee.EmployeeLocation = new EmployeeLocation
+            if (employee.EmployeeLocation.IsNull())
             {
-                EmployeeId = model.NationalId,
-                Latitude = model.Lat,
-                Longitude = model.Lang,
-                Location = model.Location
-            };
+                employee.EmployeeLocation = new EmployeeLocation
+                {
+                    EmployeeId = model.NationalId,
+                    Latitude = model.Lat,
+                    Longitude = model.Lang,
+                    Location = model.Location
+                };
+            }
+            employeeRepository.Update(employee.EmployeeId, employee);
             return await employeeRepository.SaveAsync();
         }
-
-        public async Task<int> CompleteEmployeeWorkingData(EmployeeWorkingDataDto model)
+        public async Task<Result<EmployeeT>> CompleteEmployeeWorkingDataAsync(EmployeeWorkingDataDto model)
         {
             var employee = await employeeRepository
                   .Where(d => d.EmployeeId == model.NationalId)
+                  .Include(d => d.EmployeeWorkplacesT)
+                  .Include(d => d.DepartmentEmployeeT)
+                  .Include(d => d.OpreationT)
                   .FirstOrDefaultAsync();
             if (employee.IsNull())
             {
-                return (int)App.Global.Enums.ResultStatusCode.NotFound;
+                return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("Employee not found");
             }
-            foreach (var item in model.Departments)
+            if (employee.DepartmentEmployeeT.IsEmpty())
             {
-                var department = await departmentRepository.GetAsync(item);
-                employee.DepartmentEmployeeT.Add(new DepartmentEmployeeT
+                foreach (var item in model.Departments)
                 {
-                    DepartmentId = item,
-                    EmployeeId = model.NationalId,
-                    DepartmentName = department.DepartmentName,
-                    Percentage = department.DepartmentPercentage
+                    var department = await departmentRepository.GetAsync(item);
+                    employee.DepartmentEmployeeT.Add(new DepartmentEmployeeT
+                    {
+                        DepartmentId = item,
+                        EmployeeId = model.NationalId,
+                        DepartmentName = department.DepartmentName,
+                        Percentage = department.DepartmentPercentage
+                    });
+                }
+            }
+            if (employee.EmployeeWorkplacesT.IsEmpty())
+            {
+                var city = await cityRepository.GetAsync(model.CityId);
+                employee.EmployeeWorkplacesT.Add(new EmployeeWorkplacesT
+                {
+                    BranchId = city.BranchId.GetValueOrDefault(1),
+                    EmployeeId = model.NationalId
                 });
             }
-            var city = await cityRepository.GetAsync(model.CityId);
-            employee.EmployeeWorkplacesT.Add(new EmployeeWorkplacesT
+            if (employee.OpreationT.IsNull())
             {
-                BranchId = city.BranchId.GetValueOrDefault(1),
-                EmployeeId = model.NationalId
-            });
-            employee.OpreationT = new OpreationT
-            {
-                IsActive = false,
-                LastActiveTime = DateTime.Now.EgyptTimeNow(),
-            };
-            employee.IsDataComplete = true;
-            return await employeeRepository.SaveAsync();
+                employee.OpreationT = new OpreationT
+                {
+                    IsActive = false,
+                    LastActiveTime = DateTime.Now.EgyptTimeNow(),
+                };
+            }
+            employee.SubscriptionId = GeneralSetting.DefaultEmployeeSubacriptionId;
+            employeeRepository.Update(employee.EmployeeId, employee);
+            var affectedRows = await employeeRepository.SaveAsync();
+            return ResultFactory<EmployeeT>.CreateAffectedRowsResult(affectedRows, data: employee);
         }
-
-        public async Task<Result<EmployeeRegisterStepDto>> GetEmployeeRegisterStep(string nationalId)
+        public async Task<Result<EmployeeRegisterStepDto>> GetEmployeeRegisterStepAsync(string nationalId)
         {
             var employee = await employeeRepository
                .Where(d => d.EmployeeId == nationalId)
                .Include(d => d.EmployeeWorkplacesT)
                .Include(d => d.DepartmentEmployeeT)
+               .Include(d => d.EmployeeLocation)
+               .Include(d => d.OpreationT)
                .FirstOrDefaultAsync();
             if (employee.IsNull())
             {
@@ -386,10 +471,11 @@ namespace SanyaaDelivery.Application.Services
                     NextStepDescription = Domain.Enum.EmployeeRegisterStep.Register.ToString()
                 });
             }
-            var account = await accountService.Get(GeneralSetting.EmployeeAccountTypeId, nationalId);
+            var account = await accountRepository.Where(d => d.AccountTypeId == GeneralSetting.EmployeeAccountTypeId && d.AccountReferenceId == employee.EmployeeId)
+                .FirstOrDefaultAsync();
             if (account.IsNull())
             {
-                account = await RegisterAccount(nationalId, employee.EmployeePhone, nationalId, GeneralSetting.EmployeeAccountTypeId, 600, GeneralSetting.EmployeeAppDefaultRoleId, isActive: false);
+                account = await RegisterAccountAsync(nationalId, employee.EmployeePhone, nationalId, GeneralSetting.EmployeeAccountTypeId, GeneralSetting.EmployeeAppSystemUserId, GeneralSetting.EmployeeAppDefaultRoleId, isActive: true);
                 return ResultFactory<EmployeeRegisterStepDto>.CreateSuccessResponse(new EmployeeRegisterStepDto
                 {
                     NationalId = nationalId,
@@ -408,7 +494,7 @@ namespace SanyaaDelivery.Application.Services
                     NextStepDescription = Domain.Enum.EmployeeRegisterStep.ConfirmMobile.ToString()
                 });
             }
-            if (string.IsNullOrEmpty(employee.EmployeeRelativeName) || string.IsNullOrEmpty(employee.EmployeeRelativePhone))
+            if (string.IsNullOrEmpty(employee.EmployeeRelativeName) || string.IsNullOrEmpty(employee.EmployeeRelativePhone) || string.IsNullOrEmpty(employee.EmployeeImageUrl))
             {
                 return ResultFactory<EmployeeRegisterStepDto>.CreateSuccessResponse(new EmployeeRegisterStepDto
                 {
@@ -418,8 +504,9 @@ namespace SanyaaDelivery.Application.Services
                     NextStepDescription = Domain.Enum.EmployeeRegisterStep.CompleteNationalAndRelative.ToString()
                 });
             }
-            if(string.IsNullOrEmpty(employee.EmployeeGov) || string.IsNullOrEmpty(employee.EmployeeCity) || string.IsNullOrEmpty(employee.EmployeeRegion)
-                || string.IsNullOrEmpty(employee.EmployeeStreet) || employee.EmployeeBlockNum.IsNull() || employee.EmployeeFlatNum.IsNull())
+            if(employee.EmployeeLocation.IsNull() || string.IsNullOrEmpty(employee.EmployeeGov) || string.IsNullOrEmpty(employee.EmployeeCity) || string.IsNullOrEmpty(employee.EmployeeRegion)
+                || string.IsNullOrEmpty(employee.EmployeeStreet) || employee.EmployeeBlockNum.IsNull() || employee.EmployeeFlatNum.IsNull() 
+                || string.IsNullOrEmpty(employee.EmployeeLocation.Latitude) || string.IsNullOrEmpty(employee.EmployeeLocation.Longitude))
             {
                 return ResultFactory<EmployeeRegisterStepDto>.CreateSuccessResponse(new EmployeeRegisterStepDto
                 {
@@ -429,7 +516,7 @@ namespace SanyaaDelivery.Application.Services
                     NextStepDescription = Domain.Enum.EmployeeRegisterStep.CompleteAddress.ToString()
                 });
             }
-            if (employee.DepartmentEmployeeT.IsEmpty())
+            if (employee.DepartmentEmployeeT.IsEmpty() || employee.EmployeeWorkplacesT.IsEmpty())
             {
                 return ResultFactory<EmployeeRegisterStepDto>.CreateSuccessResponse(new EmployeeRegisterStepDto
                 {
@@ -446,6 +533,71 @@ namespace SanyaaDelivery.Application.Services
                 NextStep = (int)Domain.Enum.EmployeeRegisterStep.Done,
                 NextStepDescription = Domain.Enum.EmployeeRegisterStep.Done.ToString()
             });
+        }
+
+        public async Task<Result<SystemUserDto>> ConfirmClientRegisterOTPAsync(int? clientId, string phone, string otpCode, string signature)
+        {
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (!clientId.HasValue || string.IsNullOrEmpty(otpCode) || string.IsNullOrEmpty(signature))
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponseMessageFD("Please enter all data first", App.Global.Enums.ResultStatusCode.EmptyData);
+                }
+                var account = await accountRepository.
+                    Where(d => d.AccountTypeId == GeneralSetting.CustomerAccountTypeId && d.AccountReferenceId == clientId.ToString())
+                    .Include(d => d.AccountRoleT)
+                    .FirstOrDefaultAsync();
+                if (account.IsNull())
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponse();
+                }
+
+                var passwordHash = App.Global.Encreption.Hashing.ComputeSha256Hash(clientId + phone + otpCode + account.AccountSecurityCode);
+                if (passwordHash.ToLower() != signature.ToLower())
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponseMessage("Invalid data siganture", App.Global.Enums.ResultStatusCode.InvalidSignature);
+                }
+
+                if (account.MobileOtpCode != otpCode)
+                {
+                    return ResultFactory<SystemUserDto>.CreateErrorResponseMessageFD("Invalid OTP code", App.Global.Enums.ResultStatusCode.InvalidOTP, App.Global.Enums.ResultAleartType.FailedDialog);
+                }
+                account.IsMobileVerfied = true;
+                account.IsActive = true;
+                accountRepository.Update(account.AccountId, account);
+                var client = await clientService.GetByPhone(phone);
+                string token = tokenService.CreateToken(account);
+                await tokenService.AddAsync(new TokenT { AccountId = account.AccountId, CreationTime = DateTime.Now.EgyptTimeNow(), Token = token });
+                if (isRootTransaction)
+                {
+                    await unitOfWork.CommitAsync(false);
+                }
+                var res = new SystemUserDto
+                {
+                    Username = phone,
+                    Token = token,
+                    TokenExpireDate = DateTime.Now.EgyptTimeNow().AddDays(GeneralSetting.TokenExpireInDays),
+                    UserData = client,
+                    AccountId = account.AccountId
+                };
+                return ResultFactory<SystemUserDto>.CreateSuccessResponse(res);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<SystemUserDto>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
+            
         }
     }
 }

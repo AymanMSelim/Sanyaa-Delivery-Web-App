@@ -30,8 +30,20 @@ namespace SanyaaDelivery.Application.Interfaces
             bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
             bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false);
 
+        Task<List<RequestDto>> GetCustomList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
+           int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
+           bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
+           bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
+           bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
+           bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
+           bool includeDelayedT = false, bool includeFollowUpT = false, bool includeReviewT = false, bool includeSubscription = false,
+           bool includePayment = false, bool includeComplaiment = false, bool includeSite = false, bool includeBill = false,
+           bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
+           bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false);
+
         Task<List<AppRequestDto>> GetAppList(int? clientId = null, string employeeId = null, int? status = null);
         Task<AppRequestDetailsDto> GetAppDetails(int requestId);
+        Task<EmpAppRequestDetailsDto> GetEmpAppDetails(int requestId);
         Task<List<RequestT>> GetEmployeeOrdersList(string employeeId, DateTime time);
         Task<List<OrderDto>> GetEmployeeOrdersCustomList(string employeeId, DateTime day);
         Task<List<RequestT>> GetEmployeeOrdersExceptCanceledList(DateTime day);

@@ -197,7 +197,7 @@ namespace SanyaaDelivery.Application.Services
                 MaterialCost = d.MaterialCost,
                 NoDiscount = d.NoDiscount,
                 ServiceCost = d.ServiceCost,
-                ServiceDiscount = d.NoDiscount.HasValue ? d.NoDiscount.Value ? 0 : d.ServiceDiscount : 0,
+                ServiceDiscount = d.NoDiscount ? 0 : d.ServiceDiscount,
                 ServiceDuration = d.ServiceDuration,
                 ServiceName = d.ServiceName,
                 ServicePoints = d.ServicePoints,
@@ -256,7 +256,7 @@ namespace SanyaaDelivery.Application.Services
                 MaterialCost = d.MaterialCost,
                 NoDiscount = d.NoDiscount,
                 ServiceCost = d.ServiceCost,
-                ServiceDiscount = d.NoDiscount.HasValue ? d.NoDiscount.Value ? 0 : d.ServiceDiscount : 0,
+                ServiceDiscount = d.NoDiscount ? 0 : d.ServiceDiscount,
                 ServiceDuration = d.ServiceDuration,
                 ServiceName = d.ServiceName,
                 ServicePoints = d.ServicePoints,
@@ -269,7 +269,7 @@ namespace SanyaaDelivery.Application.Services
 
         private decimal GetNetServiceCost(ServiceT service)
         {
-            if((service.NoDiscount.HasValue && service.NoDiscount.Value) || service.ServiceDiscount.HasValue == false || service.ServiceDiscount <= 0)
+            if(service.NoDiscount || service.ServiceDiscount.HasValue == false || service.ServiceDiscount <= 0)
             {
                 return service.ServiceCost;
             }

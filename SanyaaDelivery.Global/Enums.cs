@@ -37,6 +37,9 @@ namespace App.Global
 
         public enum ResultStatusCode
         {
+            NotAuthenticated = -27,
+            TokenExpired = -26,
+            NotAuthorized = -25,
             False = -24,
             DeleteFailed = -22,
             NotAvailable = -21,

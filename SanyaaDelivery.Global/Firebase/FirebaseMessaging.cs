@@ -1,4 +1,5 @@
 ﻿using FirebaseAdmin;
+using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using System;
 using System.Collections.Generic;
@@ -9,30 +10,65 @@ namespace App.Global.Firebase
 {
     public class FirebaseMessaging
     {
-        public static void Initalize(string jsonFilePath = "firebase.json")
+        private static FirebaseApp clientApp;
+        private static FirebaseApp empApp;
+
+        public static void Initalize(string clientAppJsonPath, string employeeAppJsonPath)
         {
-            FirebaseApp.Create(new AppOptions()
+            clientApp = FirebaseApp.Create(new AppOptions()
             {
-                Credential = GoogleCredential.FromFile(jsonFilePath),
-            });
+                Credential = GoogleCredential.FromFile(clientAppJsonPath)
+            }, "ClientApp");
+
+            empApp = FirebaseApp.Create(new AppOptions()
+            {
+                Credential = GoogleCredential.FromFile(employeeAppJsonPath)
+            }, "EmployeeApp");
         }
 
-        public static async Task Send(string token, string title, string body)
+        public static async Task SendToClientAsync(string token, string title, string body, string imageUrl = null)
         {
             if (string.IsNullOrEmpty(token))
             {
                 return;
             }
-            var res = await FirebaseAdmin.Messaging.FirebaseMessaging.DefaultInstance.SendAsync(new FirebaseAdmin.Messaging.Message
+            var msg = new FirebaseAdmin.Messaging.Message
             {
                 Token = token,
                 Notification = new FirebaseAdmin.Messaging.Notification
                 {
                     Title = title,
                     Body = body,
-                    ImageUrl = "https://api.sane3ydelivery.com/Public/LandingScreen/5/5e3ab51c-49da-493e-98b7-06e84697b0f5.jpg"
                 }
-            });
+            };
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                msg.Notification.ImageUrl = $"https://api.sane3ydelivery.com{imageUrl}";
+            }
+            await FirebaseAdmin.Messaging.FirebaseMessaging.GetMessaging(clientApp).SendAsync(msg);
         }
+
+        public static async Task SendToEmpAsync(string token, string title, string body, string imageUrl = null)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return;
+            }
+            var msg = new FirebaseAdmin.Messaging.Message
+            {
+                Token = token,
+                Notification = new FirebaseAdmin.Messaging.Notification
+                {
+                    Title = title,
+                    Body = body,
+                }
+            };
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                msg.Notification.ImageUrl = $"https://api.sane3ydelivery.com{imageUrl}";
+            }
+            await FirebaseAdmin.Messaging.FirebaseMessaging.GetMessaging(empApp).SendAsync(msg);
+        }
+
     }
 }

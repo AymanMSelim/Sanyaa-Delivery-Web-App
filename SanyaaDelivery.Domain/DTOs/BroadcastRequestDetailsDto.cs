@@ -14,6 +14,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public string Region { get; set; }
         public string Status { get; set; }
         public string StatusTranslated { get; set; }
+        public string Note { get; set; }
         public List<InvoiceDetailsDto> InvoiceDetails { get; set; }
         public List<RequestServiceDto> RequestServiceList { get; set; }
 

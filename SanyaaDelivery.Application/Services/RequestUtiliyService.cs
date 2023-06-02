@@ -13,6 +13,7 @@ using App.Global.DateTimeHelper;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Infra.Data.Context;
 using App.Global.ExtensionMethods;
+using SanyaaDelivery.Domain.Enum;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -26,11 +27,12 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<ClientT> clientRepository;
         private readonly IRepository<MessagesT> messageRepository;
         private readonly IEmployeeAppAccountService employeeAppAccountService;
+        private readonly IHelperService helperService;
         private readonly IUnitOfWork unitOfWork;
 
         public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService,
             IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IRepository<ClientT> clientRepository,
-            IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IUnitOfWork unitOfWork)
+            IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IHelperService helperService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
             this.paymentRepository = paymentRepository;
@@ -40,6 +42,7 @@ namespace SanyaaDelivery.Application.Services
             this.clientRepository = clientRepository;
             this.messageRepository = messageRepository;
             this.employeeAppAccountService = employeeAppAccountService;
+            this.helperService = helperService;
             this.unitOfWork = unitOfWork;
         }
 
@@ -51,22 +54,15 @@ namespace SanyaaDelivery.Application.Services
                 isRootTransaction = unitOfWork.StartTransaction();
                 var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
                     .Include(d => d.RequestStagesT).FirstOrDefaultAsync();
-                if (request.IsCompleted)
-                {
-                    return ResultFactory<object>.CreateErrorResponseMessageFD("This request is already complete");
-                }
-                if (request.IsCanceled)
-                {
-                    return ResultFactory<object>.CreateErrorResponseMessageFD("This request is canceled");
-                }
+                var requestValidation = helperService.ValidateRequest<object>(request);
+                if (requestValidation.IsFail) { return requestValidation; }
                 if (string.IsNullOrEmpty(request.EmployeeId))
                 {
                     return ResultFactory<object>.CreateErrorResponseMessageFD("This request not assign to any employee, can't be set done");
                 }
                 request.IsCompleted = true;
                 request.RequestStagesT.FinishTimestamp = DateTime.Now.EgyptTimeNow();
-                request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "done").RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Done);
                 requestRepository.Update(requestId, request);
                 if (request.RequestPoints > 0)
                 {
@@ -127,7 +123,7 @@ namespace SanyaaDelivery.Application.Services
         {
             var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
                 .Include(d => d.RequestStagesT).FirstOrDefaultAsync();
-            request.RequestStatus = GeneralSetting.RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == "waiting").RequestStatusId;
+            request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Waiting);
             request.RequestStagesT.AcceptTimestamp = null;
             request.RequestStagesT.ReceiveTimestamp = null;
             request.RequestStagesT.FinishTimestamp = null;
@@ -155,8 +151,7 @@ namespace SanyaaDelivery.Application.Services
                     return ResultFactory<object>.CreateErrorResponseMessageFD("This request is already followed");
                 }
                 request.IsFollowed = true;
-                request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "FollowUp").RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.FollowUp);
                 requestRepository.Update(request.RequestId, request);
                 followUp.Timestamp = DateTime.Now.EgyptTimeNow();
                 await followUpRepository.AddAsync(followUp);
@@ -373,6 +368,11 @@ namespace SanyaaDelivery.Application.Services
         {
             DateTime startMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS();
             DateTime endMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS();
+            string maxsabTranslation = translationService.Translate("Maxsab");
+            string requestTranslation = translationService.Translate("Request");
+            string companyPercentageTranslation = translationService.Translate("CompanyPercentage");
+            string lastDuoDateTranslation = translationService.Translate("LastDuoDate");
+            string egpTranslation = translationService.Translate("EGP");
             var monthlyRequest = await requestRepository
                 .Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.RequestTimestamp >= startMonthDate && d.RequestTimestamp <= endMonthDate)
                 .Select(d => new { d.NetPrice, d.EmployeePercentageAmount })
@@ -383,22 +383,38 @@ namespace SanyaaDelivery.Application.Services
                     Address = d.RequestedAddress.City.CityName + ", " + d.RequestedAddress.Region.RegionName,
                     ClientName = d.Client.ClientName,
                     RequestId = d.RequestId,
-                    RequestCaption = translationService.Translate("Request") + " #" + d.RequestId,
-                    EmployeeAmountPercentageDescription = translationService.Translate("Maxsab") + " " + d.EmployeePercentageAmount + " ج",
-                    CompanyAmountPercentageDescription = translationService.Translate("CompanyPercentage") + " " + d.CompanyPercentageAmount + " ج",
+                    RequestCaption = requestTranslation + " #" + d.RequestId,
+                    EmployeeAmountPercentageDescription = maxsabTranslation + " " + d.EmployeePercentageAmount + " " + egpTranslation,
+                    CompanyAmountPercentageDescription = companyPercentageTranslation + " " + d.CompanyPercentageAmount + " " + egpTranslation,
                     RequestTimestamp = d.RequestTimestamp.Value
                 }).ToListAsync();
             foreach (var item in unPaidRequest)
             {
-                item.DuoDateDecription = translationService.Translate("LastDuoDate") + " " + item.RequestTimestamp.AddDays(3).ToShortDateString();
+                item.DuoDateDecription = lastDuoDateTranslation + " " + item.RequestTimestamp.AddDays(3).ToShortDateString();
             }
             return new EmployeeAppPaymentIndexDto
             {
                 EmployeeAmountPercentage = monthlyRequest.Sum(d => d.EmployeePercentageAmount).ToString() + " ج",
                 EmployeeAmountPercentageCaption = translationService.Translate("Your percentage this month is"),
-                EmployeeAmountPercentageDescription = $"لقد قمت بـ {monthlyRequest.Count} مهام بتكلفة كلية {monthlyRequest.Sum(d => d.NetPrice)}ج",
+                EmployeeAmountPercentageDescription = $"{translationService.Translate("You do")} {monthlyRequest.Count} {translationService.Translate("Requests with total cost")} {monthlyRequest.Sum(d => d.NetPrice)} {egpTranslation}",
                 RequestList = unPaidRequest
             };
+        }
+
+        public async Task<Result<object>> ConfirmArrivalAsync(int id)
+        {
+            var request = await requestRepository.Where(d => d.RequestId == id)
+                .FirstOrDefaultAsync();
+            var requestValidation = helperService.ValidateRequest<object>(request);
+            if (requestValidation.IsFail) { return requestValidation; }
+            if(request.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            {
+                return ResultFactory<object>.CreateErrorResponseMessageFD("This request is already confirmed");
+            }
+            request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.InExcution);
+            requestRepository.Update(request.RequestId, request);
+            var affectedRows = await requestRepository.SaveAsync();
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
         }
     }
 }

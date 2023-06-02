@@ -12,7 +12,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         ClientDto GetAllClients();
 
-        Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false);
+        Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false, bool getDefaultOnly = false, bool trackingEnabled = false);
         Task<int> GetPointAsync(int clientId);
 
         Task<List<ClientT>> GetListAsync(string searchValue);
@@ -67,10 +67,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> UpdatePhone(ClientPhonesT phone);
 
         Task<Result<ClientPhonesT>> DeletePhone(int phoneId);
-
-        Task<int> Subscripe(int subscriptionId, int clientId);
-
-        Task<int> UnSubscripe(int subscriptionId, int clientId);
 
     }
 }

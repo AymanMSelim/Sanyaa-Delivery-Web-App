@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.OtherModels;
+using App.Global.DTOs;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -21,11 +22,11 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
         private readonly IRepository<EmploymentApplicationsT> employmentApplicationRepository;
         private readonly IRepository<FollowUpT> followUpRepository;
-        private readonly IRepository<DepartmentT> departmentRepository1;
+        private readonly IRepository<CityT> cityRepository;
 
         public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, 
             IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<EmploymentApplicationsT> employmentApplicationRepository,
-           IRepository<FollowUpT> followUpRepository)
+           IRepository<FollowUpT> followUpRepository, IRepository<CityT> cityRepository)
         {
             this.employeeRepository = employeeRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
@@ -33,6 +34,7 @@ namespace SanyaaDelivery.Application.Services
             this.employeeWorkplaceRepository = employeeWorkplaceRepository;
             this.employmentApplicationRepository = employmentApplicationRepository;
             this.followUpRepository = followUpRepository;
+            this.cityRepository = cityRepository;
         }
 
         public Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false, 
@@ -137,10 +139,19 @@ namespace SanyaaDelivery.Application.Services
             return await employeeWorkplaceRepository.SaveAsync();
         }
 
-        public async Task<int> DeleteWorkplace(int id)
+        public async Task<Result<object>> DeleteWorkplace(int id)
         {
+            var employeeId = await employeeWorkplaceRepository.Where(d => d.EmployeeWorkplaceId == id)
+                .Select(d => d.EmployeeId)
+                .FirstOrDefaultAsync();
+            int count = await employeeWorkplaceRepository.DbSet.CountAsync(d => d.EmployeeId == employeeId);
+            if(count <= 1)
+            {
+               return ResultFactory<object>.CreateErrorResponseMessageFD("This operation can't be done");
+            }
             await employeeWorkplaceRepository.DeleteAsync(id);
-            return await employeeWorkplaceRepository.SaveAsync();
+            var affectedRows = await employeeWorkplaceRepository.SaveAsync();
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
         }
 
         public Task<List<DepartmentEmployeeT>> GetDepartmentList(string employeeId)
@@ -269,7 +280,7 @@ namespace SanyaaDelivery.Application.Services
                     d.EmployeeId,
                     d.EmployeeName,
                     d.Title,
-                    d.DepartmentEmployeeT.FirstOrDefault().DepartmentName,
+                    DepartmentName = string.Join(", ", d.DepartmentEmployeeT.Select(t => t.DepartmentName).ToList()),
                     d.EmployeeImageUrl
                 })
                 .FirstOrDefaultAsync();
@@ -294,9 +305,54 @@ namespace SanyaaDelivery.Application.Services
                     RequestId = d.RequestId,
                     Review = d.Review
                 }).ToListAsync();
-            model.Rate = reviewList.Sum(d => d.Rate) / reviewList.Count;
+            if(reviewList.Count > 0)
+            {
+                model.Rate = reviewList.Sum(d => d.Rate) / reviewList.Count;
+            }
             model.ReviewList = reviewList;
             return model;
+        }
+
+        public Task<AppEmployeeAccountIndexDto> GetAppAccountIndex(string employeeId)
+        {
+            return employeeRepository.Where(d => d.EmployeeId == employeeId)
+                .Select(d => new AppEmployeeAccountIndexDto
+                {
+                    EmployeeId = d.EmployeeId,
+                    CreationTime = d.EmployeeHireDate.HasValue ? d.EmployeeHireDate.Value : DateTime.Now,
+                    EmployeeImage = d.EmployeeImageUrl,
+                    EmployeeName = d.EmployeeName,
+                    EmployeePhone = d.EmployeePhone,
+                    EmployeePhone1 = d.EmployeePhone1,
+                    EmployeeDepartmenText = string.Join(", ", d.DepartmentEmployeeT.Select(t => t.Department.DepartmentName).ToList()),
+                    EmployeeDepartmentList = d.DepartmentEmployeeT.Select(t => new EmployeeDepartmentDto
+                    {
+                        DepartmentId = t.DepartmentId.Value,
+                        DepartmentName = t.Department.DepartmentName,
+                        Id = t.DepartmentEmployeeId
+                    }).ToList(),
+                    EmployeeWorkplaceText = string.Join(", ", d.EmployeeWorkplacesT.Select(t => t.Branch.BranchName).ToList()),
+                    EmployeeWorkplaceList = d.EmployeeWorkplacesT.Select(t => new EmployeeWorkplacesDto
+                    {
+                        Id = t.EmployeeWorkplaceId,
+                        BranchId = t.BranchId,
+                        BranchName = t.Branch.BranchName
+                    }).ToList()
+
+                }).FirstOrDefaultAsync();
+        }
+
+        public async Task<int> AddWorkplaceByCity(AddWorkplaceByCityDto model)
+        {
+            var branchId = await cityRepository.Where(d => d.CityId == model.CityId)
+                .Select(d => d.BranchId)
+                .FirstOrDefaultAsync();
+            await employeeWorkplaceRepository.AddAsync(new EmployeeWorkplacesT
+            {
+                BranchId = branchId.Value,
+                EmployeeId = model.EmployeeId
+            });
+            return await employeeWorkplaceRepository.SaveAsync();
         }
     }
 }

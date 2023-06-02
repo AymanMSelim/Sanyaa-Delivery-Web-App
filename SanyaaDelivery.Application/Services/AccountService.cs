@@ -90,7 +90,7 @@ namespace SanyaaDelivery.Application.Services
 
         public bool IsOtpExpired(AccountT account)
         {
-            if(account.LastOtpCreationTime.Value.AddMilliseconds(GeneralSetting.OTPExpireMinutes) > DateTime.Now)
+            if(DateTime.Now.EgyptTimeNow() > account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes))
             {
                 return true;
             }
@@ -153,7 +153,7 @@ namespace SanyaaDelivery.Application.Services
             return null;
         }
 
-        public async Task<Result<bool>> ConfirmOtp(ConfirmOtpDto confirmOtpDto)
+        public async Task<Result<bool>> ConfirmOTPAsync(ConfirmOtpDto confirmOtpDto)
         {
             var account = await accountRepository.GetAsync(confirmOtpDto.AccountId);
             if (account.IsNull())
@@ -164,7 +164,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<bool>.CreateErrorResponseMessageFD("Invalid OTP code");
             }
-            if(DateTime.Now.EgyptTimeNow() > account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes))
+            if (DateTime.Now.EgyptTimeNow() > account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes))
             {
                 return ResultFactory<bool>.CreateErrorResponseMessageFD("Thid code is expired, please request new one");
             }

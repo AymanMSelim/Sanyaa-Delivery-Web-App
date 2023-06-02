@@ -21,11 +21,13 @@ namespace SanyaaDelivery.Domain.Models
         public string ServiceDes { get; set; }
         public decimal? MaterialCost { get; set; }
         public int? ServicePoints { get; set; }
-        public bool? NoDiscount { get; set; }
-        public bool NoMinimumCharge { get; set; }
+        public bool NoDiscount { get; set; }
         public decimal? ServiceDiscount { get; set; }
         public int? DiscountServiceCount { get; set; }
         public decimal? CompanyDiscountPercentage { get; set; }
+        public bool NoMinimumCharge { get; set; }
+        public bool NoPointDiscount { get; set; }
+        public bool NoPromocodeDiscount { get; set; }
 
         public DepartmentSub1T Department { get; set; }
         public ICollection<CartDetailsT> CartDetailsT { get; set; }

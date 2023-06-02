@@ -10,6 +10,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using App.Global.DateTimeHelper;
+using SanyaaDelivery.Domain.DTOs;
+using App.Global.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -17,13 +21,13 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly SymmetricSecurityKey _key;
         private readonly IRepository<TokenT> tokenRepository;
-        private readonly IRoleService roleService;
+        private readonly IRepository<AccountT> accountRepository;
 
-        public TokenService(IConfiguration config, IRepository<TokenT> tokenRepository, IRoleService roleService)
+        public TokenService(IConfiguration config, IRepository<TokenT> tokenRepository, IRepository<AccountT> accountRepository)
         {
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
             this.tokenRepository = tokenRepository;
-            this.roleService = roleService;
+            this.accountRepository = accountRepository;
         }
 
         public async Task<int> AddAsync(TokenT token)
@@ -45,7 +49,7 @@ namespace SanyaaDelivery.Application.Services
             }
             else if(account.AccountTypeId == GeneralSetting.EmployeeAccountTypeId)
             {
-                systemUserId = GeneralSetting.EmployeeAccountTypeId;
+                systemUserId = GeneralSetting.EmployeeAppSystemUserId;
             }
             var claims = new List<Claim>
             {
@@ -57,22 +61,42 @@ namespace SanyaaDelivery.Application.Services
             };
             foreach (var role in account.AccountRoleT)
             {
-                if (role.Role.IsNull())
+                var r = role.Role;
+                if (r.IsNull())
                 {
-                    role.Role = GeneralSetting.RoleList.Find(d => d.RoleId == role.RoleId);
+                    r = GeneralSetting.RoleList.Find(d => d.RoleId == role.RoleId);
                 }
-                claims.Add(new Claim(ClaimTypes.Role, role.Role.RoleName));
+                claims.Add(new Claim(ClaimTypes.Role, r.RoleName));
             }
             var creds = new SigningCredentials(_key, SecurityAlgorithms.HmacSha512Signature);
             var tokenDiscreptor = new SecurityTokenDescriptor
             {
                 SigningCredentials = creds,
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddDays(GeneralSetting.TokenExpireInDays)
+                Expires = DateTime.Now.EgyptTimeNow().AddHours(1)
+                //Expires = DateTime.Now.EgyptTimeNow().AddDays(GeneralSetting.TokenExpireInDays)
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<Result<string>> RenewTokenAsync(RenewTokenDto model, bool skipCheckSignature = false)
+        {
+            var account = await accountRepository.Where(d => d.AccountId == model.AccountId)
+                .Include(d => d.AccountRoleT).ThenInclude(d => d.Role)
+               .FirstOrDefaultAsync();
+            if (account.IsNull())
+            {
+                return ResultFactory<string>.CreateErrorResponseMessage("Account not found", App.Global.Enums.ResultStatusCode.NotFound);
+            }
+            var signature = App.Global.Encreption.Hashing.ComputeSha256Hash(model.AccountId + account.AccountSecurityCode);
+            if(skipCheckSignature == false && signature != model.Signature)
+            {
+                return ResultFactory<string>.CreateErrorResponseMessage("Invalid data siganture, please contact us", App.Global.Enums.ResultStatusCode.InvalidSignature);
+            }
+            var token = CreateToken(account);
+            return ResultFactory<string>.CreateSuccessResponse(token);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,26 @@ namespace SanyaaDelivery.Application.Services
         public Task<AttachmentT> GetAsync(int id)
         {
             return repo.GetAsync(id);
+        }
+
+        public async Task<AttachmentBytesDto> GetBytesAsync(int id)
+        {
+            var attachment = await repo.GetAsync(id);
+            var file = await System.IO.File.ReadAllBytesAsync($"wwwroot{attachment.FilePath.Replace("/", @"\")}");
+            return new AttachmentBytesDto
+            {
+                Id = attachment.AttachmentId,
+                File = file,
+                FileExtention = Path.GetExtension(attachment.FileName),
+                FileName = attachment.FileName
+            };
+        }
+
+        public async Task<Stream> GetStreamAsync(int id)
+        {
+            var attachment = await repo.GetAsync(id);
+            var file = await System.IO.File.ReadAllBytesAsync($"wwwroot{attachment.FilePath.Replace("/", @"\")}");
+            return new MemoryStream(file);
         }
 
         public Task<List<AttachmentT>> GetListAsync(int type, string referenceId)

@@ -1,6 +1,7 @@
 ﻿using App.Global.DateTimeHelper;
 using App.Global.Fawry;
 using App.Global.Interfaces;
+using App.Global.SMS;
 using App.Global.Translation;
 using App.Global.WhatsApp;
 using AutoMapper;
@@ -58,6 +59,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<ClientPhonesT>, ClientPhoneRepository>();
             services.AddScoped<IRepository<EmployeeWorkplacesT>, EmployeeWorkplaceRepository>();
             services.AddScoped<IRepository<EmployeeSubscriptionT>, EmployeeSubscriptionRepository>();
+            services.AddScoped<IRepository<InsurancePaymentT>, EmployeeInsurancePaymentRepository>();
             services.AddScoped<IRepository<BranchT>, BranchRepository>();
             services.AddScoped<IRepository<TranslatorT>, TranslatorRepository>();
             services.AddScoped<IRepository<VacationT>, VacationRepository>();
@@ -96,6 +98,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<OpreationT>, OpreationRepository>();
             services.AddScoped<IRepository<BroadcastRequestT>, BroadcastRequestRepository>();
             services.AddScoped<IRepository<RejectRequestT>, RequestRejectedRepository>();
+            services.AddScoped<IRepository<AppNotificationT>, AppNotificationRepository>();
 
 
             services.AddScoped<IClientService, ClientService>();
@@ -148,6 +151,9 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<IOperationService, OperationService>();
             services.AddScoped<IVacationService, VacationService>();
+            services.AddScoped<IEmployeeInsuranceService, EmployeeInsuranceService>();
+            services.AddScoped<ISMSService, SMSMisrService>();
+            services.AddScoped<INotificatonService, NotificatonService>();
 
             services.AddSingleton<Translator, Translator>();
             services.AddSingleton<IFawryAPIService, FawryAPIService>();

@@ -9,8 +9,10 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IHelperService
     {
-        Task<int> GetMinimumCharge(int cityId, int departmentId);
+        Task<decimal> GetMinimumChargeAsync(int? cityId = null, int? departmentId = null);
         Task<Result<string>> ValidateClientSubscription(int clientSubscriptionId);
         Result<string> ValidateClientSubscription(ClientSubscriptionT clientSubscription);
+        Task<decimal> GetDeliveryPriceAsync(int? cityId = null, int? region = null, int? departmentId = null);
+        Result<T> ValidateRequest<T>(RequestT request, string employeeId = null);
     }
 }

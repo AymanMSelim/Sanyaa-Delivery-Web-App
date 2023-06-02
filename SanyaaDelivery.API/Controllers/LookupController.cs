@@ -65,5 +65,49 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<LookupDto>>(ex));
             }
         }
+
+
+        [HttpGet("DepartmentSub0/{departmentId}")]
+        public async Task<ActionResult<Result<List<LookupDto>>>> DepartmentSub0(int departmentId)
+        {
+            try
+            {
+                var list = await lookupService.DepatmentSub0(departmentId);
+                return Ok(ResultFactory<List<LookupDto>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<LookupDto>>(ex));
+            }
+        }
+
+
+        [HttpGet("DepartmentSub1/{departmentSub0Id}")]
+        public async Task<ActionResult<Result<List<LookupDto>>>> DepartmentSub1(int departmentSub0Id)
+        {
+            try
+            {
+                var list = await lookupService.DepatmentSub1(departmentSub0Id);
+                return Ok(ResultFactory<List<LookupDto>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<LookupDto>>(ex));
+            }
+        }
+
+        [HttpGet("Service/{departmentSub1Id}")]
+        public async Task<ActionResult<Result<List<LookupDto>>>> Service(int departmentSub1Id)
+        {
+            try
+            {
+                var list = await lookupService.Service(departmentSub1Id);
+                return Ok(ResultFactory<List<LookupDto>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<LookupDto>>(ex));
+            }
+        }
     }
 }

@@ -58,7 +58,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("Get/{clientId?}")]
-        public async Task<ActionResult<Result<ClientT>>> Get(int? clientId, bool includePhone = false, bool includeAddress = false)
+        public async Task<ActionResult<Result<ClientT>>> Get(int? clientId, bool includePhone = false, bool includeAddress = false, bool getDefaultOnly = true)
         {
             try
             {
@@ -67,7 +67,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return ResultFactory<ClientT>.ReturnClientError();
                 }
-                ClientT client = await clientService.GetAsync(clientId.Value, includePhone, includeAddress);
+                ClientT client = await clientService.GetAsync(clientId.Value, includePhone, includeAddress, getDefaultOnly);
                 return Ok(ResultFactory<ClientT>.CreateSuccessResponse(client));
             }
             catch (Exception ex)
@@ -152,7 +152,7 @@ namespace SanyaaDelivery.API.Controllers
                 clientId = commonService.GetClientId(clientId);
                 if (clientId.IsNull())
                 {
-                    return Ok(ResultFactory<ClientT>.CreateErrorResponseMessage("Client id is null"));
+                    return Ok(ResultFactory<ClientT>.ReturnClientError());
                 }
                 int affectedRecords = await clientService.UpdateBranchByCityAsync(clientId.Value, cityId);
                 if (affectedRecords > 0)
@@ -178,7 +178,7 @@ namespace SanyaaDelivery.API.Controllers
                 clientId = commonService.GetClientId(clientId);
                 if (clientId.IsNull())
                 {
-                    return Ok(ResultFactory<ClientT>.CreateErrorResponseMessage("Client id is null"));
+                    return Ok(ResultFactory<ClientT>.ReturnClientError());
                 }
                 int affectedRecords = await clientService.UpdateBranchByRegionAsync(clientId.Value, regionId);
                 if (affectedRecords > 0)
@@ -294,7 +294,7 @@ namespace SanyaaDelivery.API.Controllers
                 clientId = commonService.GetClientId(clientId);
                 if (clientId.IsNull())
                 {
-                    return Ok(ResultFactory<ClientSubscriptionT>.CreateErrorResponseMessage("Client Id can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
+                    return Ok(ResultFactory<ClientSubscriptionT>.ReturnClientError());
                 }
                 int affectedRecords = await clientService.SetDefaultAddressAsync(addressId, clientId.Value);
                 if (affectedRecords > 0)
@@ -447,64 +447,6 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<List<ClientPhonesT>>.CreateExceptionResponse(ex));
-            }
-        }
-
-        [HttpPost("Subscripe")]
-        public async Task<ActionResult<Result<List<ClientSubscriptionT>>>> Subscripe(int subscriptionId, int? clientId = null)
-        {
-            try
-            {
-                if (commonService.IsViaApp())
-                {
-                    clientId = commonService.GetClientId();
-                }
-                if (clientId.IsNull())
-                {
-                    return Ok(ResultFactory<ClientSubscriptionT>.CreateErrorResponseMessage("Client Id can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
-                }
-                var affectedRows = await clientService.Subscripe(subscriptionId, clientId.Value);
-                if (affectedRows > 0)
-                {
-                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateSuccessResponse());
-                }
-                else
-                {
-                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateErrorResponse());
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<List<ClientSubscriptionT>>.CreateExceptionResponse(ex));
-            }
-        }
-
-        [HttpPost("UnSubscripe")]
-        public async Task<ActionResult<Result<List<ClientSubscriptionT>>>> UnSubscripe(int subscriptionId, int? clientId = null)
-        {
-            try
-            {
-                if (commonService.IsViaApp())
-                {
-                    clientId = commonService.GetClientId();
-                }
-                if (clientId.IsNull())
-                {
-                    return Ok(ResultFactory<ClientSubscriptionT>.CreateErrorResponseMessage("Client Id can't be null", App.Global.Enums.ResultStatusCode.NullableObject));
-                }
-                var affectedRows = await clientService.UnSubscripe(subscriptionId, clientId.Value);
-                if (affectedRows > 0)
-                {
-                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateSuccessResponse());
-                }
-                else
-                {
-                    return Ok(ResultFactory<List<ClientSubscriptionT>>.CreateErrorResponse());
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<List<ClientSubscriptionT>>.CreateExceptionResponse(ex));
             }
         }
 

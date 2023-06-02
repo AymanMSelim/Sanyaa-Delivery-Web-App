@@ -191,12 +191,11 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                string employeeId = model.EmployeeId;
                 if (commonService.IsViaApp())
                 {
-                    employeeId = commonService.GetEmployeeId(employeeId);
+                    model.EmployeeId = commonService.GetEmployeeId(model.EmployeeId);
                 }
-                if (string.IsNullOrEmpty(employeeId))
+                if (string.IsNullOrEmpty(model.EmployeeId))
                 {
                     return Ok(ResultFactory<object>.ReturnEmployeeError());
                 }
@@ -204,7 +203,6 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     var result = await operationService.TakeBroadcastRequestAsync(model);
                     return Ok(result.Convert(""));
-
                 }
                 else if(model.Status.ToLower() == "waitingapprove")
                 {
@@ -245,11 +243,12 @@ namespace SanyaaDelivery.API.Controllers
                 else if (model.Status.ToLower() == "waitingapprove")
                 {
                     var result = await operationService.RejectRequestAsync(model);
-                    return Ok(result.Convert(""));
+                    return Ok(result);
                 }
                 else
                 {
-                    return Ok(ResultFactory<object>.CreateModelNotValidResponse("Invaid status"));
+                    var result = await operationService.RejectBroadcastRequestAsync(model);
+                    return Ok(result);
                 }
             }
             catch (Exception ex)
@@ -299,6 +298,20 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("BroadcastRequest")]
+        public async Task<ActionResult<Result<List<BroadcastRequestT>>>> BroadcastRequest(IntIdDto model)
+        {
+            try
+            {
+                var result = await operationService.BroadcastAsync(model.Id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<BroadcastRequestT>>.CreateExceptionResponse(ex));
             }
         }
     }

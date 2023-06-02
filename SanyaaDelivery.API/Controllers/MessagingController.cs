@@ -17,12 +17,15 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IAccountService accountService;
         private readonly CommonService commonService;
+        private readonly INotificatonService notificatonService;
 
-        public MessagingController(IAccountService  accountService, CommonService commonService)
+        public MessagingController(IAccountService accountService, CommonService commonService, INotificatonService notificatonService)
         {
             this.accountService = accountService;
             this.commonService = commonService;
+            this.notificatonService = notificatonService;
         }
+
         [HttpPost("AddFirebaseToken")]
         public async Task<ActionResult<Result<object>>> AddFirebaseToken(AddFirebaseTokenDto addFirebaseTokenDto)
         {
@@ -65,7 +68,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return ResultFactory<object>.CreateNotFoundResponse("No token for this client");
                 }
-                await App.Global.Firebase.FirebaseMessaging.Send(account.FcmToken, model.Title, model.Body);
+                await App.Global.Firebase.FirebaseMessaging.SendToClientAsync(account.FcmToken, model.Title, model.Body, model.ImageURL);
                 return ResultFactory<object>.CreateSuccessResponse();
             }
             catch (Exception ex)
@@ -73,5 +76,61 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
+
+        [HttpPost("SendFirebaseNotificationtToEmployee")]
+        public async Task<ActionResult<Result<object>>> SendFirebaseNotificationtToEmployee(SendFirebaseNotificationDto model)
+        {
+            try
+            {
+                var account = await accountService.Get(GeneralSetting.EmployeeAccountTypeId, model.Id);
+                if (account.IsNull() || string.IsNullOrEmpty(account.FcmToken))
+                {
+                    return ResultFactory<object>.CreateNotFoundResponse("No token for this account");
+                }
+                await App.Global.Firebase.FirebaseMessaging.SendToEmpAsync(account.FcmToken, model.Title, model.Body, model.ImageURL);
+                return ResultFactory<object>.CreateSuccessResponse();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SendFirebaseNotification")]
+        public async Task<ActionResult<Result<AppNotificationT>>> SendFirebaseNotification(AppNotificationT model)
+        {
+            try
+            {
+                var result = await notificatonService.SendFirebaseNotificationAsync(model);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetNotificationList/{accountId?}")]
+        public async Task<ActionResult<Result<List<AppNotificationT>>>> GetNotificationList(int? accountId = null)
+        {
+            try
+            {
+                if (commonService.IsViaApp())
+                {
+                    accountId = commonService.GetAccountId();
+                }
+                if (accountId.IsNull())
+                {
+                    return Ok(ResultFactory<List<AppNotificationT>>.ReturnAccountError());
+                }
+                var list = await notificatonService.GetListAsync(accountId.Value);
+                return Ok(ResultFactory<List<AppNotificationT>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<AppNotificationT>>.CreateExceptionResponse(ex));
+            }
+        }
+
     }
 }

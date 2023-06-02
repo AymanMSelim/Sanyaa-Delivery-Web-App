@@ -15,5 +15,6 @@ namespace SanyaaDelivery.Application.Interfaces
             bool includeClientWithReview = false, bool includeFavourite = false);
         Task<List<EmployeeT>> GetFreeEmployeeListCity(DateTime dateTime, int departmentId, int cityId);
         Task<List<EmployeeT>> GetFreeEmployeeListAddress(DateTime dateTime, int departmentId, int addressId);
+        Task<List<string>> GetFreeEmployeeListAsync(DateTime dateTime, int departmentId, int branchId);
     }
 }

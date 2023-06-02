@@ -1,4 +1,5 @@
-﻿using SanyaaDelivery.Domain.DTOs;
+﻿using App.Global.DTOs;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using SanyaaDelivery.Domain.OtherModels;
 using System;
@@ -42,8 +43,10 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> AddWorkplace(EmployeeWorkplacesT employeeWorkplace);
 
         Task<List<EmployeeWorkplacesT>> GetWorkplaceList(string employeeId);
+        Task<AppEmployeeAccountIndexDto> GetAppAccountIndex(string employeeId);
+        Task<int> AddWorkplaceByCity(AddWorkplaceByCityDto mode);
 
-        Task<int> DeleteWorkplace(int id);
+        Task<Result<object>> DeleteWorkplace(int id);
 
         Task<int> UpdateAsync(EmployeeT employee);
 

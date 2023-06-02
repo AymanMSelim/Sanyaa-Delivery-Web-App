@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SanyaaDelivery.Application.Interfaces;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
@@ -32,36 +34,26 @@ namespace SanyaaDelivery.API.Controllers
             try
             {
                 List<IFormFile> fileList = Request.Form.Files.ToList();
-                if (fileList == null || fileList.Count == 0)
-                {
-                    return Ok(ResultFactory<AttachmentT>.CreateNotFoundResponse("No files found"));
-                }
                 clientId = commonService.GetClientId(clientId);
-                var cart = await commonService.GetCurrentClientCartAsync(clientId);
-                var folderPath = $@"{hostEnvironment.WebRootPath}\Attachment\{Domain.Enum.AttachmentType.CartImage.ToString()}\{cart.CartId}";
-                if (Directory.Exists(folderPath) == false)
+                if (clientId.IsNull())
                 {
-                    Directory.CreateDirectory(folderPath);
+                    return Ok(ResultFactory<AttachmentT>.ReturnClientError());
                 }
-                foreach (var file in fileList)
+                if (fileList.IsEmpty() || !commonService.IsFileValid(fileList[0]))
                 {
-                    var extension = file.ContentType.Split('/')[1];
-                    var uniqueFileName = Guid.NewGuid().ToString();
-                    var uniqueFilePath = Path.Combine($@"{folderPath}\", $"{uniqueFileName}.{extension}");
-                    using (var stream = System.IO.File.Create(uniqueFilePath))
-                    {
-                        await file.CopyToAsync(stream);
-                        await attachmentService.AddAsync(new Domain.Models.AttachmentT
-                        {
-                            AttachmentType = ((int)Domain.Enum.AttachmentType.CartImage),
-                            CreationTime = DateTime.Now,
-                            FileName = $"{uniqueFileName}.{extension}",
-                            FilePath = $@"{Request.Host.Host}/test/Attachment/{Domain.Enum.AttachmentType.CartImage}/{cart.CartId}/{uniqueFileName}.{extension}",
-                            ReferenceId = cart.CartId.ToString()
-                        });
-                    }
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessageFD("File not valid"));
                 }
-                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(null));
+                var cartId = await commonService.GetCurrentClientCartIdAsync(clientId);
+                if (cartId.IsNull())
+                {
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessageFD("Cart not found"));
+                }
+                var fileExtention = System.IO.Path.GetExtension(fileList[0].FileName);
+                fileExtention = fileExtention.Replace(".", "");
+                var attachment = await attachmentService.SaveFileAsync(commonService.ConvertFileToByteArray(fileList[0]),
+                    (int)Domain.Enum.AttachmentType.CartImage, cartId.ToString(), fileExtention);
+                attachment.FilePath = $"{hostEnvironment.WebRootPath}{attachment.FilePath}";
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachment));
             }
             catch (Exception ex)
             {
@@ -96,12 +88,16 @@ namespace SanyaaDelivery.API.Controllers
             try
             {
                 var attachmentList = new List<AttachmentT>();
-                var cart = await commonService.GetCurrentClientCartAsync(clientId);
-                if (cart.IsNotNull())
+                var cartId = await commonService.GetCurrentClientCartIdAsync(clientId);
+                if (cartId.IsNotNull())
                 {
-                    attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cart.CartId.ToString());
+                    attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cartId.ToString());
                 }
-                return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
+                foreach (var item in attachmentList)
+                {
+                    item.FilePath = $"{hostEnvironment.WebRootPath}{item.FilePath}";
+                }
+                return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList));
             }
             catch (Exception ex)
             {
@@ -136,7 +132,115 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-       
+
+        [HttpPost("Add")]
+        public async Task<ActionResult<Result<AttachmentT>>> Add(AddAttachmentDto model)
+        {
+            try
+            {
+                var fileExtention = System.IO.Path.GetExtension(model.FileName);
+                fileExtention = fileExtention.Replace(".", "");
+                var attachment = await attachmentService.SaveFileAsync(model.File, model.ReferenceType,
+                    model.ReferenceId, fileExtention);
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachment, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetList")]
+        public async Task<ActionResult<Result<List<AttachmentT>>>> GetList(int referenceType, string referenceId = null)
+        {
+            try
+            {
+                var attachmentList = await attachmentService.GetListAsync(referenceType, referenceId);
+                return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("Get")]
+        public async Task<ActionResult<Result<AttachmentT>>> Get(int id)
+        {
+            try
+            {
+                var attachmentList = await attachmentService.GetAsync(id);
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachmentList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetBytes/{id}")]
+        public async Task<ActionResult<Result<AttachmentBytesDto>>> GetBytes(int id)
+        {
+            try
+            {
+                var attachment = await attachmentService.GetBytesAsync(id);
+                return Ok(ResultFactory<AttachmentBytesDto>.CreateSuccessResponse(attachment));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentBytesDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+
+        [HttpGet("GetStream/{id}")]
+        public async Task<IActionResult> GetStream(int id)
+        {
+            try
+            {
+                var stream = await attachmentService.GetStreamAsync(id);
+                // Set the content type and length headers
+                Response.Headers.Add("Content-Type", "application/octet-stream");
+                Response.ContentLength = stream.Length;
+                var header = new MediaTypeHeaderValue("application/octet-stream");
+                return new FileStreamResult(stream, "application/octet-stream");
+            }
+            catch (Exception ex)
+            {
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return StatusCode(500);
+            }
+        }
+
+        //[HttpGet("GetEmpOptionalAttachmentIndex/{employeeId?}")]
+        //public async Task<ActionResult<Result<EmpOptionalAttachmentIndexDto>>> GetEmpOptionalAttachmentIndex(string employeeId)
+        //{
+        //    try
+        //    {
+        //        employeeId = commonService.GetEmployeeId(employeeId);
+        //        if (string.IsNullOrEmpty(employeeId))
+        //        {
+        //            return Ok(ResultFactory<EmpOptionalAttachmentIndexDto>.ReturnEmployeeError());
+        //        }
+        //        var attachmentList = new List<AttachmentT>();
+        //        var cartId = await commonService.GetCurrentClientCartIdAsync(clientId);
+        //        if (cartId.IsNotNull())
+        //        {
+        //            attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cartId.ToString());
+        //        }
+        //        foreach (var item in attachmentList)
+        //        {
+        //            item.FilePath = $"{hostEnvironment.WebRootPath}{item.FilePath}";
+        //        }
+        //        return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, ResultFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
+        //    }
+        //}
+
+
 
 
     }

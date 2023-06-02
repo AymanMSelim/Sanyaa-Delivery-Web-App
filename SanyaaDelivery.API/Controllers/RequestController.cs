@@ -26,7 +26,6 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IMapper mapper;
         private readonly IRequestHelperService requestHelperService;
         private readonly IRequestUtilityService requestUtilityService;
-
         public RequestController(IRequestService requestService, 
             CommonService commonService,
             IRequestStatusService requestStatusService,
@@ -118,6 +117,7 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
+
         [HttpPost("AddCustom")]
         public async Task<ActionResult<Result<AppRequestDto>>> AddCustom(AddRequestDto requestDto)
         {
@@ -236,20 +236,6 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<RequestT>.CreateExceptionResponse(ex));
             }
         }
-        [Authorize(Roles = "Test")]
-        [HttpGet("Test")]
-        public async Task<ActionResult<Result<RequestT>>> Test()
-        {
-            try
-            {
-                return ResultFactory<RequestT>.CreateSuccessResponseSD(message: $"Datetime now: {DateTime.Now.ToString()}, Egypt now: {DateTime.Now.EgyptTimeNow().ToString()}");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<RequestT>.CreateExceptionResponse(ex));
-            }
-        }
-
 
         [HttpGet("GetAppList")]
         public async Task<ActionResult<Result<List<AppRequestDto>>>> GetAppList(int? clientId = null, int? status = null)
@@ -330,12 +316,12 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                var list = await requestService.GetList(requestId: requestId, branchId: branchId, startDate: startDate, endDate: endDate, employeeId: employeeId, clientId: clientId, departmentId: departmentId, requestStatus: status,
+                var list = await requestService.GetCustomList(requestId: requestId, branchId: branchId, startDate: startDate, endDate: endDate, employeeId: employeeId, clientId: clientId, departmentId: departmentId, requestStatus: status,
                     getCanceled: isCanceled, isPaid: isPaid, isCompleted: isCompleted, isFollowUp: isFollowUp, isReviewed: isReviewed, systemUserId: systemUserId,
                     includeAddress: true, includePhone: true, includeClient: true, includeDepartment: true, includeSubscription: true, includeRequestService: true, includeService: true,
                     includeEmployee: true, includeStatus: true, includeBranch: true, includeSystemUser: true, includeEmployeeLogin: includeEmployeeLogin);
-                var mapList = mapper.Map<List<RequestDto>>(list);
-                return ResultFactory<List<RequestDto>>.CreateSuccessResponse(mapList);
+                //var mapList = mapper.Map<List<RequestDto>>(list);
+                return ResultFactory<List<RequestDto>>.CreateSuccessResponse(list);
             }
             catch (Exception ex)
             {
@@ -475,54 +461,36 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("AddUpdateService")]
-        public async Task<ActionResult<Result<AppRequestDetailsDto>>> AddUpdateService(AddUpdateeRequestServiceDto model)
+        public async Task<ActionResult<Result<object>>> AddUpdateService(AddUpdateeRequestServiceDto model)
         {
-            AppRequestDetailsDto request = null;
-            Result<RequestServicesT> result;
+            object request = null;
             try
             {
                 var service = new RequestServicesT
                 {
                     RequestId = model.RequestId,
-                    AddTimestamp = DateTime.Now,
+                    AddTimestamp = DateTime.Now.EgyptTimeNow(),
                     RequestServicesQuantity = model.ServiceQuantity,
                     ServiceId = model.ServiceId
                 };
-                result =  await requestService.AddUpdateServiceAsync(service);
+                var result =  await requestService.AddUpdateServiceAsync(service);
                 if (result.IsFail)
                 {
                     return result.Convert(request);
                 }
-                request = await requestService.GetAppDetails(model.RequestId);
-                if (request.IsNotNull())
+                if (commonService.IsViaEmpApp())
                 {
-                    if (request.IsCanceled || request.IsCompleted)
-                    {
-                        request.ShowCancelRequestButton = false;
-                        request.ShowAddServiceButton = false;
-                        request.ShowReAssignEmployeeButton = false;
-                        request.ShowDelayRequestButton = false;
-                    }
-                    else
-                    {
-                        request.ShowCancelRequestButton = true;
-                        request.ShowAddServiceButton = true;
-                        request.ShowReAssignEmployeeButton = true;
-                        request.ShowDelayRequestButton = true;
-                    }
-                    if (request.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.AddHours(-1)
-                        && request.IsCanceled == false && request.IsCompleted == false)
-                    {
-                        request.Employee.ShowContact = true;
-                        request.ShowReAssignEmployeeButton = false;
-                        request.ShowDelayRequestButton = false;
-                    }
+                    request = await requestService.GetEmpAppDetails(model.RequestId);
                 }
-                return ResultFactory<AppRequestDetailsDto>.CreateSuccessResponse(request);
+                else
+                {
+                    request = await requestService.GetAppDetails(model.RequestId);
+                }
+                return ResultFactory<object>.CreateSuccessResponse(request);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<RequestCanceledT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
         [AllowAnonymous]
@@ -584,16 +552,38 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("SetComplete")]
-        public async Task<ActionResult<Result<object>>> SetComplete(int requestId)
+        public async Task<ActionResult<Result<object>>> SetComplete(IntIdDto model)
         {
             try
             {
-                var result = await requestUtilityService.CompleteAsync(requestId, commonService.GetSystemUserId());
+                var result = await requestUtilityService.CompleteAsync(model.Id, commonService.GetSystemUserId());
+                if (result.IsSuccess && commonService.IsViaApp())
+                {
+                    result.Data = await requestService.GetEmpAppDetails(model.Id);
+                }
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("ConfirmArrival")]
+        public async Task<ActionResult<Result<EmpAppRequestDetailsDto>>> ConfirmArrival(IntIdDto model)
+        {
+            try
+            {
+                var result = await requestUtilityService.ConfirmArrivalAsync(model.Id);
+                if (result.IsSuccess && commonService.IsViaApp())
+                {
+                    result.Data = await requestService.GetEmpAppDetails(model.Id);
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmpAppRequestDetailsDto>.CreateExceptionResponse(ex));
             }
         }
 
@@ -611,20 +601,5 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
-
-        [HttpGet("Get/{requestId}")]
-        public async Task<ActionResult<Result<RequestTrackerDto>>> GetTrack0ing(int requestId)
-        {
-            try
-            {
-                var requestTrackerDto = await requestHelperService.GetTracking(requestId);
-                return ResultFactory<RequestTrackerDto>.CreateSuccessResponse(requestTrackerDto);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<RequestTrackerDto>.CreateExceptionResponse(ex));
-            }
-        }
-
     }
 }

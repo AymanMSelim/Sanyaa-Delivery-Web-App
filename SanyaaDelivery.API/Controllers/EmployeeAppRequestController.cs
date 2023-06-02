@@ -45,5 +45,26 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<List<RequestGroupStatusDto>>.CreateExceptionResponse(ex));
             }
         }
+
+
+
+        [HttpGet("GetEmpAppRequestDetails/{requestId}")]
+        public async Task<ActionResult<Result<EmpAppRequestDetailsDto>>> GetEmpAppRequestDetails(int requestId)
+        {
+            try
+            {
+                var employeeId = commonService.GetEmployeeId();
+                var request = await requestService.GetEmpAppDetails(requestId);
+                if(request.EmployeeId != employeeId)
+                {
+                    return ResultFactory<EmpAppRequestDetailsDto>.CreateErrorResponseMessageFD("This request not belong to this employee");
+                }
+                return ResultFactory<EmpAppRequestDetailsDto>.CreateSuccessResponse(request);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmpAppRequestDetailsDto>.CreateExceptionResponse(ex));
+            }
+        }
     }
 }

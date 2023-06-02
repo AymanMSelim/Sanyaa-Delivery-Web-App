@@ -215,6 +215,29 @@ namespace SanyaaDelivery.API
             return false;
         }
 
+        public bool IsViaEmpApp()
+        {
+            var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+            int? accountType = App.Global.JWT.TokenHelper.GetAccountType(identity);
+            if (accountType.HasValue && GeneralSetting.EmployeeAccountTypeId == accountType.Value)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsViaClientApp()
+        {
+            var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+            int? accountType = App.Global.JWT.TokenHelper.GetAccountType(identity);
+            if (accountType.HasValue && GeneralSetting.CustomerAccountTypeId == accountType.Value )
+            {
+                return true;
+            }
+            return false;
+        }
+
+
         public bool IsFileValid(IFormFile formFile)
         {
             if (formFile.IsNull())
@@ -243,9 +266,81 @@ namespace SanyaaDelivery.API
             }
         }
 
+        public string GetFileExtention(IFormFile file)
+        {
+            var fileExtention = System.IO.Path.GetExtension(file.FileName);
+            fileExtention = fileExtention.Replace(".", "");
+            return fileExtention;
+        }
+
         public string GetHost()
         {
             return "https://" + context.HttpContext.Request.Host.Host;
         }
+
+        public bool IsPhoneValid(string phone)
+        {
+            if (string.IsNullOrEmpty(phone))
+            {
+                return false;
+            }
+            if(phone.Length != 11)
+            {
+                return false;
+            }
+            if(!long.TryParse(phone, out _))
+            {
+                return false;
+            }
+            if(phone.StartsWith("010") || phone.StartsWith("011") || phone.StartsWith("015") || phone.StartsWith("012"))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool IsPhoneNotValid(string phone)
+        {
+            return !IsPhoneValid(phone);
+        }
+
+
+        public string GetPhoneNotValidMessage(string phone)
+        {
+            if (string.IsNullOrEmpty(phone))
+            {
+                return "Please enter the mobile number first";
+            }
+            if (phone.Length != 11)
+            {
+                return "The number you entered is incorrect";
+            }
+            if (!long.TryParse(phone, out _))
+            {
+                return "The number you entered is incorrect";
+            }
+            if (phone.StartsWith("010") || phone.StartsWith("011") || phone.StartsWith("015") || phone.StartsWith("012"))
+            {
+                return "";
+            }
+            else
+            {
+                return "The mobile number must start with 011, 012, 015 or 010";
+            }
+        }
+
+        public string RepairPhoneNumber(string phone)
+        {
+            if(phone.Length == 10 && !phone.StartsWith("0"))
+            {
+                phone = "0" + phone;
+            }
+            return phone;
+        }
+
+
     }
 }

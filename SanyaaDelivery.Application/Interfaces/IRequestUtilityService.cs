@@ -22,5 +22,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<Result<object>> SetReviewedAsync(int requestId);
         Task<Result<object>> ResetRequestAsync(int requestId);
         Task<bool> IsHaveUnPaidRequestExceed3Days(string employeeId);
+        Task<Result<object>> ConfirmArrivalAsync(int id);
     }
 }

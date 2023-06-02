@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.DTOs;
+using SanyaaDelivery.Domain.Enum;
 using SanyaaDelivery.Domain.Models;
 using SanyaaDelivery.Infra.Data;
 using System;
@@ -44,6 +45,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RequestServicesT> requestServiceRepository;
         private readonly IRepository<AddressT> addressRepository;
         private readonly IRepository<ServiceT> serviceRepository;
+        private readonly IRepository<AttachmentT> attachmentRepository;
         private readonly IRepository<RequestCanceledT> cancelRequestRepository;
         private readonly IRepository<RequestDelayedT> delayRequestRepository;
         private readonly IRepository<RequestComplaintT> complaintRequestRepository;
@@ -65,7 +67,7 @@ namespace SanyaaDelivery.Application.Services
         public RequestService(IRepository<RequestT> requestRepository, IRepository<RequestCanceledT> cancelRequestRepository,
             IRepository<RequestDelayedT> delayRequestRepository, IRepository<RequestComplaintT> complaintRequestRepository,
             IRepository<RequestServicesT> requestServiceRepository, IRepository<AddressT> addressRepository,
-            IRepository<ServiceT> serviceRepository,
+            IRepository<ServiceT> serviceRepository, IRepository<AttachmentT> attachmentRepository,
             ICartService cartService, IRepository<ClientPhonesT> phoneRepository, IRepository<EmployeeT> employeeRepository,
             IRepository<ClientSubscriptionT> clientSubscriptionRepository, ISubscriptionRequestService subscriptionRequestService,
             ICityService cityService, WhatsAppService whatsAppService, IRepository<MessagesT> messageRepository, IHelperService helperService,
@@ -79,6 +81,7 @@ namespace SanyaaDelivery.Application.Services
             this.requestServiceRepository = requestServiceRepository;
             this.addressRepository = addressRepository;
             this.serviceRepository = serviceRepository;
+            this.attachmentRepository = attachmentRepository;
             this.cartService = cartService;
             this.phoneRepository = phoneRepository;
             this.employeeRepository = employeeRepository;
@@ -265,6 +268,199 @@ namespace SanyaaDelivery.Application.Services
                && o.RequestCanceledT.Count == 0).CountAsync();
         }
 
+        private IQueryable<RequestT> GetRequestQuery(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
+         int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
+         bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
+         bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
+         bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
+         bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
+         bool includeDelayedT = false, bool includeFollowUpT = false, bool includeReviewT = false, bool includeSubscription = false,
+         bool includePayment = false, bool includeComplaiment = false, bool includeSite = false, bool includeBill = false,
+         bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
+         bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false)
+        {
+            var query = requestRepository.DbSet.AsQueryable();
+            if (startDate.HasValue)
+            {
+                query = query.Where(d => d.RequestTimestamp >= startDate);
+            }
+            if (endDate.HasValue)
+            {
+                query = query.Where(d => d.RequestTimestamp <= endDate);
+            }
+            if (requestId.HasValue)
+            {
+                query = query.Where(d => d.RequestId == requestId);
+            }
+            if (clientId.HasValue)
+            {
+                query = query.Where(d => d.ClientId == clientId);
+            }
+            if (systemUserId.HasValue)
+            {
+                query = query.Where(d => d.SystemUserId == systemUserId);
+            }
+            if (requestStatus.HasValue)
+            {
+                query = query.Where(d => d.RequestStatus == requestStatus);
+            }
+            if (requestStatusGroupId.HasValue)
+            {
+                query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == requestStatusGroupId);
+            }
+            if (getCanceled.HasValue)
+            {
+                query = query.Where(d => d.IsCanceled);
+            }
+            if (!string.IsNullOrEmpty(employeeId))
+            {
+                query = query.Where(d => d.EmployeeId == employeeId);
+            }
+            if (branchId.HasValue)
+            {
+                query = query.Where(d => d.BranchId == branchId.Value);
+            }
+            if (subscriptionId.HasValue)
+            {
+                query = query.Where(d => d.SubscriptionId == subscriptionId.Value);
+            }
+            if (clientSubscriptionId.HasValue)
+            {
+                query = query.Where(d => d.ClientSubscriptionId == clientSubscriptionId.Value);
+            }
+            if (siteId.HasValue)
+            {
+                query = query.Where(d => d.SiteId == siteId.Value);
+            }
+            if (isPaid.HasValue)
+            {
+                query = query.Where(d => d.RequestStagesT.PaymentFlag == isPaid.Value);
+            }
+            if (promocode.HasValue)
+            {
+                query = query.Where(d => d.PromocodeId == promocode.Value);
+            }
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.DepartmentId == departmentId);
+            }
+            if (isCompleted.HasValue)
+            {
+                query = query.Where(d => d.IsCompleted == isCompleted);
+            }
+            if (isFollowUp.HasValue)
+            {
+                query = query.Where(d => d.IsFollowed == isFollowUp);
+            }
+            if (isReviewed.HasValue)
+            {
+                query = query.Where(d => d.IsReviewed == isReviewed);
+            }
+            if (includeRequestService)
+            {
+                if (includeService)
+                {
+                    query = query.Include(d => d.RequestServicesT).ThenInclude(d => d.Service);
+                }
+                else
+                {
+                    query = query.Include(d => d.RequestServicesT);
+                }
+            }
+            if (includeClient)
+            {
+                query = query.Include(d => d.Client);
+            }
+            if (includeEmployee)
+            {
+                if (includeEmployeeLogin)
+                {
+                    query = query.Include(d => d.Employee)
+                        .ThenInclude(d => d.LoginT);
+                }
+                else
+                {
+                    query = query.Include(d => d.Employee);
+                }
+            }
+            if (includeStatus)
+            {
+                query = query.Include(d => d.RequestStatusNavigation);
+            }
+            if (includeCancelT)
+            {
+                query = query.Include(d => d.RequestCanceledT);
+            }
+            if (includeDelayedT)
+            {
+                query = query.Include(d => d.RequestDelayedT);
+            }
+            if (includeComplaiment)
+            {
+                query = query.Include(d => d.RequestComplaintT);
+            }
+            if (includeDiscounts)
+            {
+                query = query.Include(d => d.RequestDiscountT);
+            }
+            if (includeFollowUpT)
+            {
+                query = query.Include(d => d.FollowUpT);
+            }
+            if (includePayment)
+            {
+                query = query.Include(d => d.PaymentT);
+            }
+            if (includeSite)
+            {
+                query = query.Include(d => d.Site);
+            }
+            if (includeSubscription)
+            {
+                query = query.Include(d => d.Subscription);
+            }
+            if (includeReviewT)
+            {
+                query = query.Include(d => d.EmployeeReviewT);
+            }
+            if (includeRequestStage)
+            {
+                query = query.Include(d => d.RequestStagesT);
+            }
+            if (includeBill)
+            {
+                query = query.Include(d => d.BillNumberT);
+            }
+            if (includeFawryCharge)
+            {
+                query = query.Include(d => d.FawryChargeRequestT);
+            }
+            if (includeAddress)
+            {
+                query = query.Include(d => d.RequestedAddress);
+            }
+            if (includePhone)
+            {
+                query = query.Include(d => d.RequestedPhone);
+            }
+            if (includePromocode)
+            {
+                query = query.Include(d => d.Promocode);
+            }
+            if (includeDepartment)
+            {
+                query = query.Include(d => d.Department);
+            }
+            if (includeBranch)
+            {
+                query = query.Include(d => d.Branch);
+            }
+            if (includeSystemUser)
+            {
+                query = query.Include(d => d.SystemUser);
+            }
+            return query;
+        }
         public Task<List<RequestT>> GetList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
         int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
         bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
@@ -457,6 +653,229 @@ namespace SanyaaDelivery.Application.Services
                 query = query.Include(d => d.SystemUser);
             }
             return query.ToListAsync();
+        }
+
+
+       public Task<List<RequestDto>> GetCustomList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
+       int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
+       bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
+       bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
+       bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
+       bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
+       bool includeDelayedT = false, bool includeFollowUpT = false, bool includeReviewT = false, bool includeSubscription = false,
+       bool includePayment = false, bool includeComplaiment = false, bool includeSite = false, bool includeBill = false,
+       bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
+       bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false)
+        {
+            var query = requestRepository.DbSet.AsQueryable();
+            if (startDate.HasValue)
+            {
+                query = query.Where(d => d.RequestTimestamp >= startDate);
+            }
+            if (endDate.HasValue)
+            {
+                query = query.Where(d => d.RequestTimestamp <= endDate);
+            }
+            if (requestId.HasValue)
+            {
+                query = query.Where(d => d.RequestId == requestId);
+            }
+            if (clientId.HasValue)
+            {
+                query = query.Where(d => d.ClientId == clientId);
+            }
+            if (systemUserId.HasValue)
+            {
+                query = query.Where(d => d.SystemUserId == systemUserId);
+            }
+            if (requestStatus.HasValue)
+            {
+                query = query.Where(d => d.RequestStatus == requestStatus);
+            }
+            if (requestStatusGroupId.HasValue)
+            {
+                query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == requestStatusGroupId);
+            }
+            if (getCanceled.HasValue)
+            {
+                query = query.Where(d => d.IsCanceled);
+            }
+            if (!string.IsNullOrEmpty(employeeId))
+            {
+                query = query.Where(d => d.EmployeeId == employeeId);
+            }
+            if (branchId.HasValue)
+            {
+                query = query.Where(d => d.BranchId == branchId.Value);
+            }
+            if (subscriptionId.HasValue)
+            {
+                query = query.Where(d => d.SubscriptionId == subscriptionId.Value);
+            }
+            if (clientSubscriptionId.HasValue)
+            {
+                query = query.Where(d => d.ClientSubscriptionId == clientSubscriptionId.Value);
+            }
+            if (siteId.HasValue)
+            {
+                query = query.Where(d => d.SiteId == siteId.Value);
+            }
+            if (isPaid.HasValue)
+            {
+                query = query.Where(d => d.RequestStagesT.PaymentFlag == isPaid.Value);
+            }
+            if (promocode.HasValue)
+            {
+                query = query.Where(d => d.PromocodeId == promocode.Value);
+            }
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.DepartmentId == departmentId);
+            }
+            if (isCompleted.HasValue)
+            {
+                query = query.Where(d => d.IsCompleted == isCompleted);
+            }
+            if (isFollowUp.HasValue)
+            {
+                query = query.Where(d => d.IsFollowed == isFollowUp);
+            }
+            if (isReviewed.HasValue)
+            {
+                query = query.Where(d => d.IsReviewed == isReviewed);
+            }
+            if (includeRequestService)
+            {
+                if (includeService)
+                {
+                    query = query.Include(d => d.RequestServicesT).ThenInclude(d => d.Service);
+                }
+                else
+                {
+                    query = query.Include(d => d.RequestServicesT);
+                }
+            }
+            if (includeClient)
+            {
+                query = query.Include(d => d.Client);
+            }
+            if (includeEmployee)
+            {
+                if (includeEmployeeLogin)
+                {
+                    query = query.Include(d => d.Employee)
+                        .ThenInclude(d => d.LoginT);
+                }
+                else
+                {
+                    query = query.Include(d => d.Employee);
+                }
+            }
+            if (includeStatus)
+            {
+                query = query.Include(d => d.RequestStatusNavigation);
+            }
+            if (includeCancelT)
+            {
+                query = query.Include(d => d.RequestCanceledT);
+            }
+            if (includeDelayedT)
+            {
+                query = query.Include(d => d.RequestDelayedT);
+            }
+            if (includeComplaiment)
+            {
+                query = query.Include(d => d.RequestComplaintT);
+            }
+            if (includeDiscounts)
+            {
+                query = query.Include(d => d.RequestDiscountT);
+            }
+            if (includeFollowUpT)
+            {
+                query = query.Include(d => d.FollowUpT);
+            }
+            if (includePayment)
+            {
+                query = query.Include(d => d.PaymentT);
+            }
+            if (includeSite)
+            {
+                query = query.Include(d => d.Site);
+            }
+            if (includeSubscription)
+            {
+                query = query.Include(d => d.Subscription);
+            }
+            if (includeReviewT)
+            {
+                query = query.Include(d => d.EmployeeReviewT);
+            }
+            if (includeRequestStage)
+            {
+                query = query.Include(d => d.RequestStagesT);
+            }
+            if (includeBill)
+            {
+                query = query.Include(d => d.BillNumberT);
+            }
+            if (includeFawryCharge)
+            {
+                query = query.Include(d => d.FawryChargeRequestT);
+            }
+            if (includeAddress)
+            {
+                query = query.Include(d => d.RequestedAddress);
+            }
+            if (includePhone)
+            {
+                query = query.Include(d => d.RequestedPhone);
+            }
+            if (includePromocode)
+            {
+                query = query.Include(d => d.Promocode);
+            }
+            if (includeDepartment)
+            {
+                query = query.Include(d => d.Department);
+            }
+            if (includeBranch)
+            {
+                query = query.Include(d => d.Branch);
+            }
+            if (includeSystemUser)
+            {
+                query = query.Include(d => d.SystemUser);
+            }
+            return query.Select(d => new RequestDto
+            {
+                BranchId = d.BranchId,
+                BranchName = d.Branch.BranchName,
+                CityId = d.RequestedAddress.CityId,
+                ClientAddress = d.RequestedAddress.City.CityName + ", " + d.RequestedAddress.Region.RegionName,
+                ClientId = d.ClientId,
+                ClientName = d.Client.ClientName,
+                ClientPhone = d.RequestedPhone.ClientPhone,
+                CompanyPercentageAmount = d.CompanyPercentageAmount,
+                CustomerPrice = d.CustomerPrice,
+                DeparmentName = d.Department.DepartmentName,
+                DepartmentId = d.DepartmentId.Value,
+                //EmployeeAccountState = d.EmployeeId == null ? false : d.Employee.LoginT.LoginAccountState,
+                EmployeeId = d.EmployeeId,
+                EmployeeName = d.EmployeeId == null ? "" : d.Employee.EmployeeName,
+                IsCanceled = d.IsCanceled,
+                NetPrice = d.NetPrice,
+                RequestId = d.RequestId,
+                RequestNote = d.RequestNote,
+                RequestStatus = d.RequestStatus,
+                RequestStatusName = translationService.Tranlate(d.RequestStatusNavigation.RequestStatusName),
+                RequestTimestamp = d.RequestTimestamp.Value,
+                SubscriptionId = d.SubscriptionId,
+                SubscriptionName = d.SubscriptionId.HasValue ? d.Subscription.SubscriptionName : "",
+                SystemUserId = d.SystemUserId,
+                SystemUserName = d.SystemUser.SystemUserUsername,
+                ServicesNames = string.Join(", ", d.RequestServicesT.Select(s => s.Service.ServiceName))
+            }).ToListAsync();
         }
 
         public async Task<int> AddAsync(RequestT request)
@@ -730,8 +1149,8 @@ namespace SanyaaDelivery.Application.Services
         public async Task<List<AppRequestDto>> GetAppList(int? clientId = null, string employeeId = null, int? status = null)
         {
             bool getCanceled = false;
-            var cancelStatus = GeneralSetting.RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == "canceled");
-            if(cancelStatus.RequestStatusGroupId == status)
+            var cancelStatusGroupId = GeneralSetting.GetRequestStatusGroupId(RequestStatus.Canceled);
+            if(cancelStatusGroupId == status)
             {
                 getCanceled = true;
             }
@@ -764,15 +1183,12 @@ namespace SanyaaDelivery.Application.Services
                 Time = d.RequestTimestamp.Value.ToString("tt hh:mm"),
                 Services = string.Join(", ", d.RequestServicesT.Select(t => t.Service.ServiceName))
             }).ToListAsync();
-            //var list = await GetList(requestStatusGroupId: status, clientId: clientId, getCanceled: getCanceled, includeStatus: true,
-            //    includeRequestService: true, includeService: true, includeDepartment: true, employeeId: employeeId);
-            //list = list.OrderByDescending(d => d.RequestTimestamp).ToList();
             return list;
         }
 
-        public Task<AppRequestDetailsDto> GetAppDetails(int requestId)
+        public async Task<AppRequestDetailsDto> GetAppDetails(int requestId)
         {
-            var requst = requestRepository.Where(d => d.RequestId == requestId)
+            var request = await requestRepository.Where(d => d.RequestId == requestId)
                    .Select(d => new AppRequestDetailsDto
                    {
                        CityName = d.RequestedAddress.City.CityName,
@@ -799,7 +1215,7 @@ namespace SanyaaDelivery.Application.Services
                        RequestCaption = translationService.Tranlate("Request") + " #" + d.RequestId,
                        Time = d.RequestTimestamp.Value.ToString("tt hh:mm"),
                        DayOfWeek = translationService.Tranlate(d.RequestTimestamp.Value.DayOfWeek.ToString()),
-                       Employee = new Domain.OtherModels.AppEmployeeDto
+                       Employee = d.EmployeeId == null ? null : new Domain.OtherModels.AppEmployeeDto
                        {
                            DepartmentId = d.DepartmentId.Value,
                            Id = d.EmployeeId,
@@ -821,7 +1237,169 @@ namespace SanyaaDelivery.Application.Services
                        IsCompleted = d.IsCompleted,
                        RequestTimestamp = d.RequestTimestamp.Value
                    }).FirstOrDefaultAsync();
-            return requst;
+
+            if (request.IsNotNull())
+            {
+                if (request.IsCanceled || request.IsCompleted)
+                {
+                    request.ShowCancelRequestButton = false;
+                    request.ShowAddServiceButton = false;
+                    request.ShowReAssignEmployeeButton = false;
+                    request.ShowDelayRequestButton = false;
+                }
+                else
+                {
+                    request.ShowCancelRequestButton = true;
+                    request.ShowAddServiceButton = true;
+                    request.ShowReAssignEmployeeButton = true;
+                    request.ShowDelayRequestButton = true;
+                }
+                if (request.Employee.IsNotNull() && DateTime.Now.EgyptTimeNow() > request.RequestTimestamp.AddHours(-1)
+                    && request.IsCanceled == false && request.IsCompleted == false)
+                {
+                    request.Employee.ShowContact = true;
+                    request.ShowReAssignEmployeeButton = false;
+                    request.ShowDelayRequestButton = false;
+                }
+            }
+            return request;
+        }
+
+        public async Task<EmpAppRequestDetailsDto> GetEmpAppDetails(int requestId)
+        {
+            var request = await requestRepository.Where(d => d.RequestId == requestId)
+                .Select(d => new EmpAppRequestDetailsDto
+                {
+                    EmployeeId = d.EmployeeId,
+                    City = d.RequestedAddress.City.CityName,
+                    RequestId = d.RequestId,
+                    FlatNumber = d.RequestedAddress.AddressFlatNum.HasValue ? d.RequestedAddress.AddressFlatNum.Value : 0,
+                    Date = d.RequestTimestamp.Value.ToString("yyyy-MM-dd"),
+                    DepartmentId = d.DepartmentId.Value,
+                    BlockNumber = d.RequestedAddress.AddressBlockNum.HasValue ? d.RequestedAddress.AddressBlockNum.Value : 0,
+                    Street = d.RequestedAddress.AddressStreet,
+                    Phone = d.RequestedPhone.ClientPhone,
+                    Region = d.RequestedAddress.Region.RegionName,
+                    Note = d.RequestNote,
+                    RequestServices = d.RequestServicesT.OrderBy(t => t.RequestServiceId).Select(t => new RequestServiceDto
+                    {
+                        Discount = t.ServiceDiscount,
+                        NetPrice = t.ServicePrice - t.ServiceDiscount,
+                        Price = t.ServicePrice,
+                        Quantity = t.RequestServicesQuantity,
+                        RequestServiceId = t.RequestServiceId,
+                        ServiceId = t.ServiceId,
+                        ServiceDescription = t.Service.ServiceDes,
+                        ServiceName = t.Service.ServiceName
+                    }).ToList(),
+                    RequestCaption = translationService.Tranlate("Request") + " #" + d.RequestId,
+                    Time = d.RequestTimestamp.Value.ToString("tt hh:mm"),
+                    InvoiceDetails = new List<InvoiceDetailsDto>
+                    {
+                        new InvoiceDetailsDto {Name = "الاجمالى", Amount = Math.Round(d.TotalPrice, 2) },
+                        new InvoiceDetailsDto {Name = "انتقالات", Amount = Math.Round(d.DeliveryPrice, 2) },
+                        new InvoiceDetailsDto {Name = "الخصم", Amount = Math.Round(d.TotalDiscount, 2) },
+                        new InvoiceDetailsDto {Name = "المطلوب", Amount = Math.Round(d.CustomerPrice, 2), Bold = true },
+                    },
+                    AddressDescription = d.RequestedAddress.AddressDes,
+                    CanAddOrUpdate = !(d.IsCanceled || d.IsCompleted),
+                    CanRejectRequest = !(d.IsCanceled || d.IsCompleted),
+                    ClientName = d.Client.ClientName,
+                    Location = d.RequestedAddress.Location,
+                    Lat = d.RequestedAddress.Latitude,
+                    Lng = d.RequestedAddress.Longitude,
+                    Status = d.RequestStatusNavigation.RequestStatusName,
+                    CartId = d.CartId.HasValue ? d.CartId.Value : 0
+                }).FirstOrDefaultAsync();
+            request.Attachments = await attachmentRepository.Where(a => a.AttachmentType == (int)Domain.Enum.AttachmentType.CartImage && a.ReferenceId == request.CartId.ToString())
+                .Select(a => new AttachmentDto
+                {
+                    Id = a.AttachmentId,
+                    Path = a.FilePath,
+                    DomainUrl = "https://testapp.sane3ydelivery.com",
+                    Url = "https://testapp.sane3ydelivery.com" + a.FilePath
+                }).ToListAsync();
+            var otherDetails = await requestRepository.Where(d => d.RequestId == requestId)
+                .Select(d => new { d.RequestStatus, d.RequestTimestamp, d.IsCanceled, d.IsCompleted }).FirstOrDefaultAsync();
+
+            request.Tracking = await GetEmpAppRequestTrackingAsync(otherDetails.IsCanceled, requestId);
+            if (otherDetails.IsCanceled || otherDetails.IsCompleted)
+            {
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.DoneOrCanceled;
+                return request;
+            }
+            if(otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            {
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.InExcution;
+                request.ShowEndRequestButton = true;
+                request.ShowCallClientButton = true;
+                return request;
+            }
+            if(DateTime.Now.EgyptTimeNow() >= otherDetails.RequestTimestamp.Value.AddHours(-1))
+            {
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.GoToClient;
+                request.ShowCallClientButton = true;
+                request.ShowArrivalButton = true;
+            }
+            else
+            {
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.Waiting;
+            }
+            return request;
+        }
+
+        private async Task<EmployeeAppTrackingDto> GetEmpAppRequestTrackingAsync(bool isCanceled, int requestId)
+        {
+            var requestDetalis = await requestRepository.Where(d => d.RequestId == requestId)
+                .Select(d => new 
+                { 
+                    d.RequestStagesT.AcceptTimestamp,
+                    d.RequestTimestamp, 
+                    d.RequestStagesT.FinishTimestamp
+                })
+                .FirstOrDefaultAsync();
+            EmployeeAppTrackingDto tracking = new EmployeeAppTrackingDto();
+            tracking.TrackingItemList = new List<EmployeeAppTrackingItemDto>();
+            tracking.TrackingItemList.Add(new EmployeeAppTrackingItemDto
+            {
+                Id = (int)EmployeeRequestTrackingItem.Waiting,
+                Date = requestDetalis.AcceptTimestamp.HasValue ? requestDetalis.AcceptTimestamp.ToString() : "",
+                Name = "تم اختيارك, الطلب قيد الانتظار"
+            });
+            tracking.TrackingItemList.Add(new EmployeeAppTrackingItemDto
+            {
+                Id = (int)EmployeeRequestTrackingItem.GoToClient,
+                Date = requestDetalis.RequestTimestamp.Value.AddHours(-1).ToString(),
+                Name = "عليك التوجة الى العميل الان"
+            });
+            tracking.TrackingItemList.Add(new EmployeeAppTrackingItemDto
+            {
+                Id = (int)EmployeeRequestTrackingItem.InExcution,
+                Date = DateTime.Now.ToString(),
+                Name = "جارى تنفيذ الطلب"
+            });
+            if (isCanceled)
+            {
+                var canceledTime = await cancelRequestRepository.Where(d => d.RequestId == requestId)
+                    .Select(d => d.CancelRequestTimestamp)
+                    .FirstOrDefaultAsync();
+                tracking.TrackingItemList.Add(new EmployeeAppTrackingItemDto
+                {
+                    Id = (int)EmployeeRequestTrackingItem.DoneOrCanceled,
+                    Date = canceledTime.ToString(),
+                    Name = "تم الغاء الطلب"
+                });
+            }
+            else
+            {
+                tracking.TrackingItemList.Add(new EmployeeAppTrackingItemDto
+                {
+                    Id = (int)EmployeeRequestTrackingItem.DoneOrCanceled,
+                    Date = requestDetalis.FinishTimestamp.HasValue ? requestDetalis.FinishTimestamp.Value.ToString() : "",
+                    Name = "تم انتهاء الطلب"
+                });
+            }
+            return tracking;
         }
 
         public async Task<Result<RequestCanceledT>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true)
@@ -837,18 +1415,8 @@ namespace SanyaaDelivery.Application.Services
                 var request = await requestRepository.Where(d => d.RequestId == requestId)
                     .Include(d => d.RequestCanceledT)
                     .FirstOrDefaultAsync();
-                if (request.IsNull())
-                {
-                    return ResultFactory<RequestCanceledT>.CreateNotFoundResponse("Request not found"); 
-                }
-                if (request.IsCanceled || request.RequestCanceledT.Any())
-                {
-                    return ResultFactory<RequestCanceledT>.CreateSuccessResponse(message: "Request is already canceled");
-                }
-                if (request.IsCompleted)
-                {
-                    return ResultFactory<RequestCanceledT>.CreateErrorResponseMessage("This request is completed");
-                }
+                var requestValidation = helperService.ValidateRequest<RequestCanceledT>(request);
+                if (requestValidation.IsFail) { return requestValidation; }
                 var cancelRequest = new RequestCanceledT
                 {
                     CancelRequestReason = translationService.Tranlate(reason),
@@ -858,8 +1426,7 @@ namespace SanyaaDelivery.Application.Services
                 };
                 await cancelRequestRepository.AddAsync(cancelRequest);
                 request.IsCanceled = true;
-                request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "canceled").RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Canceled);
                 await UpdateAsync(request);
                 if (request.UsedPoints > 0)
                 {
@@ -1045,8 +1612,7 @@ namespace SanyaaDelivery.Application.Services
                     SystemUserId = systemUserId
                 };
                 await delayRequestRepository.AddAsync(delayRequest);
-                request.RequestStatus = GeneralSetting.RequestStatusList
-                    .FirstOrDefault(d => d.RequestStatusName.ToLower() == "Delayed".ToLower()).RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Delayed);
                 request.RequestTimestamp = newTime;
                 await UpdateAsync(request);
                 int affectedRows = 0;
@@ -1090,8 +1656,7 @@ namespace SanyaaDelivery.Application.Services
             if (string.IsNullOrEmpty(model.EmployeeId))
             {
                 request.EmployeeId = null;
-                request.RequestStatus = GeneralSetting.RequestStatusList
-               .FirstOrDefault(d => d.RequestStatusName.ToLower() == "notset").RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.NotSet);
             }
             else
             {
@@ -1104,8 +1669,7 @@ namespace SanyaaDelivery.Application.Services
                         return employeeValidateResult;
                     }
                 }
-                request.RequestStatus = GeneralSetting.RequestStatusList
-                 .FirstOrDefault(d => d.RequestStatusName.ToLower() == "waiting").RequestStatusId;
+                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Waiting);
                     employee = await employeeRepository.GetAsync(model.EmployeeId);
             }
             request.IsReviewed = false;

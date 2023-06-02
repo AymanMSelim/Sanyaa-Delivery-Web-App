@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data.Context;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +21,11 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<CityT> cityRepository;
         private readonly IRepository<AddressT> addressRepository;
         private readonly IRepository<VacationT> vacationRepository;
+        private readonly SanyaaDatabaseContext dbContext;
 
         public EmployeeRequestService(IRepository<RequestT> requestRepository, 
             IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeT> employeeRepository,
-            IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository, IRepository<VacationT> vacationRepository)
+            IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository, IRepository<VacationT> vacationRepository, SanyaaDatabaseContext dbContext)
         {
             this.requestRepository = requestRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
@@ -31,6 +33,7 @@ namespace SanyaaDelivery.Application.Services
             this.cityRepository = cityRepository;
             this.addressRepository = addressRepository;
             this.vacationRepository = vacationRepository;
+            this.dbContext = dbContext;
         }
 
 
@@ -204,10 +207,47 @@ namespace SanyaaDelivery.Application.Services
             if (requestIdList.HasItem())
             {
                 var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee have request in this time");
-                result.Message += string.Join(", ", requestIdList);
+                result.Message += string.Join(" , ", requestIdList);
                 return result;
             }
             return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);
+        }
+
+        public async Task<List<string>> GetFreeEmployeeListAsync(DateTime dateTime, int departmentId, int branchId)
+        {
+            DateTime startTime;
+            DateTime endTime;
+            if (departmentId == GeneralSetting.CleaningDepartmentId)
+            {
+                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
+                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
+            }
+            else
+            {
+                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
+                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
+            }
+            var query = from e in dbContext.EmployeeT
+                        join o in dbContext.OpreationT on new { e.EmployeeId, OpenVacation = false, IsActive = true } equals new { o.EmployeeId, o.OpenVacation, o.IsActive }
+                        join ew in dbContext.EmployeeWorkplacesT on new { e.EmployeeId, BranchId = branchId } equals new { ew.EmployeeId, ew.BranchId }
+                        join de in dbContext.DepartmentEmployeeT on new { DEmployeeId = e.EmployeeId, DDepartmentId = departmentId } equals new { DEmployeeId = de.EmployeeId, DDepartmentId = de.DepartmentId.Value }
+                        join fs in dbContext.FiredStaffT on e.EmployeeId equals fs.EmployeeId into fsJoin
+                        from fs in fsJoin.DefaultIfEmpty()
+                        join v in dbContext.VacationT on new { e.EmployeeId, Date = dateTime.Date} equals new { v.EmployeeId, v.Day.Date } into vJoin
+                        from v in vJoin.DefaultIfEmpty()
+                        join r in dbContext.RequestT on 
+                            new { REmployeeId = e.EmployeeId, ST = true, ET = true, IsCompleted = false, IsCanceled  = false} equals 
+                            new { REmployeeId = r.EmployeeId, ST = r.RequestTimestamp >= startTime, ET = r.RequestTimestamp <= endTime, r.IsCompleted, r.IsCanceled} into rJoin
+                        from r in rJoin.DefaultIfEmpty()
+                        where e.IsApproved == true
+                              && e.IsActive == true
+                              && (fs == null)
+                              && (v == null)
+                              && (r == null)
+                        select e.EmployeeId;
+
+            var distinctEmployeeIds = await query.Distinct().ToListAsync();
+            return distinctEmployeeIds;
         }
     }
 }

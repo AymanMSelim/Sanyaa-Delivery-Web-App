@@ -6,6 +6,7 @@ using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -85,21 +86,49 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-
-        [HttpGet("GetMem")]
-        public ActionResult<Result<long>> GetMem()
+        [HttpGet("GetEmployeeAppRegisterPolicy")]
+        public ActionResult<Result<string>> GetEmployeeAppRegisterPolicy()
         {
             try
             {
-                long memoryUsed = GC.GetTotalMemory(false);
-                memoryUsed = memoryUsed / 1024;
-                memoryUsed = memoryUsed / 1024;
-                return Ok(ResultFactory<long>.CreateSuccessResponse(memoryUsed, App.Global.Enums.ResultStatusCode.NotAllowed));
+                return Ok(ResultFactory<string>.CreateSuccessResponse("Test"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<string>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetProcInfo")]
+        public ActionResult<Result<object>> GetProcInfo()
+        {
+            try
+            {
+                // Get the current process
+                Process currentProcess = Process.GetCurrentProcess();
+
+                // Get the working set size of the process (in bytes)
+                long workingSetBytes = currentProcess.WorkingSet64;
+
+                // Convert the working set size to megabytes
+                double workingSetMegabytes = (double)workingSetBytes / (1024 * 1024);
+
+                float cpuUsage = currentProcess.TotalProcessorTime.Ticks / (float)Stopwatch.Frequency / Environment.ProcessorCount * 100;
+                var ret = new
+                {
+                    Memory = $"Memory = {workingSetMegabytes} MB",
+                    CPU = $"{cpuUsage}%",
+                    currentProcess.StartTime,
+                    currentProcess.TotalProcessorTime,
+                    ThreadsCount = currentProcess.Threads.Count,
+                    currentProcess.UserProcessorTime
+                };
+                return Ok(ResultFactory<object>.CreateSuccessResponse(ret, App.Global.Enums.ResultStatusCode.NotAllowed));
 
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
     }

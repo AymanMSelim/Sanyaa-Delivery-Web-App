@@ -89,23 +89,16 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("DeleteWorkplace/{employeeWorkplaceId}")]
-        public async Task<ActionResult<Result<EmployeeWorkplacesT>>> DeleteWorkplace(int employeeWorkplaceId)
+        public async Task<ActionResult<Result<object>>> DeleteWorkplace(int employeeWorkplaceId)
         {
             try
             {
                 var result = await employeeService.DeleteWorkplace(employeeWorkplaceId);
-                if (result > 0)
-                {
-                    return Ok(ResultFactory<EmployeeWorkplacesT>.CreateSuccessResponse());
-                }
-                else
-                {
-                    return BadRequest(ResultFactory<EmployeeWorkplacesT>.CreateErrorResponse());
-                }
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<EmployeeWorkplacesT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
 
@@ -131,6 +124,50 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<List<EmployeeWorkplacesT>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetAppAccountIndex/{employeeId}")]
+        public async Task<ActionResult<Result<AppEmployeeAccountIndexDto>>> GetAppAccountIndex(string employeeId = null)
+        {
+            try
+            {
+                if (commonService.IsViaApp())
+                {
+                    employeeId = commonService.GetEmployeeId(employeeId);
+                }
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<AppEmployeeAccountIndexDto>.ReturnEmployeeError());
+                }
+                var model = await employeeService.GetAppAccountIndex(employeeId);
+                return Ok(ResultFactory<AppEmployeeAccountIndexDto>.CreateSuccessResponse(model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppEmployeeAccountIndexDto>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("AddWorkplaceByCity")]
+        public async Task<ActionResult<Result<AppEmployeeAccountIndexDto>>> AddWorkplaceByCity(AddWorkplaceByCityDto model)
+        {
+            try
+            {
+                if (commonService.IsViaApp())
+                {
+                    model.EmployeeId = commonService.GetEmployeeId(model.EmployeeId);
+                }
+                if (string.IsNullOrEmpty(model.EmployeeId))
+                {
+                    return Ok(ResultFactory<AppEmployeeAccountIndexDto>.ReturnEmployeeError());
+                }
+                var affectedRows = await employeeService.AddWorkplaceByCity(model);
+                return Ok(ResultFactory<AppEmployeeAccountIndexDto>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AppEmployeeAccountIndexDto>.CreateExceptionResponse(ex));
             }
         }
 

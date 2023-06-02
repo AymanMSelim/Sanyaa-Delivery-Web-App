@@ -21,6 +21,8 @@ using SanyaaDelivery.API.ActionsFilter;
 using Microsoft.AspNetCore.Diagnostics;
 using SanyaaDelivery.Application.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using App.Global.DTOs;
 
 namespace SanyaaDelivery.API
 {
@@ -53,22 +55,27 @@ namespace SanyaaDelivery.API
                     .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
                 services.AddDbContext<SanyaaDatabaseContext>(options =>
                     options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")));
+
+
+               // services.AddDbContext<SanyaaDatabaseContext>(options =>
+               //options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")).EnableSensitiveDataLogging(true).UseLoggerFactory(new LoggerFactory().AddConsole()));
+
                 DependencyContainer.RegisterServices(services);
                 services.AddHttpContextAccessor();
                 services.AddScoped<CommonService>();
                 services.AddCors();
-                services.AddSwaggerGen(c => c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
-                {
-                    Version = "v1",
-                    Title = "Sanyaa API",
-                    Description = "List of Api's.",
-                    Contact = new Swashbuckle.AspNetCore.Swagger.Contact
-                    {
-                        Name = "Test site",
-                        Email = string.Empty
-                    },
-                }
-                ));
+                //services.AddSwaggerGen(c => c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
+                //{
+                //    Version = "v1",
+                //    Title = "Sanyaa API",
+                //    Description = "List of Api's.",
+                //    Contact = new Swashbuckle.AspNetCore.Swagger.Contact
+                //    {
+                //        Name = "Test site",
+                //        Email = string.Empty
+                //    },
+                //}
+                //));
                 App.Global.SMS.SMSMisrService.SetParameters(
                     Configuration.GetValue<string>("SMSMisrUsername"),
                     Configuration.GetValue<string>("SMSMisrPassword"),
@@ -106,11 +113,14 @@ namespace SanyaaDelivery.API
                     {
                         if (!context.File.PhysicalPath.ToLower().Contains("public") && !context.Context.User.Identity.IsAuthenticated)
                         {
-                            throw new Exception("Not authenticated");
-                            //context.Response.WriteAsJsonAsync(response);
+                            context.Context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            //throw new Exception("Not authenticated");
+                            var response = ResultFactory<object>.CreateErrorResponseMessageFD("NotAuthenticated", App.Global.Enums.ResultStatusCode.NotAuthenticated);
+                            context.Context.Response.WriteAsync(App.Global.Serialization.Json.Serialize(response));
                         }
                     }
                 });
+                app.UseMiddleware<UnauthorizedResponseMiddleware>();
                 //app.UseExceptionHandler(c => c.Run(async context =>
                 //{
                 //    var exception = context.Features
@@ -120,12 +130,12 @@ namespace SanyaaDelivery.API
                 //    await context.Response.(response);
                 //}));
                 app.UseMvc();
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
-                });
-                App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json");
+                //app.UseSwagger();
+                //app.UseSwaggerUI(c =>
+                //{
+                //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
+                //});
+                App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json", env.WebRootPath + "/empFirebase.json");
 
             }
             catch (Exception ex)

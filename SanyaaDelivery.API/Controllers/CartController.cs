@@ -372,8 +372,8 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(ResultFactory<CartDto>.CreateNotFoundResponse("No cart fount"));
                 }
-                var affectedRows = await cartService.ChangeUsePointStatusAsync(cart.CartId);
-                if (affectedRows > 0)
+                var result = await cartService.ChangeUsePointStatusAsync(cart.CartId);
+                if (result.IsSuccess)
                 {
                     var cartDto = await cartService.GetCartForAppAsync(cart.CartId);
                     if (cartDto.IsNull())
@@ -384,7 +384,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 else
                 {
-                    return Ok(ResultFactory<CartDto>.CreateErrorResponse());
+                    return Ok(result.Convert(new CartDto()));
                 }
             }
             catch (Exception ex)
@@ -398,15 +398,15 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                CartT cart = await commonService.GetCurrentClientCartAsync(clientId);
-                if (cart.IsNull())
+                var cartId = await commonService.GetCurrentClientCartIdAsync(clientId);
+                if (cartId.IsNull())
                 {
                     return Ok(ResultFactory<CartDto>.CreateNotFoundResponse("Cart not found"));
                 }
-                var result = await cartService.ApplyPromocodeAsync(cart.CartId, promocode);
+                var result = await cartService.ApplyPromocodeAsync(cartId.Value, promocode);
                 if (result.IsSuccess)
                 {
-                    var cartDto = await cartService.GetCartForAppAsync(cart.CartId);
+                    var cartDto = await cartService.GetCartForAppAsync(cartId.Value);
                     if (cartDto.IsNull())
                     {
                         return Ok(ResultFactory<CartDto>.CreateErrorResponse());

@@ -10,22 +10,22 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IRegisterService
     {
-        Task<Result<ClientRegisterResponseDto>> CRegisterClient(ClientRegisterDto clientRegisterDto);
-        Task<Result<ClientRegisterResponseDto>> CRegisterGuestClient(int guestClientId, ClientRegisterDto clientRegisterDto);
-        Task<ClientRegisterResponseDto> RegisterClient(ClientRegisterDto clientRegisterDto);
-        Task<Result<EmployeeRegisterResponseDto>> RegisterEmployee(EmployeeRegisterDto employeeRegisterDto, int systemUserId);
-        Task<Result<string>> CompleteEmployeePersonalData(string phoneNumber, string nationalId, string relativeName, string realtivePhone,
-            byte[] profilePic, byte[] nationalIdFront, byte[] nationalIdBack);
+        Task<Result<ClientRegisterResponseDto>> RegisterClientCompleteAsync(ClientRegisterDto clientRegisterDto);
+        Task<Result<ClientRegisterResponseDto>> RegisterClientAsync(ClientRegisterDto clientRegisterDto);
+        Task<Result<SystemUserDto>> ConfirmClientRegisterOTPAsync(int? clientId, string phone, string otpCode, string signature);
+        Task<Result<EmployeeRegisterResponseDto>> RegisterEmployeeAsync(EmployeeRegisterDto employeeRegisterDto, int systemUserId);
+        Task<Result<string>> CompleteEmployeePersonalDataAsync(string phoneNumber, string nationalId, string relativeName, string realtivePhone,
+             byte[] profilePic, string profileExtention,
+            byte[] nationalIdFront, string nationalFrontExtention,
+            byte[] nationalIdBack, string nationalBackExtention);
 
-        Task<int> CompleteEmployeeAddress(EmployeeAddressDto model);
-
-        Task<int> CompleteEmployeeWorkingData(EmployeeWorkingDataDto model);
-        Task<Result<EmployeeRegisterStepDto>> GetEmployeeRegisterStep(string nationalId);
-
+        Task<int> CompleteEmployeeAddressAsync(EmployeeAddressDto model);
+        Task<Result<EmployeeT>> CompleteEmployeeWorkingDataAsync(EmployeeWorkingDataDto model);
+        Task<Result<EmployeeRegisterStepDto>> GetEmployeeRegisterStepAsync(string nationalId);
         Task<GuestClientRegisterResponseDto> RegisterGuest(ClientRegisterDto clientRegisterDto);
-        Task<AccountT> RegisterClientAccount(ClientT client, Domain.DTOs.ClientRegisterDto clientRegisterDto);
-        Task<AccountT> RegisterAccount(string id, string userName, string password, int accountTypeId, 
-            int systemUserId, int roleId, string fcmToken = null, bool isGuest = false, bool isActive = true);
+        Task<AccountT> RegisterClientAccountAsync(ClientT client, Domain.DTOs.ClientRegisterDto clientRegisterDto);
+        Task<AccountT> RegisterAccountAsync(string id, string userName, string password, int accountTypeId, 
+            int systemUserId, int roleId, string fcmToken = null, bool isGuest = false, bool isActive = true, bool requireConfirmMobile = true);
 
     }
 }

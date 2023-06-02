@@ -41,18 +41,26 @@ namespace SanyaaDelivery.Application.Services
             return null;
         }
 
-        public Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false)
+        public async Task<ClientT> GetAsync(int id, bool includePhone = false, bool includeAddress = false, bool getDefaultOnly = false, bool trackingEnabled = false)
         {
-            var query = clientRepository.Where(d => d.ClientId == id);
+            var client = await clientRepository.Where(d => d.ClientId == id).FirstOrDefaultAsync();
+            //if (getDefaultOnly)
+            //{
+            //    client.AddressT = await addressRepository.AsTracking(trackingEnabled).Where(d => d.IsDefault && d.ClientId == id).ToListAsync();
+            //    client.ClientPhonesT = await phoneRepository.AsTracking(trackingEnabled).Where(d => d.IsDefault && d.ClientId == id).ToListAsync();
+            //}
+            //else
+            //{
             if (includeAddress)
             {
-                query = query.Include(d => d.AddressT);
+                client.AddressT = await addressRepository.Where(d => d.ClientId == id).ToListAsync();
             }
             if (includePhone)
             {
-                query = query.Include(d => d.ClientPhonesT);
+                client.ClientPhonesT = await phoneRepository.Where(d => d.ClientId == id).ToListAsync();
             }
-            return query.FirstOrDefaultAsync();
+            //}
+            return client;
         }
 
         public Task<List<ClientT>> GetByName(string name)
@@ -175,36 +183,6 @@ namespace SanyaaDelivery.Application.Services
             return phoneRepository.GetAsync(phoneId);
         }
 
-        public async Task<int> Subscripe(int subscriptionId, int clientId)
-        {
-            //var subscription = await subscriptionservice.getasync(subscriptionid);
-            //var clientsubscriptionlist = await clientsubscriptionservice.getlistasync(clientid, null, true);
-            //var samedepartmentsubscription = clientsubscriptionlist.where(d => d.subscription.departmentid == subscription.departmentid).firstordefault();
-            //if (samedepartmentsubscription.isnotnull())
-            //{
-            //    _ = await clientsubscriptionservice.deletetasync(samedepartmentsubscription.clientsubscriptionid);
-            //}
-            //return await clientsubscriptionservice.addasync(new clientsubscriptiont
-            //{
-            //    clientid = clientid,
-            //    subscriptionid = subscriptionid,
-            //    creationtime = datetime.now,
-            //    systemuserid = 500
-            //});
-            return default;
-        }
-
-        public async Task<int> UnSubscripe(int subscriptionId, int clientId)
-        {
-            //var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId);
-            //var subscription = clientSubscriptionList.Where(d => d.SubscriptionId == subscriptionId).FirstOrDefault();
-            //if (subscription.IsNotNull())
-            //{
-            //    return await clientSubscriptionService.DeletetAsync(subscription.ClientSubscriptionId);
-            //}
-            return 0;
-        }
-
         public async Task<int> AddPointAsync(int clientId, int points)
         {
             var client = await GetAsync(clientId);
@@ -221,29 +199,51 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> UpdateBranchByCityAsync(int clientId, int cityId)
         {
-            unitOfWork.StartTransaction();
-            var city = await cityService.GetAsync(cityId, true);
-            var client = await GetAsync(clientId);
-            if (city.IsNull() || client.IsNull())
+            bool isRootTransaction = false;
+            try
             {
-                return -1;
-            }
-            client.BranchId = city.BranchId;
-            var clientAddressList = await GetAddressListAsync(clientId);
-            if (clientAddressList.IsEmpty())
-            {
-                var address = new AddressT
+                isRootTransaction = unitOfWork.StartTransaction();
+                var city = await cityService.GetAsync(cityId, true);
+                var client = await GetAsync(clientId);
+                if (city.IsNull() || client.IsNull())
                 {
-                    ClientId = clientId,
-                    AddressGov = city.Governorate.GovernorateName,
-                    AddressCity = city.CityName,
-                    CityId = cityId,
-                    IsDefault = true
-                };
-                await AddAddress(address);
+                    return (int)App.Global.Enums.ResultStatusCode.Failed;
+                }
+                client.BranchId = city.BranchId;
+                var clientAddressList = await GetAddressListAsync(clientId);
+                if (clientAddressList.IsEmpty())
+                {
+                    var address = new AddressT
+                    {
+                        ClientId = clientId,
+                        AddressGov = city.Governorate.GovernorateName,
+                        AddressCity = city.CityName,
+                        CityId = cityId,
+                        IsDefault = true
+                    };
+                    await AddAddress(address);
+                }
+                await UpdateAsync(client);
+                if (isRootTransaction)
+                {
+                    return await unitOfWork.CommitAsync(false);
+                }
+                return (int)App.Global.Enums.ResultStatusCode.Success;
             }
-            await UpdateAsync(client);
-            return await unitOfWork.CommitAsync();
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
         }
 
         public async Task<int> UpdateBranchAsync(int clientId, int brnachId)
@@ -259,26 +259,47 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> SetDefaultAddressAsync(int addressId, int clientId)
         {
-            unitOfWork.StartTransaction();
-            var addressList = await GetAddressListAsync(clientId);
-            if (addressList.IsEmpty())
+            bool isRootTransaction = false;
+            try
             {
-                return ((int)App.Global.Enums.ResultStatusCode.Failed);
-            }
-            if(!addressList.Any(d => d.AddressId == addressId))
-            {
-                return ((int)App.Global.Enums.ResultStatusCode.Failed);
-            }
-            foreach (var address in addressList)
-            {
-                address.IsDefault = false;
-                if(address.AddressId == addressId)
+                isRootTransaction = unitOfWork.StartTransaction();
+                var addressList = await GetAddressListAsync(clientId);
+                if (addressList.IsEmpty())
                 {
-                    address.IsDefault = true;
+                    return ((int)App.Global.Enums.ResultStatusCode.Failed);
                 }
-                await UpdateAddress(address);
+                if (!addressList.Any(d => d.AddressId == addressId))
+                {
+                    return ((int)App.Global.Enums.ResultStatusCode.Failed);
+                }
+                foreach (var address in addressList)
+                {
+                    address.IsDefault = false;
+                    if (address.AddressId == addressId)
+                    {
+                        address.IsDefault = true;
+                    }
+                    addressRepository.Update(address.AddressId, address);
+                }
+                if (isRootTransaction)
+                {
+                    return await unitOfWork.CommitAsync(false);
+                }
+                return (int)App.Global.Enums.ResultStatusCode.Success;
             }
-            return await unitOfWork.CommitAsync();
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
         }
 
         public async Task<int> SelectDefaultAddressAutoAsync(int clientId, List<AddressT> addressList = null)
@@ -429,36 +450,58 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> UpdateBranchByRegionAsync(int clientId, int regionId)
         {
-            unitOfWork.StartTransaction();
-            var region = await regionService.GetAsync(regionId);
-            if (region.IsNull())
+            bool isRootTransaction = false;
+            try
             {
-                return -1;
-            }
-            CityT city = await cityService.GetAsync(region.CityId.Value, true);
-            var client = await GetAsync(clientId);
-            if (city.IsNull() || client.IsNull())
-            {
-                return -1;
-            }
-            var clientAddressList = await GetAddressListAsync(clientId);
-            if (clientAddressList.IsEmpty())
-            {
-                var address = new AddressT
+                isRootTransaction = unitOfWork.StartTransaction();
+                var region = await regionService.GetAsync(regionId);
+                if (region.IsNull())
                 {
-                    ClientId = clientId,
-                    AddressGov = city.Governorate.GovernorateName,
-                    AddressCity = city.CityName,
-                    CityId = region.CityId,
-                    RegionId = region.RegionId,
-                    AddressRegion = region.RegionName,
-                    IsDefault = true
-                };
-                await AddAddress(address);
+                    return (int)App.Global.Enums.ResultStatusCode.Failed;
+                }
+                CityT city = await cityService.GetAsync(region.CityId.Value, true);
+                var client = await GetAsync(clientId);
+                if (city.IsNull() || client.IsNull())
+                {
+                    return (int)App.Global.Enums.ResultStatusCode.Failed;
+                }
+                var clientAddressList = await GetAddressListAsync(clientId);
+                if (clientAddressList.IsEmpty())
+                {
+                    var address = new AddressT
+                    {
+                        ClientId = clientId,
+                        AddressGov = city.Governorate.GovernorateName,
+                        AddressCity = city.CityName,
+                        CityId = region.CityId,
+                        RegionId = region.RegionId,
+                        AddressRegion = region.RegionName,
+                        IsDefault = true
+                    };
+                    await AddAddress(address);
+                }
+                client.BranchId = city.BranchId;
+                await UpdateAsync(client);
+                if (isRootTransaction)
+                {
+                    return await unitOfWork.CommitAsync(false);
+                }
+                return (int)App.Global.Enums.ResultStatusCode.Success;
             }
-            client.BranchId = city.BranchId;
-            await UpdateAsync(client);
-            return await unitOfWork.CommitAsync();
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+          
         }
 
         public async Task<int> GetDefaultCityIdAsync(int clientId)

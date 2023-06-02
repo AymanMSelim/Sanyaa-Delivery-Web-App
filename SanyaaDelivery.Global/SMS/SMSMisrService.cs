@@ -22,27 +22,20 @@ namespace App.Global.SMS
             _environment = environment;
         }
 
-        public static Task<bool> SendSmsAsync(string languange, string mobile, string message)
+        public async Task<bool> SendSmsAsync(string mobile, string message, string lang = null)
         {
-
-            //WhatsApp.WhatsAppService whatsApp = new WhatsApp.WhatsAppService();
-            //whatsApp.SendOTP(mobile, message);
-            //return null;
-            SMSMisrService sMSMisrService = new SMSMisrService();
-            return sMSMisrService.SendSms(languange, mobile, message);
-        }
-
-        public static Task<bool> SendOTPAsync(string mobile, string otp)
-        {
-            SMSMisrService sMSMisrService = new SMSMisrService();
-            return sMSMisrService.SendOTP(mobile, otp);
-        }
-
-        public async Task<bool> SendSms(string languange, string mobile, string message)
-        {
+            var request = new SMSMisrSMSRequestDto
+            {
+                Environment = 1,
+                Mobile = mobile,
+                Password = _password,
+                Sender = _sender,
+                Message = message,
+                Username = _username
+            };
             bool response;
             var result = await APIService.PostAsync<SMSMisrDto>(
-                $@"/api/sms/?environment={_environment}&username={_username}&password={_password}&language=2&sender={_sender}&mobile=2{mobile}&message={message}", null);
+                $@"/api/sms", request);
             switch (result.Code)
             {
                 case "1901":
@@ -55,11 +48,20 @@ namespace App.Global.SMS
             return response;
         }
 
-        public async Task<bool> SendOTP(string mobile, string otp)
+        public async Task<bool> SendOTPAsync(string mobile, string otp)
         {
+            var request = new SMSMisrOTPRequestDto
+            {
+                Environment = 1,
+                Mobile = mobile,
+                Otp = otp,
+                Password = _password,
+                Sender = _sender,
+                Template = "0f9217c9d760c1c0ed47b8afb5425708da7d98729016a8accfc14f9cc8d1ba83",
+                Username = _username
+            };
             bool response;
-            var result = await APIService.PostAsync<SMSMisrDto>(
-                $@"/api/otp/?environment={_environment}&username={_username}&password={_password}&language=2&sender={_sender}&mobile=2{mobile}&template=5f0b0e60ee65179573bdad2f7e9da5d4f89547a44cb15ff5a134a5d595cffc47&otp={otp}", null);
+            var result = await APIService.PostAsync<SMSMisrDto>($@"/api/otp", request);
             switch (result.Code)
             {
                 case "4901":

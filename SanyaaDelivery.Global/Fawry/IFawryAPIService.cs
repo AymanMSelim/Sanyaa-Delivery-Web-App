@@ -9,6 +9,7 @@ namespace App.Global.Interfaces
     {
         void SetFawryRequest(Models.Fawry.FawryRequest fawryRequest, string securityCode);
         string SignRequest();
+        void InitialAPI(string apiUrl, bool sendSMS = false);
         Task<Models.Fawry.FawryRefNumberResponse> GetRefNumberAsync();
         Task<Models.Fawry.FawryStatusResponse> GetStatusAsync(int systemId, string marchantCode, string securityCode);
     }

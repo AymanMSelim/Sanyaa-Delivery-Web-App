@@ -34,6 +34,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> ConfirmResetPasswordOtp(AccountT account);
 
         Task<int> ConfirmRegisterOtp(AccountT account);
-        Task<Result<bool>> ConfirmOtp(ConfirmOtpDto confirmOtpDto);
+        Task<Result<bool>> ConfirmOTPAsync(ConfirmOtpDto confirmOtpDto);
     }
 }

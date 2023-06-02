@@ -39,6 +39,15 @@ namespace App.Global.RestAPI
             _token = token;
         }
 
+        public void AddHeader(string name, string value)
+        {
+            if (_httpClient.DefaultRequestHeaders.Contains(name))
+            {
+                _httpClient.DefaultRequestHeaders.Remove(name);
+            }
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(name, value);
+        }
+
         public void SetTokenHeader(string token, TokenType tokenType)
         {
             _token = token;
@@ -72,6 +81,11 @@ namespace App.Global.RestAPI
         public Task<HttpResponseMessage> GetAsync(string url)
         {
             return _httpClient.GetAsync(GetPath(url));
+        }
+
+        public Task<System.IO.Stream> GetStreamAsync(string url)
+        {
+            return _httpClient.GetStreamAsync(GetPath(url));
         }
 
         public Task<HttpResponseMessage> PostAsync(string url, HttpContent content)

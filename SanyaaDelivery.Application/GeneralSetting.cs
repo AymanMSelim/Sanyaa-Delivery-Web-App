@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using SanyaaDelivery.Application.Interfaces;
+using SanyaaDelivery.Domain.Enum;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -66,8 +67,6 @@ namespace SanyaaDelivery.Application
             }
         }
 
-        public static int OTPExpireMinutes { get; set; }
-
         static Interfaces.IAccountTypeService _accountTypeService;
         static Interfaces.IRoleService _roleService;
         private readonly IAppSettingService appSettingService;
@@ -86,8 +85,6 @@ namespace SanyaaDelivery.Application
 
         public static List<AccountTypeT> AccountTypeList { get => _accountTypeList; private set => _accountTypeList = value; }
         
-        public static List<RequestStatusT> RequestStatusList { get => _requestStatusList; private set => _requestStatusList = value; }
-
         public static List<AppSettingT> AppSetting { get => _appSettingList; private set => _appSettingList = value; }
 
         public static List<TranslatorT> TranslationList { get => _translationList; private set => _translationList = value; }
@@ -115,16 +112,26 @@ namespace SanyaaDelivery.Application
             {
                 _requestStatusList = requestStatusService.GetListAsync().Result;
             }
-            OTPExpireMinutes = configuration.GetValue<int>("OTPExpireMinutes");
         }
 
-        public static sbyte GetRequestStatusId(string statusName)
+        public static sbyte GetRequestStatusId(RequestStatus requeststatus)
         {
-            return RequestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == statusName.ToLower())
+            return _requestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == requeststatus.ToString().ToLower())
                 .RequestStatusId;
         }
-        
-        public const int TokenExpireInDays = 30;
+
+        public static RequestStatusT GetRequestStatus(RequestStatus requeststatus)
+        {
+            return _requestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == requeststatus.ToString().ToLower());
+        }
+
+        public static int? GetRequestStatusGroupId(RequestStatus requeststatus)
+        {
+            return _requestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == requeststatus.ToString().ToLower())
+                .RequestStatusGroupId;
+        }
+
+        public const int TokenExpireInDays = 365;
         
         public const int CustomerAppSystemUserId = 500;
 
@@ -156,6 +163,10 @@ namespace SanyaaDelivery.Application
         private const int DefaultCleaningDepartmentId = 12;
 
         private const int DefaultRequestExcutionHours = 3;
+
+        private const int DefaultOTPExpireMinutes = 15;
+
+        private const bool DefaultSendFawrySMS = false;
          
         public static bool IsEmailVerificationRequired
         {
@@ -299,7 +310,7 @@ namespace SanyaaDelivery.Application
                 return Convert.ToInt32(setting.SettingValue);
             }
         }
-         public static int RequestExcutionHours
+        public static int RequestExcutionHours
         {
             get
             {
@@ -313,5 +324,34 @@ namespace SanyaaDelivery.Application
         }
 
         public static int CurrentRequest { get; set; }
+
+        public static bool SendFawrySMS
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "SendFawrySMS");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultSendFawrySMS;
+                }
+                return Convert.ToBoolean(setting.SettingValue);
+            }
+        }
+
+        public static int OTPExpireMinutes
+        {
+            get
+            {
+                var setting = AppSetting.FirstOrDefault(d => d.SettingKey == "OTPExpireMinutes");
+                if (setting == null || string.IsNullOrEmpty(setting.SettingValue))
+                {
+                    return DefaultOTPExpireMinutes;
+                }
+                return Convert.ToInt32(setting.SettingValue);
+            }
+        }
+
+
+        public static int DefaultEmployeeSubacriptionId = 1;
     }
 }

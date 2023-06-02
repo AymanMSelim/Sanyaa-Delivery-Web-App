@@ -30,6 +30,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> UpdateNoteAsync(int cartId, string note);
         Task<Result<PromocodeT>> ApplyPromocodeAsync(int cartId, string code);
         Task<int> CancelPromocodeAsync(int cartId);
-        Task<int> ChangeUsePointStatusAsync(int cartId);
+        Task<Result<object>> ChangeUsePointStatusAsync(int cartId);
     }
 }

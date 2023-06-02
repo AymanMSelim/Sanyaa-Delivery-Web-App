@@ -127,6 +127,11 @@ namespace App.Global.DTOs
             return CreateErrorResponse(resultStatusCode: resultStatusCode, message: message, resultAleartType: resultAleartType);
         }
 
+        public static Result<T> CreateEmptyDataErrorMessageFD()
+        {
+            return CreateErrorResponse(resultStatusCode: ResultStatusCode.EmptyData, message: "Please enter all data first", resultAleartType: ResultAleartType.FailedDialog);
+        }
+
         public static Result<T> CreateRequireRegisterResponse(T data = default)
         {
             return CreateErrorResponse(date : data, resultStatusCode: ResultStatusCode.NotAllowed, message: "You must register first", resultAleartType: ResultAleartType.RegistrationRequired);
@@ -146,16 +151,22 @@ namespace App.Global.DTOs
             return CreateErrorResponse(resultStatusCode: ResultStatusCode.EmptyData, message: "This employee not exist, or not approved yet or account is suspended", resultAleartType: ResultAleartType.FailedToast);
         }
 
+        public static Result<T> ReturnAccountError()
+        {
+            return CreateErrorResponse(resultStatusCode: ResultStatusCode.EmptyData, message: "This account not found", resultAleartType: ResultAleartType.FailedToast);
+        }
+
+
         public static Result<T> FileValidationError(string fileName = null)
         {
             return CreateErrorResponse(resultStatusCode: ResultStatusCode.InvalidData, message: $"Invalid file: {fileName}", resultAleartType: ResultAleartType.FailedToast);
         }
 
-        public static Result<T> CreateAffectedRowsResult(int affectedRow, string errorMessage = null, T data = default)
+        public static Result<T> CreateAffectedRowsResult(int affectedRow, string errorMessage = null, T data = default, ResultAleartType aleartType = ResultAleartType.None)
         {
             if(affectedRow >= 0)
             {
-                return CreateSuccessResponse(data);
+                return CreateSuccessResponse(data, resultAleartType: aleartType);
             }
             else
             {
@@ -167,8 +178,12 @@ namespace App.Global.DTOs
 
     public static class ResultExtention
     {
-        public static Result<NewType> Convert<OldType, NewType>(this Result<OldType> result, NewType data) where OldType : class
+        public static Result<NewType> Convert<OldType, NewType>(this Result<OldType> result, NewType data, bool setDataToNull = false) where OldType : class
         {
+            if (setDataToNull)
+            {
+                data = default;
+            }
             return new Result<NewType>
             {
                 AleartType = result.AleartType,

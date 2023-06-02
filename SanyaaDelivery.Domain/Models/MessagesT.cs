@@ -10,6 +10,7 @@ namespace SanyaaDelivery.Domain.Models
         public string Title { get; set; }
         public string Body { get; set; }
         public sbyte? IsRead { get; set; }
+        public int Id { get; set; }
 
         public EmployeeT Employee { get; set; }
     }
