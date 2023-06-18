@@ -30,5 +30,6 @@ namespace SanyaaDelivery.Domain.OtherModels
         public  List<SiteLight> SiteLighttList { get; set; }
         public  List<EmployeeDepartmentLight> EmployeeDepartmentLightList { get; set; }
         public  List<EmployeeWorkplaceLight> EmployeeWorkplaceLightList { get; set; }
+        public  List<string> FiredEmployeeIdList { get; set; }
     }
 }

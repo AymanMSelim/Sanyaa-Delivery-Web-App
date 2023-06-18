@@ -26,7 +26,7 @@ namespace SanyaaDelivery.API.Controllers
 
         public CartController(ICartService cartService, IServiceService serviceService, ITranslationService translationService,
             CommonService commonService, IGeneralSetting generalSetting, IDayWorkingTimeService dayWorkingTimeService,
-            IClientSubscriptionService clientSubscriptionService)
+            IClientSubscriptionService clientSubscriptionService) : base(commonService)
         {
             this.cartService = cartService;
             this.serviceService = serviceService;

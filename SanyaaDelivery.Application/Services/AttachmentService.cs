@@ -8,16 +8,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using App.Global.ExtensionMethods;
+using System.Linq;
 
 namespace SanyaaDelivery.Application.Services
 {
     public class AttachmentService : IAttachmentService
     {
         private readonly IRepository<AttachmentT> repo;
+        private readonly ITranslationService translationService;
 
-        public AttachmentService(IRepository<AttachmentT> repo)
+        public AttachmentService(IRepository<AttachmentT> repo, ITranslationService translationService)
         {
             this.repo = repo;
+            this.translationService = translationService;
         }
         public Task<int> AddAsync(AttachmentT attachment)
         {
@@ -25,10 +29,16 @@ namespace SanyaaDelivery.Application.Services
             return repo.SaveAsync();
         }
 
-        public Task<int> DeleteAsync(int id)
+        public async Task<int> DeleteAsync(int id)
         {
-            repo.DeleteAsync(id);
-            return repo.SaveAsync();
+            var attachment = await GetAsync(id);
+            var filePath = $"wwwroot{attachment.FilePath.Replace(" / ", @"\")}";
+            if (File.Exists(filePath))
+            {
+               File.Delete(filePath); 
+            }
+            await repo.DeleteAsync(id);
+            return await repo.SaveAsync();
         }
 
         public async Task<int> DeleteByReferenceAsync(int type, string referenceId)
@@ -75,9 +85,16 @@ namespace SanyaaDelivery.Application.Services
             return new MemoryStream(file);
         }
 
-        public Task<List<AttachmentT>> GetListAsync(int type, string referenceId)
+        public Task<List<AttachmentT>> GetListAsync(int? type, string referenceId)
         {
-            return repo.Where(d => d.AttachmentType == type && d.ReferenceId == referenceId).ToListAsync();
+            if (type.HasValue)
+            {
+                return repo.Where(d => d.AttachmentType == type && d.ReferenceId == referenceId).ToListAsync();
+            }
+            else
+            {
+                return repo.Where(d => d.ReferenceId == referenceId).ToListAsync();
+            }
         }
 
         public async Task<AttachmentT> SaveFileAsync(byte[] data, int type, string referenceId, string extension, string folder = "Attachment", string domain = "")
@@ -101,6 +118,43 @@ namespace SanyaaDelivery.Application.Services
             await repo.AddAsync(attachment);
             await repo.SaveAsync();
             return attachment; 
+        }
+
+        public async Task<EmpOptionalAttachmentIndexDto> GetEmpOptionalAttachmentIndexAsync(string employeeId)
+        {
+            var attachmentList = await GetListAsync(null, employeeId);
+            EmpOptionalAttachmentIndexDto attachmentIndexDto = new EmpOptionalAttachmentIndexDto()
+            {
+                EmpoyeeId = employeeId,
+                ItemList = new List<EmpOptionalAttachmentItemDto>()
+            };
+            attachmentIndexDto.ItemList.Add(GetItem(Domain.Enum.AttachmentType.ArmyCertificate, attachmentList));
+            attachmentIndexDto.ItemList.Add(GetItem(Domain.Enum.AttachmentType.DrivingLicense, attachmentList));
+            attachmentIndexDto.ItemList.Add(GetItem(Domain.Enum.AttachmentType.QualificationCertificate, attachmentList));
+            attachmentIndexDto.ItemList.Add(GetItem(Domain.Enum.AttachmentType.ElectricReceipt, attachmentList));
+            attachmentIndexDto.ItemList.Add(GetItem(Domain.Enum.AttachmentType.CriminalRecord, attachmentList));
+            return attachmentIndexDto;
+        }
+
+        private EmpOptionalAttachmentItemDto GetItem(Domain.Enum.AttachmentType typeEnum, List<AttachmentT> attachmentList)
+        {
+            int type = (int)typeEnum;
+            EmpOptionalAttachmentItemDto item = new EmpOptionalAttachmentItemDto
+            {
+                Type = type,
+                Description = translationService.Translate(typeEnum.ToString())
+            };
+            if (attachmentList.IsEmpty())
+            {
+                return item;
+            }
+            var attachment = attachmentList.LastOrDefault(d => d.AttachmentType == type);
+            if (attachment.IsNotNull())
+            {
+                item.FileName = attachment.FileName;
+                item.FilePath = attachment.FilePath;
+            };
+            return item;
         }
     }
 }

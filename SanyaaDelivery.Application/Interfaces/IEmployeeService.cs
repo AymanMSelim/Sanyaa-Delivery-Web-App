@@ -13,7 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
     {
         Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false,
             bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false,
-            bool includeReview = false, bool includeReviewClient = false, bool includeFavourite = false);
+            bool includeReview = false, bool includeReviewClient = false, bool includeFavourite = false, bool includeOperation = false);
 
         Task<List<EmployeeT>> GetListAsync(int? departmentId, int? branchId, bool? getActive = null, bool includeReview = false, 
             bool includeClientWithReview = false, bool includeFavourite = false);
@@ -54,5 +54,9 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<List<FollowUpT>> GetReviewListAsync(List<string> employeeIdList);
         Task<AppReviewIndexDto> GetAppReviewIndexAsync(string employeeId);
         Task<bool> IsThisEmployeeExist(string natioalNumber);
+
+        Task<int> ReturnEmployeeAsync(string employeeId);
+
+        Task<int> FireEmpolyeeAsync(FireEmployeeDto model);
     }
 }

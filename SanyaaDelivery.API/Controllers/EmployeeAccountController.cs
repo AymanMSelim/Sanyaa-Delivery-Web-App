@@ -18,7 +18,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IRegisterService registerService;
 
         public EmployeeAccountController(IEmployeeAppAccountService appAccountService, CommonService commonService,
-            IRegisterService registerService)
+            IRegisterService registerService) : base(commonService)
         {
             this.appAccountService = appAccountService;
             this.commonService = commonService;

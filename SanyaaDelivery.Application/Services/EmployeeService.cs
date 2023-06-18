@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.OtherModels;
 using App.Global.DTOs;
+using App.Global.DateTimeHelper;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -18,28 +19,35 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
+        private readonly IRepository<FiredStaffT> firedRepository;
         private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
         private readonly IRepository<EmploymentApplicationsT> employmentApplicationRepository;
+        private readonly INotificatonService notificatonService;
         private readonly IRepository<FollowUpT> followUpRepository;
         private readonly IRepository<CityT> cityRepository;
+        private readonly IHelperService helperService;
 
-        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, 
-            IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<EmploymentApplicationsT> employmentApplicationRepository,
-           IRepository<FollowUpT> followUpRepository, IRepository<CityT> cityRepository)
+        public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<FiredStaffT> firedRepository,
+            IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository,
+            IRepository<EmploymentApplicationsT> employmentApplicationRepository, INotificatonService notificatonService,
+           IRepository<FollowUpT> followUpRepository, IRepository<CityT> cityRepository, IHelperService helperService)
         {
             this.employeeRepository = employeeRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
+            this.firedRepository = firedRepository;
             this.departmentRepository = departmentRepository;
             this.employeeWorkplaceRepository = employeeWorkplaceRepository;
             this.employmentApplicationRepository = employmentApplicationRepository;
+            this.notificatonService = notificatonService;
             this.followUpRepository = followUpRepository;
             this.cityRepository = cityRepository;
+            this.helperService = helperService;
         }
 
         public Task<EmployeeT> GetAsync(string id, bool includeWorkplace = false, bool includeDepartment = false, 
             bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false, bool includeReview = false,
-            bool inculdeReviewClient = false, bool includeFavourite = false)
+            bool inculdeReviewClient = false, bool includeFavourite = false, bool includeOpreation = false)
         {
             var query = employeeRepository.Where(d => d.EmployeeId == id);
             if (includeDepartment)
@@ -80,6 +88,10 @@ namespace SanyaaDelivery.Application.Services
             if (includeFavourite)
             {
                 query = query.Include(d => d.FavouriteEmployeeT);
+            }
+            if (includeOpreation)
+            {
+                query = query.Include(d => d.OpreationT);
             }
             return query.FirstOrDefaultAsync();
         }
@@ -286,7 +298,10 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
             model.EmployeeId = employee.EmployeeId;
             model.EmployeeName = employee.EmployeeName;
-            model.Image = employee.EmployeeImageUrl;
+            if (!string.IsNullOrEmpty(employee.EmployeeImageUrl))
+            {
+                model.Image = helperService.GetHost() + employee.EmployeeImageUrl;
+            }
             if (string.IsNullOrEmpty(employee.Title))
             {
                 model.Title = employee.DepartmentName;
@@ -295,19 +310,24 @@ namespace SanyaaDelivery.Application.Services
             {
                 model.Title = employee.Title;
             }
-            var reviewList = await followUpRepository.Where(d => d.Request.EmployeeId == employeeId)
+            var dateBefore15Days = DateTime.Now.AddDays(-15);
+            var reviewList = await followUpRepository.Where(d => d.Request.EmployeeId == employeeId && d.Timestamp < dateBefore15Days && d.Request.IsCompleted)
                 .Select(d => new EmployeeReviewDto
                 {
                     ClientId = d.Request.ClientId,
                     ClientName = d.Request.Client.ClientName,
-                    Rate = d.Rate.Value,
+                    Rate = d.Rate,
                     CreationTime = d.Timestamp,
                     RequestId = d.RequestId,
-                    Review = d.Review
-                }).ToListAsync();
-            if(reviewList.Count > 0)
+                    Review = ""//d.Review
+                })
+                .OrderByDescending(d => d.CreationTime)
+                .Take(50)
+                .ToListAsync();
+            if(reviewList.HasItem())
             {
-                model.Rate = reviewList.Sum(d => d.Rate) / reviewList.Count;
+                reviewList.ForEach(d => d.Rate = d.Rate.GetValueOrDefault(0));
+                model.Rate = reviewList.Sum(d => d.Rate.Value) / reviewList.Count;
             }
             model.ReviewList = reviewList;
             return model;
@@ -353,6 +373,38 @@ namespace SanyaaDelivery.Application.Services
                 EmployeeId = model.EmployeeId
             });
             return await employeeWorkplaceRepository.SaveAsync();
+        }
+
+        public async Task<int> FireEmpolyeeAsync(FireEmployeeDto model)
+        {
+            var employee = await employeeRepository.Where(d => d.EmployeeId == model.EmployeeId)
+                .Include(d => d.FiredStaffT)
+                .FirstOrDefaultAsync();
+            employee.IsFired = true;
+            if (employee.FiredStaffT.IsNull()) {
+                employee.FiredStaffT = new FiredStaffT
+                {
+                    EmployeeId = model.EmployeeId,
+                    FiredDate = DateTime.Now.EgyptTimeNow(),
+                    FiredReasons = model.Reason
+                };
+            }
+            string title = "رفد موظف";
+            string body =  $"لقد تم رفدك بسبب {model.Reason}";
+            try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, model.EmployeeId, title, body); } catch { }
+            return await employeeRepository.SaveAsync();
+        }
+
+        public async Task<int> ReturnEmployeeAsync(string employeeId)
+        {
+            var employee = await employeeRepository.Where(d => d.EmployeeId == employeeId)
+                .FirstOrDefaultAsync();
+            employee.IsFired = false;
+            await firedRepository.DeleteAsync(employeeId);
+            string title = "إعادة تعيين";
+            string body = $"لقد تم اعادة تعيينك مرة أخرى";
+            try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, employeeId, title, body); } catch { }
+            return await employeeRepository.SaveAsync();
         }
     }
 }

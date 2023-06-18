@@ -63,15 +63,21 @@ namespace SanyaaDelivery.Domain.Enum
         ProfilePicture = 2,
         NationalIdFront = 3,
         NationalIdBack = 4,
-        AppLandingItem = 5
+        AppLandingItem = 5,
+        ArmyCertificate = 6,
+        DrivingLicense = 7,
+        QualificationCertificate = 8,
+        CriminalRecord = 9,
+        ElectricReceipt = 10
     }
 
     public enum TechnicianSelectionType
     {
-        Manual,
-        Auto,
-        App,
-        Favourite
+        None = 0,
+        App = 1,
+        BroadcastAll = 2,
+        BroadcastFavourite = 3,
+        SentToApprove = 4
     }
 
     public enum PromocodeType

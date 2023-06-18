@@ -8,6 +8,7 @@ namespace SanyaaDelivery.Domain.Models
         public int ClientPointId { get; set; }
         public int ClientId { get; set; }
         public int? Points { get; set; }
+        public int? RequestId { get; set; }
         public sbyte? PointType { get; set; }
         public string Reason { get; set; }
         public DateTime? CreationDate { get; set; }

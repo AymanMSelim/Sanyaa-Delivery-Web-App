@@ -17,7 +17,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IOperationService operationService;
         private readonly CommonService commonService;
 
-        public VacationController(IVacationService vacationService, IOperationService operationService, CommonService commonService)
+        public VacationController(IVacationService vacationService, IOperationService operationService, CommonService commonService) : base(commonService)
         {
             this.vacationService = vacationService;
             this.operationService = operationService;

@@ -38,7 +38,7 @@ namespace SanyaaDelivery.API.Controllers
         public AccountController(ISystemUserService systemUserService, ITokenService tokenService,
             IAccountService accountService, IAccountRoleService accountRoleService, ISMSService smsService,
             IClientService clientService, IEmployeeService employeeService, IGeneralSetting generalSetting,
-            IRegisterService registerService, ILoginService loginService, CommonService commonService)
+            IRegisterService registerService, ILoginService loginService, CommonService commonService) : base(commonService)
         {
             this.systemUserService = systemUserService;
             this.tokenService = tokenService;
@@ -220,7 +220,11 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
+                //var s = App.Global.Serialization.Json.Serialize(model);
+                //System.IO.File.AppendAllText($@"wwwroot\timer\login.txt", s + @"\n");
                 var result = await loginService.LoginEmployeeAsync(model);
+                //var r = App.Global.Serialization.Json.Serialize(result);
+                //System.IO.File.AppendAllText($@"wwwroot\timer\login.txt", r);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -284,8 +288,8 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                if(string.IsNullOrEmpty(model.City) || string.IsNullOrEmpty(model.Governate) || string.IsNullOrEmpty(model.Region) || string.IsNullOrEmpty(model.Street)
-                    || string.IsNullOrEmpty(model.Lang) || string.IsNullOrEmpty(model.Lat)) 
+                if (string.IsNullOrEmpty(model.City) || string.IsNullOrEmpty(model.Governate) || string.IsNullOrEmpty(model.Region) || string.IsNullOrEmpty(model.Street)
+                    || string.IsNullOrEmpty(model.Lang) || string.IsNullOrEmpty(model.Lat) || string.IsNullOrEmpty(model.Description)) 
                 {
                     return Ok(ResultFactory<string>.CreateErrorResponseMessage("Data not complete"));
                 }
@@ -356,6 +360,21 @@ namespace SanyaaDelivery.API.Controllers
                 phone = commonService.RepairPhoneNumber(phone);
                 var result = await loginService.RequestOTPForLoginAsync(phone);
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<ClientT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("ResendOTP")]
+        public async Task<ActionResult<Result<OTPCodeDto>>> ResendOTP()
+        {
+            try
+            {
+                var accountId = commonService.GetAccountId();
+                var result = await registerService.ResendOTP(accountId.Value);
+                return Ok(ResultFactory<object>.CreateSuccessResponse());
             }
             catch (Exception ex)
             {

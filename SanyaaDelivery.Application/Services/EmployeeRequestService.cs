@@ -3,6 +3,7 @@ using App.Global.ExtensionMethods;
 using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
+using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
 using SanyaaDelivery.Infra.Data.Context;
 using System;
@@ -18,37 +19,24 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RequestT> requestRepository;
         private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
         private readonly IRepository<EmployeeT> employeeRepository;
+        private readonly IHelperService helperService;
         private readonly IRepository<CityT> cityRepository;
         private readonly IRepository<AddressT> addressRepository;
         private readonly IRepository<VacationT> vacationRepository;
         private readonly SanyaaDatabaseContext dbContext;
 
         public EmployeeRequestService(IRepository<RequestT> requestRepository, 
-            IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeT> employeeRepository,
+            IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeT> employeeRepository, IHelperService helperService,
             IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository, IRepository<VacationT> vacationRepository, SanyaaDatabaseContext dbContext)
         {
             this.requestRepository = requestRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
             this.employeeRepository = employeeRepository;
+            this.helperService = helperService;
             this.cityRepository = cityRepository;
             this.addressRepository = addressRepository;
             this.vacationRepository = vacationRepository;
             this.dbContext = dbContext;
-        }
-
-
-        private void GetStartAndEndTime(DateTime dateTime, int departmentId, out DateTime startTime, out DateTime endTime)
-        {
-            if (departmentId == GeneralSetting.CleaningDepartmentId)
-            {
-                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
-                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
-            }
-            else
-            {
-                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
-                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
-            }
         }
 
         private IQueryable<EmployeeT> GetFreeEmployeeConditionQuery(DateTime dateTime, int? departmentId = null, int? branchId = null, 
@@ -85,9 +73,9 @@ namespace SanyaaDelivery.Application.Services
         public Task<List<EmployeeT>> GetFreeEmployeeListByBranch(DateTime dateTime, int departmentId, int branchId, bool includeReview = false,
             bool includeClientWithReview = false, bool includeFavourite = false)
         {
-            GetStartAndEndTime(dateTime, departmentId, out DateTime startTime, out DateTime endTime);
+            var times = helperService.GetDepartmentTimeBetween(departmentId, dateTime);
             var query = GetFreeEmployeeConditionQuery(dateTime, departmentId, branchId);    
-            query = query.Where(d => d.RequestT.Count(t => t.RequestTimestamp > startTime && t.RequestTimestamp < endTime && t.IsCanceled == false) == 0);
+            query = query.Where(d => d.RequestT.Count(t => t.RequestTimestamp > times.StartTime && t.RequestTimestamp < times.EndTime && t.IsCanceled == false) == 0);
             if (includeReview)
             {
                 if (includeClientWithReview)
@@ -112,37 +100,8 @@ namespace SanyaaDelivery.Application.Services
             return await GetFreeEmployeeListByBranch(dateTime, departmentId, city.BranchId.GetValueOrDefault(0));
         }
 
-        public async Task<bool> IsThisEmployeeFree(string employeeId, DateTime dateTime)
-        {
-            if (string.IsNullOrEmpty(employeeId))
-            {
-                return true;
-            }
-            DateTime startTime;
-            DateTime endTime;
-            var departmentList = await employeeDepartmentRepository.Where(d => d.EmployeeId == employeeId)
-                .ToListAsync();
-            if(departmentList.Any(d => d.DepartmentId == GeneralSetting.CleaningDepartmentId))
-            {
-                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
-                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
-            }
-            else
-            {
-                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
-                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
-            }
-            var query = GetFreeEmployeeConditionQuery(dateTime);
-            query = query.Where(d => d.EmployeeId == employeeId);
-            query = query.Where(d => d.RequestT.Count(t => t.RequestTimestamp > startTime && t.RequestTimestamp < endTime && t.IsCanceled == false) == 0);
-            var requestCount = await query.CountAsync();
-            return requestCount == 0;
-        }
-
         public async Task<Result<EmployeeT>> ValidateEmployeeForRequest(string employeeId, DateTime dateTime, int branchId, int? departmentId = null, int? requestId = null)
         {
-            DateTime startTime;
-            DateTime endTime;
             if (string.IsNullOrEmpty(employeeId))
             {
                 return ResultFactory<EmployeeT>.CreateSuccessResponse();
@@ -158,24 +117,24 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not found");
             }
-            //if (employee.IsApproved == false)
-            //{
-            //    return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not approved");
-            //}
-            //if (employee.IsActive == false)
-            //{
-            //    return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not active");
-            //}
-            if (employee.LoginT.IsNotNull() && employee.LoginT.LoginAccountState == false)
+            if (employee.IsApproved == false)
             {
-                return ResultFactory<EmployeeT>.CreateErrorResponseMessage("Employee account not active");
+                return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not approved");
             }
+            if (employee.IsActive == false)
+            {
+                return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not active");
+            }
+            //if (employee.LoginT.IsNotNull() && employee.LoginT.LoginAccountState == false)
+            //{
+            //    return ResultFactory<EmployeeT>.CreateErrorResponseMessage("Employee account not active");
+            //}
             if (employee.FiredStaffT.IsNotNull())
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee is fired");
             }
-            var isInVacation = await vacationRepository.DbSet.AnyAsync(t => t.Day.Year == dateTime.Year && t.Day.Month == dateTime.Month && t.Day.Day == dateTime.Day);
-            if (isInVacation)
+            var isInVacation = await vacationRepository.DbSet.AnyAsync(t => t.Day.Year == dateTime.Year && t.Day.Month == dateTime.Month && t.Day.Day == dateTime.Day && t.EmployeeId == employeeId);
+            if (employee.OpreationT.OpenVacation || isInVacation)
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee in vacation");
             }
@@ -187,17 +146,8 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee branch not matched");
             }
-            if (employee.DepartmentEmployeeT.Any(d => d.DepartmentId == GeneralSetting.CleaningDepartmentId))
-            {
-                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
-                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
-            }
-            else
-            {
-                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
-                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
-            }
-            var requestQuery = requestRepository.Where(t => t.EmployeeId == employeeId && t.RequestTimestamp > startTime && t.RequestTimestamp < endTime
+            var times = helperService.GetDepartmentTimeBetween(employee.DepartmentEmployeeT.Select(d => d.DepartmentId.Value).ToList(), dateTime);
+            var requestQuery = requestRepository.Where(t => t.EmployeeId == employeeId && t.RequestTimestamp > times.StartTime && t.RequestTimestamp < times.EndTime
             && t.IsCanceled == false && t.IsCompleted == false);
             if (requestId.HasValue)
             {
@@ -213,22 +163,15 @@ namespace SanyaaDelivery.Application.Services
             return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);
         }
 
-        public async Task<List<string>> GetFreeEmployeeListAsync(DateTime dateTime, int departmentId, int branchId)
+        public async Task<List<string>> GetFreeEmployeeIdListAsync(DateTime dateTime, int departmentId, int branchId)
         {
             DateTime startTime;
             DateTime endTime;
-            if (departmentId == GeneralSetting.CleaningDepartmentId)
-            {
-                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
-                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
-            }
-            else
-            {
-                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
-                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
-            }
+            var times = helperService.GetDepartmentTimeBetween(departmentId, dateTime);
+            startTime = times.StartTime;
+            endTime = times.EndTime;
             var query = from e in dbContext.EmployeeT
-                        join o in dbContext.OpreationT on new { e.EmployeeId, OpenVacation = false, IsActive = true } equals new { o.EmployeeId, o.OpenVacation, o.IsActive }
+                        join o in dbContext.OpreationT on new { e.EmployeeId, OpenVacation = false } equals new { o.EmployeeId, o.OpenVacation }
                         join ew in dbContext.EmployeeWorkplacesT on new { e.EmployeeId, BranchId = branchId } equals new { ew.EmployeeId, ew.BranchId }
                         join de in dbContext.DepartmentEmployeeT on new { DEmployeeId = e.EmployeeId, DDepartmentId = departmentId } equals new { DEmployeeId = de.EmployeeId, DDepartmentId = de.DepartmentId.Value }
                         join fs in dbContext.FiredStaffT on e.EmployeeId equals fs.EmployeeId into fsJoin
@@ -248,6 +191,19 @@ namespace SanyaaDelivery.Application.Services
 
             var distinctEmployeeIds = await query.Distinct().ToListAsync();
             return distinctEmployeeIds;
+        }
+
+        public async Task<List<FreeEmployeeDto>> GetFreeEmployeeListAsync(DateTime dateTime, int departmentId, int branchId)
+        {
+            var employeeIdList = await GetFreeEmployeeIdListAsync(dateTime, departmentId, branchId);
+            return await employeeRepository.Where(d => employeeIdList.Contains(d.EmployeeId))
+                .Select(d => new FreeEmployeeDto
+                {
+                    EmployeeId = d.EmployeeId,
+                    Address = d.EmployeeCity,
+                    EmployeeName = d.EmployeeName,
+                    PhoneNumber = d.EmployeePhone
+                }).ToListAsync();
         }
     }
 }

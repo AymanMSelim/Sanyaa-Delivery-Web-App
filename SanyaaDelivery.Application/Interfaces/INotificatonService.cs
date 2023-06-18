@@ -9,6 +9,7 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface INotificatonService
     {
+        Task<Result<AppNotificationT>> SendFirebaseNotificationAsync(Domain.Enum.AccountType accountType, string referenceId, string title, string body);
         Task<Result<AppNotificationT>> SendFirebaseNotificationAsync(AppNotificationT notification);
         Task<List<AppNotificationT>> GetListAsync(int accountId, DateTime? startDate = null, DateTime? endDate = null);
     }

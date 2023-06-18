@@ -20,5 +20,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<Result<object>> ApproveRequestAsync(BroadcastRequestActionDto model);
         Task<Result<RejectRequestT>> RejectRequestAsync(BroadcastRequestActionDto model);
         Task<Result<List<BroadcastRequestT>>> BroadcastAsync(int requestId);
+        Task BroadcastTask();
     }
 }

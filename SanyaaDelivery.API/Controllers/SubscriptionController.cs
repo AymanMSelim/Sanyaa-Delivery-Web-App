@@ -24,7 +24,7 @@ namespace SanyaaDelivery.API.Controllers
 
         public SubscriptionController(ISubscriptionService subscriptionService,
             IClientSubscriptionService clientSubscriptionService, CommonService commonService,
-            IDayWorkingTimeService dayWorkingTimeService, IMapper mapper)
+            IDayWorkingTimeService dayWorkingTimeService, IMapper mapper) : base(commonService)
         {
             this.subscriptionService = subscriptionService;
             this.clientSubscriptionService = clientSubscriptionService;

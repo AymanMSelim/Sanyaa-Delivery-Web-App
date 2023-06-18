@@ -1,5 +1,6 @@
 ﻿using App.Global.DTOs;
 using App.Global.ExtensionMethods;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SanyaaDelivery.Application.Interfaces;
@@ -16,7 +17,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IAppSettingService appSettingService;
 
-        public SettingController(IAppSettingService appSettingService)
+        public SettingController(IAppSettingService appSettingService, CommonService commonService) : base(commonService)
         {
             this.appSettingService = appSettingService;
         }
@@ -64,7 +65,7 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
             }
         }
-
+        [AllowAnonymous]
         [HttpGet("IsTestMode")]
         public async Task<ActionResult<Result<bool>>> IsTestMode()
         {

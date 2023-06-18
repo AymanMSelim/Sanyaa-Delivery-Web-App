@@ -3,6 +3,7 @@ using App.Global.ExtensionMethods;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SanyaaDelivery.API.Dto;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
@@ -22,7 +23,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly CommonService commonService;
         private readonly IAttachmentService attachmentService;
 
-        public AttachmentController(IHostingEnvironment hostEnvironment, CommonService commonService, IAttachmentService attachmentService)
+        public AttachmentController(IHostingEnvironment hostEnvironment, CommonService commonService, IAttachmentService attachmentService) : base(commonService)
         {
             this.hostEnvironment = hostEnvironment;
             this.commonService = commonService;
@@ -62,23 +63,17 @@ namespace SanyaaDelivery.API.Controllers
            
 		}
 
-        [HttpPost("Delete/{attachmentId}")]
-        public async Task<ActionResult<Result<AttachmentT>>> Delete(int attachmentId)
+        [HttpPost("Delete")]
+        public async Task<ActionResult<Result<object>>> Delete(IntIdDto model)
         {
             try
             {
-                var attachment = await attachmentService.GetAsync(attachmentId);
-                var type = ((Domain.Enum.AttachmentType)attachment.AttachmentType).ToString();
-                if (System.IO.File.Exists($@"{hostEnvironment.WebRootPath}\Attachment\{type}\{attachment.ReferenceId}\{attachment.FileName}"))
-                {
-                    System.IO.File.Delete($@"{hostEnvironment.WebRootPath}\Attachment\{type}\{attachment.ReferenceId}\{attachment.FileName}");
-                }
-                await attachmentService.DeleteAsync(attachmentId);
-                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(null, App.Global.Enums.ResultStatusCode.RecordDeletedSuccessfully));
+                var affectedRows =  await attachmentService.DeleteAsync(model.Id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
 
@@ -150,8 +145,59 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpPost("AddForm")]
+        public async Task<ActionResult<Result<AttachmentT>>> AddForm([FromForm]AddFormAttachmentDto model)
+        {
+            try
+            {
+                if (commonService.IsFileValid(model.File) == false)
+                {
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessage("File not valid"));
+                }
+                var fileExtention = System.IO.Path.GetExtension(model.FileName);
+                fileExtention = fileExtention.Replace(".", "");
+                var bytes = commonService.ConvertFileToByteArray(model.File);
+                var attachment = await attachmentService.SaveFileAsync(bytes, model.ReferenceType,
+                    model.ReferenceId, fileExtention);
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachment, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("AddEmployeeAttachment")]
+        public async Task<ActionResult<Result<AttachmentT>>> AddEmployeeAttachment([FromForm] AddEmployeeAttachmentDto model)
+        {
+            try
+            {
+                var employeeId = commonService.GetEmployeeId(model.EmployeeId);
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<EmpOptionalAttachmentIndexDto>.ReturnEmployeeError());
+                }
+                if (commonService.IsFileValid(model.File) == false)
+                {
+                    return Ok(ResultFactory<AttachmentT>.CreateErrorResponseMessage("File not valid"));
+                }
+                model.EmployeeId = employeeId;
+                var fileExtention = System.IO.Path.GetExtension(model.File.FileName);
+                fileExtention = fileExtention.Replace(".", "");
+                var byteArray = commonService.ConvertFileToByteArray(model.File);
+                var attachment = await attachmentService.SaveFileAsync(byteArray, model.Type,
+                    model.EmployeeId, fileExtention);
+                return Ok(ResultFactory<AttachmentT>.CreateSuccessResponse(attachment, App.Global.Enums.ResultStatusCode.RecordAddedSuccessfully));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<AttachmentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+
         [HttpGet("GetList")]
-        public async Task<ActionResult<Result<List<AttachmentT>>>> GetList(int referenceType, string referenceId = null)
+        public async Task<ActionResult<Result<List<AttachmentT>>>> GetList(int? referenceType = null, string referenceId = null)
         {
             try
             {
@@ -212,33 +258,30 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        //[HttpGet("GetEmpOptionalAttachmentIndex/{employeeId?}")]
-        //public async Task<ActionResult<Result<EmpOptionalAttachmentIndexDto>>> GetEmpOptionalAttachmentIndex(string employeeId)
-        //{
-        //    try
-        //    {
-        //        employeeId = commonService.GetEmployeeId(employeeId);
-        //        if (string.IsNullOrEmpty(employeeId))
-        //        {
-        //            return Ok(ResultFactory<EmpOptionalAttachmentIndexDto>.ReturnEmployeeError());
-        //        }
-        //        var attachmentList = new List<AttachmentT>();
-        //        var cartId = await commonService.GetCurrentClientCartIdAsync(clientId);
-        //        if (cartId.IsNotNull())
-        //        {
-        //            attachmentList = await attachmentService.GetListAsync(((int)Domain.Enum.AttachmentType.CartImage), cartId.ToString());
-        //        }
-        //        foreach (var item in attachmentList)
-        //        {
-        //            item.FilePath = $"{hostEnvironment.WebRootPath}{item.FilePath}";
-        //        }
-        //        return Ok(ResultFactory<List<AttachmentT>>.CreateSuccessResponse(attachmentList));
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, ResultFactory<List<AttachmentT>>.CreateExceptionResponse(ex));
-        //    }
-        //}
+        [HttpGet("GetEmpOptionalAttachmentIndex/{employeeId?}")]
+        public async Task<ActionResult<Result<EmpOptionalAttachmentIndexDto>>> GetEmpOptionalAttachmentIndex(string employeeId = null)
+        {
+            try
+            {
+                employeeId = commonService.GetEmployeeId(employeeId);
+                if (string.IsNullOrEmpty(employeeId))
+                {
+                    return Ok(ResultFactory<EmpOptionalAttachmentIndexDto>.ReturnEmployeeError());
+                }
+                var index = await attachmentService.GetEmpOptionalAttachmentIndexAsync(employeeId);
+                foreach (var item in index.ItemList)
+                {
+                    if (string.IsNullOrEmpty(item.FilePath)) { continue; }
+                    item.FileUrl = $"{commonService.GetHost()}{item.FilePath}";
+                }
+                return Ok(ResultFactory<EmpOptionalAttachmentIndexDto>.CreateSuccessResponse(index));
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmpOptionalAttachmentIndexDto>.CreateExceptionResponse(ex));
+            }
+        }
 
 
 

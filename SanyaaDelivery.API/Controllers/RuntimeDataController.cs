@@ -15,7 +15,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IRuntimeDataService runtimeDataService;
 
-        public RuntimeDataController(IRuntimeDataService runtimeDataService)
+        public RuntimeDataController(IRuntimeDataService runtimeDataService, CommonService commonService) : base(commonService)
         {
             this.runtimeDataService = runtimeDataService;
         }

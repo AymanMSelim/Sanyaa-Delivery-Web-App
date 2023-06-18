@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using App.Global.DateTimeHelper;
 using SanyaaDelivery.Infra.Data;
 using App.Global.SMS;
+using SanyaaDelivery.Domain.Enum;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -24,12 +25,13 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<ClientPhonesT> clientPhoneRepository;
         private readonly IUnitOfWork unitOfWork;
         private readonly ISMSService smsService;
+        private readonly INotificatonService notificatonService;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly ITokenService tokenService;
         private readonly IRegisterService registerService;
 
         public LoginService(ISystemUserService systemUserService, IRepository<AccountT> accountRepository, IRepository<ClientT> clientRepository,
-            IRepository<ClientPhonesT> clientPhoneRepository, IUnitOfWork unitOfWork, ISMSService smsService,
+            IRepository<ClientPhonesT> clientPhoneRepository, IUnitOfWork unitOfWork, ISMSService smsService, INotificatonService notificatonService,
             IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IRegisterService registerService)
         {
             this.systemUserService = systemUserService;
@@ -38,9 +40,19 @@ namespace SanyaaDelivery.Application.Services
             this.clientPhoneRepository = clientPhoneRepository;
             this.unitOfWork = unitOfWork;
             this.smsService = smsService;
+            this.notificatonService = notificatonService;
             this.employeeRepository = employeeRepository;
             this.tokenService = tokenService;
             this.registerService = registerService;
+        }
+
+        private Result<EmployeeLoginResponseDto> ValidateEmployeeLogin(EmployeeT employee)
+        {
+            if (employee.IsFired)
+            {
+                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("This employee if fired!");
+            }
+            return ResultFactory<EmployeeLoginResponseDto>.CreateSuccessResponse();
         }
 
         public async Task<Result<EmployeeLoginResponseDto>> LoginEmployeeAsync(LoginEmployeeDto model)
@@ -50,16 +62,26 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeLoginResponseDto>.CreateEmptyDataErrorMessageFD();
             }
-            var account = await accountRepository.DbSet.FirstOrDefaultAsync(d => d.AccountUsername == model.UserName);
+            var employee = await employeeRepository.Where(d => d.EmployeePhone == model.UserName)
+                .FirstOrDefaultAsync();
+            if (employee.IsNull())
+            {
+                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD(message: "Invalid username or password", resultStatusCode: App.Global.Enums.ResultStatusCode.InvalidUserOrPassword);
+            }
+            var account = await accountRepository.DbSet.FirstOrDefaultAsync(d => d.AccountUsername == model.UserName && d.AccountTypeId == (int)AccountType.Employee);
+            if (account.IsNull())
+            {
+                account = await registerService.RegisterAccountAsync(employee.EmployeeId, employee.EmployeePhone, employee.EmployeeId, (int)AccountType.Employee, 1, GeneralSetting.EmployeeAppDefaultRoleId, model.FCMToken);
+            }
             var validationCredentialResult = ValidateAccountCredential(account, model.Password);
             if (validationCredentialResult.IsFail)
             {
                 return validationCredentialResult.Convert(response);
             }
-            var employee = await employeeRepository.GetAsync(account.AccountReferenceId);
-            if (employee.IsNull())
+            var employeeValidation = ValidateEmployeeLogin(employee);
+            if (employeeValidation.IsFail)
             {
-                return ResultFactory<EmployeeLoginResponseDto>.CreateErrorResponseMessageFD("We cannot find this employee's data, please contact us");
+                return employeeValidation;
             }
             var registerStep = await registerService.GetEmployeeRegisterStepAsync(account.AccountReferenceId);
             response.NextRegisterStep = registerStep.Data.NextStep;
@@ -90,6 +112,14 @@ namespace SanyaaDelivery.Application.Services
             //    response.NextRegisterStep = registerStep.Data.NextStep;
             //    response.NextRegisterStepDescription = registerStep.Data.NextStepDescription;
             //}
+            if(response.NextRegisterStep == (int)Domain.Enum.EmployeeRegisterStep.ConfirmMobile)
+            {
+                try
+                {
+                    await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, account.AccountReferenceId, "OTP Code", $"Your OTP is {account.MobileOtpCode}");
+                }
+                catch { }
+            }
             response.Employee = employee;
             response.AccountId = account.AccountId;
             response.FCMToken = account.FcmToken;
@@ -137,7 +167,7 @@ namespace SanyaaDelivery.Application.Services
             return ResultFactory<AccountT>.CreateSuccessResponse();
         }
 
-        public async Task<Result<SystemUserT>> SystemUserLoginAsync(string userName, string password)
+        public async Task<Result<SystemUserT>> SystemUserLoginAsync(string userName, string password, int? version = null)
         {
             var systemUser = await systemUserService.Get(userName);
             if (systemUser.IsNull())

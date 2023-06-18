@@ -18,7 +18,8 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IDeparmentSub0Service deparmentSub0Service;
         private readonly IDeparmentSub1Service deparmentSub1Service;
 
-        public DepartmentController(IDepartmentService departmentService, IDeparmentSub0Service deparmentSub0Service, IDeparmentSub1Service deparmentSub1Service)
+        public DepartmentController(IDepartmentService departmentService, IDeparmentSub0Service deparmentSub0Service,
+            IDeparmentSub1Service deparmentSub1Service, CommonService commonService) : base(commonService)
         {
             this.departmentService = departmentService;
             this.deparmentSub0Service = deparmentSub0Service;

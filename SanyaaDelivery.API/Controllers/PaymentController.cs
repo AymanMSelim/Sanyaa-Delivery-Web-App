@@ -16,7 +16,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IRequestUtilityService requestUtilityService;
         private readonly CommonService commonService;
 
-        public PaymentController(IRequestUtilityService requestUtilityService, CommonService commonService)
+        public PaymentController(IRequestUtilityService requestUtilityService, CommonService commonService) : base(commonService)
         {
             this.requestUtilityService = requestUtilityService;
             this.commonService = commonService;

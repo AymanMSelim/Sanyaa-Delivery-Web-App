@@ -29,7 +29,7 @@ namespace SanyaaDelivery.API.Controllers
         public RequestController(IRequestService requestService, 
             CommonService commonService,
             IRequestStatusService requestStatusService,
-            IMapper mapper, IRequestHelperService requestHelperService, IRequestUtilityService requestUtilityService)
+            IMapper mapper, IRequestHelperService requestHelperService, IRequestUtilityService requestUtilityService) : base(commonService)
         {
             this.requestService = requestService;
             this.commonService = commonService;
@@ -99,6 +99,26 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
+
+
+        [HttpPost("Update")]
+        public async Task<ActionResult<Result<object>>> Update(RequestT model)
+        {
+            try
+            {
+                if (model.IsNull())
+                {
+                    return Ok(ResultFactory<object>.CreateErrorResponse(null, App.Global.Enums.ResultStatusCode.NullableObject));
+                }
+                int affectedRecords = await requestService.UpdateAsync(model);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRecords));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
 
         [HttpPost("UpdateAddress")]
         public async Task<ActionResult<Result<object>>> UpdateAddress(UpdateRequestAddressDto model)
@@ -466,12 +486,21 @@ namespace SanyaaDelivery.API.Controllers
             object request = null;
             try
             {
+                if(commonService.IsViaEmpApp())
+                {
+                    var canEdit = await requestUtilityService.IsEmployeeCanEditRequest(model.RequestId);
+                    if(canEdit is false)
+                    {
+                        return ResultFactory<object>.CreateErrorResponseMessageFD("You can't update this request now");
+                    }
+                }
                 var service = new RequestServicesT
                 {
                     RequestId = model.RequestId,
                     AddTimestamp = DateTime.Now.EgyptTimeNow(),
                     RequestServicesQuantity = model.ServiceQuantity,
-                    ServiceId = model.ServiceId
+                    ServiceId = model.ServiceId,
+                    SystemUserId = commonService.GetSystemUserId()
                 };
                 var result =  await requestService.AddUpdateServiceAsync(service);
                 if (result.IsFail)
@@ -493,6 +522,7 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
+        
         [AllowAnonymous]
         [HttpPost("AddUpdateServiceO")]
         public async Task<ActionResult<Result<RequestServicesT>>> AddUpdateServiceO(AddUpdateeRequestServiceODto model)
@@ -506,34 +536,6 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<RequestServicesT>.CreateExceptionResponse(ex));
-            }
-        }
-
-        [HttpPost("SetReviewed")]
-        public async Task<ActionResult<Result<object>>> SetReviewed(int requestId)
-        {
-            try
-            {
-                var result = await requestUtilityService.SetReviewedAsync(requestId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
-            }
-        }
-
-        [HttpPost("SetAsUnReviewed")]
-        public async Task<ActionResult<Result<object>>> SetAsUnReviewed(int requestId)
-        {
-            try
-            {
-                var result = await requestUtilityService.SetAsUnReviewedAsync(requestId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
 
@@ -569,6 +571,35 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpPost("SetReviewed")]
+        public async Task<ActionResult<Result<object>>> SetReviewed(IntIdDto model)
+        {
+            try
+            {
+                var result = await requestUtilityService.SetReviewedAsync(model.Id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SetAsUnReviewed")]
+        public async Task<ActionResult<Result<object>>> SetAsUnReviewed(IntIdDto model)
+        {
+            try
+            {
+                var result = await requestUtilityService.SetAsUnReviewedAsync(model.Id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+
         [HttpPost("ConfirmArrival")]
         public async Task<ActionResult<Result<EmpAppRequestDetailsDto>>> ConfirmArrival(IntIdDto model)
         {
@@ -588,7 +619,7 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("FollowUp")]
-        public async Task<ActionResult<Result<object>>> FollowUp(FollowUpT followUp)
+        public async Task<ActionResult<Result<FollowUpT>>> FollowUp(FollowUpT followUp)
         {
             try
             {
@@ -598,7 +629,7 @@ namespace SanyaaDelivery.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+                return StatusCode(500, ResultFactory<FollowUpT>.CreateExceptionResponse(ex));
             }
         }
     }

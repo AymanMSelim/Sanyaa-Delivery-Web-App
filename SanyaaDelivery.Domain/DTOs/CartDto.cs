@@ -273,7 +273,7 @@ namespace SanyaaDelivery.Domain.DTOs
             if(NetPrice < MinimumCharge)
             {
                 IsLessThanMinimumCharge = true;
-                MinimumChargeAdditionAmount = NetPrice - MinimumCharge;
+                MinimumChargeAdditionAmount = MinimumCharge - NetPrice;
                 NetPrice = MinimumCharge;
             }
         }

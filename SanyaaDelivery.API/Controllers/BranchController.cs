@@ -14,7 +14,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IBranchService branchService;
 
-        public BranchController(IBranchService branchService)
+        public BranchController(IBranchService branchService, CommonService commonService) : base(commonService)
         {
             this.branchService = branchService;
         }

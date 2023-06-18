@@ -15,7 +15,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly ITranslationService translationService;
 
-        public TranslatorController(ITranslationService translationService)
+        public TranslatorController(ITranslationService translationService, CommonService commonService) : base(commonService)
         {
             this.translationService = translationService;
         }

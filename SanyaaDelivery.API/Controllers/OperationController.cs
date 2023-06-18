@@ -15,11 +15,13 @@ namespace SanyaaDelivery.API.Controllers
     public class OperationController : APIBaseAuthorizeController
     {
         private readonly IOperationService operationService;
+        private readonly IEmployeeRequestService employeeRequestService;
         private readonly CommonService commonService;
 
-        public OperationController(IOperationService operationService, CommonService commonService)
+        public OperationController(IOperationService operationService, IEmployeeRequestService employeeRequestService, CommonService commonService) : base(commonService)
         {
             this.operationService = operationService;
+            this.employeeRequestService = employeeRequestService;
             this.commonService = commonService;
         }
 
@@ -247,7 +249,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 else
                 {
-                    var result = await operationService.RejectBroadcastRequestAsync(model);
+                    var result = await operationService.RejectRequestAsync(model);
                     return Ok(result);
                 }
             }
@@ -257,27 +259,6 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
-        [HttpGet("GetVacationIndex/{employeeId?}")]
-        public async Task<ActionResult<Result<AppLandingIndexDto>>> GetVacationIndex(string employeeId = null)
-        {
-            try
-            {
-                if (commonService.IsViaApp())
-                {
-                    employeeId = commonService.GetEmployeeId(employeeId);
-                }
-                if (string.IsNullOrEmpty(employeeId))
-                {
-                    return Ok(ResultFactory<AppLandingIndexDto>.ReturnEmployeeError());
-                }
-                var model = await operationService.GetAppLandingIndexAsync(employeeId);
-                return Ok(ResultFactory<AppLandingIndexDto>.CreateSuccessResponse(model));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ResultFactory<AppLandingIndexDto>.CreateExceptionResponse(ex));
-            }
-        }
 
         [HttpPost("UpdatePreferredWorkingHour")]
         public async Task<ActionResult<Result<object>>> UpdatePreferredWorkingHour(UpdatePreferredWorkingHourDto model)
@@ -312,6 +293,20 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<List<BroadcastRequestT>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpGet("GetFreeEmployeeList")]
+        public async Task<ActionResult<Result<List<FreeEmployeeDto>>>> GetFreeEmployeeList(DateTime time, int departmentId, int branchId)
+        {
+            try
+            {
+                var list = await employeeRequestService.GetFreeEmployeeListAsync(time, departmentId, branchId);
+                return Ok(ResultFactory<List<FreeEmployeeDto>>.CreateSuccessResponse(list));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<FreeEmployeeDto>>.CreateExceptionResponse(ex));
             }
         }
     }

@@ -34,6 +34,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.CreationTime <= endDate.Value);
             }
+            query = query.OrderByDescending(d => d.CreationTime);
             return query.ToListAsync();
         }
 
@@ -59,6 +60,20 @@ namespace SanyaaDelivery.Application.Services
                 await App.Global.Firebase.FirebaseMessaging.SendToEmpAsync(account.FcmToken, notification.Title, notification.Body, notification.Image);
             }
             return ResultFactory<AppNotificationT>.CreateSuccessResponse(notification);
+        }
+
+        public async Task<Result<AppNotificationT>> SendFirebaseNotificationAsync(Domain.Enum.AccountType accountType, string referenceId, string title, string body)
+        {
+            int accountTypeInt = (int)accountType;
+            var accountId = await accountRepository.Where(d => d.AccountTypeId == accountTypeInt && d.AccountReferenceId == referenceId)
+                .Select(d =>  d.AccountId)
+                .FirstOrDefaultAsync();
+            return await SendFirebaseNotificationAsync(new AppNotificationT
+            {
+                AccountId = accountId,
+                Body = body,
+                Title = title,
+            });
         }
     }
 }

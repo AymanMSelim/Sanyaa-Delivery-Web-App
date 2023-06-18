@@ -21,7 +21,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IServiceService serviceService;
         private readonly CommonService commonService;
 
-        public AppLandingScreenController(IAppLandingScreenService landingScreenService, IServiceService serviceService, CommonService commonService)
+        public AppLandingScreenController(IAppLandingScreenService landingScreenService, IServiceService serviceService, CommonService commonService) : base(commonService)
         {
             this.landingScreenService = landingScreenService;
             this.serviceService = serviceService;

@@ -22,7 +22,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly CommonService commonService;
 
         public FawryController(IFawryService fawryService, IConfiguration configuration,
-            IRequestService orderService, IEmployeeService employeeService, CommonService commonService)
+            IRequestService orderService, IEmployeeService employeeService, CommonService commonService) : base(commonService)
         {
             this.fawryService = fawryService;
             this.configuration = configuration;

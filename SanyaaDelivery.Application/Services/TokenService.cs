@@ -73,8 +73,8 @@ namespace SanyaaDelivery.Application.Services
             {
                 SigningCredentials = creds,
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.EgyptTimeNow().AddHours(1)
-                //Expires = DateTime.Now.EgyptTimeNow().AddDays(GeneralSetting.TokenExpireInDays)
+                //Expires = DateTime.Now.EgyptTimeNow().AddHours(1)
+                Expires = DateTime.Now.EgyptTimeNow().AddDays(GeneralSetting.TokenExpireInDays)
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDiscreptor);

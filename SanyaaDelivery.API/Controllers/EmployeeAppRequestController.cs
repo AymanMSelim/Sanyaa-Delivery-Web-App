@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using App.Global.ExtensionMethods;
+using SanyaaDelivery.Application;
 
 namespace SanyaaDelivery.API.Controllers
 {
@@ -18,6 +19,11 @@ namespace SanyaaDelivery.API.Controllers
             try
             {
                 var list = await requestService.GetAppList(employeeId: employeeId, status: status);
+                if (list.HasItem())
+                {
+                    list.RemoveAll(d => d.RequestStatus == Domain.Enum.RequestStatus.Broadcast.ToString());
+                    list.RemoveAll(d => d.RequestStatus == Domain.Enum.RequestStatus.WaitingApprove.ToString());
+                }
                 var mapList = mapper.Map<List<AppRequestDto>>(list);
                 return ResultFactory<List<AppRequestDto>>.CreateSuccessResponse(mapList);
             }
@@ -45,8 +51,6 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<List<RequestGroupStatusDto>>.CreateExceptionResponse(ex));
             }
         }
-
-
 
         [HttpGet("GetEmpAppRequestDetails/{requestId}")]
         public async Task<ActionResult<Result<EmpAppRequestDetailsDto>>> GetEmpAppRequestDetails(int requestId)

@@ -10,7 +10,7 @@ namespace SanyaaDelivery.Domain.OtherModels
         public int ClientId { get; set; }
         public string ClientName { get; set; }
         public string Review { get; set; }
-        public sbyte Rate { get; set; }
+        public sbyte? Rate { get; set; }
         public DateTime CreationTime { get; set; }
     }
 

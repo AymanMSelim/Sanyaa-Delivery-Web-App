@@ -16,7 +16,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly ICleaningSubscriberService subscriberService;
 
-        public CleaningSubscriberController(ICleaningSubscriberService subscriberService)
+        public CleaningSubscriberController(ICleaningSubscriberService subscriberService, CommonService commonService) : base(commonService)
         {
             this.subscriberService = subscriberService;
         }

@@ -99,12 +99,48 @@ namespace SanyaaDelivery.Application.Services
                 isRootTransaction = unitOfWork.StartTransaction();
                 var clientPoint = await GetAsync(id);
                 await repo.DeleteAsync(id);
-                await clientService.WidthrawPointAsync(clientPoint.ClientId, clientPoint.Points.Value);
+                if(clientPoint.PointType == (sbyte)ClientPointType.Add)
+                {
+                    await clientService.WidthrawPointAsync(clientPoint.ClientId, clientPoint.Points.Value);
+                }
+                else
+                {
+                    await clientService.AddPointAsync(clientPoint.ClientId, clientPoint.Points.Value);
+                }
                 if (isRootTransaction)
                 {
                     return await unitOfWork.CommitAsync(false);
                 }
                 return (int)App.Global.Enums.ResultStatusCode.Success;
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                App.Global.Logging.LogHandler.PublishException(ex);
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
+        }
+
+        public async Task<int> DeletetByRequestIdAsync(int id)
+        {
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                var clientPoint = await repo.Where(d => d.RequestId == id).FirstOrDefaultAsync();
+                if (clientPoint.IsNull()) 
+                {
+                    return (int)App.Global.Enums.ResultStatusCode.Success;
+                }
+                return await DeletetAsync(clientPoint.ClientPointId);
             }
             catch (Exception ex)
             {

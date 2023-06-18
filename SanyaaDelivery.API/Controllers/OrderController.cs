@@ -28,7 +28,7 @@ namespace SanyaaDelivery.API.Controllers
 
         public OrderController(IRequestService requestService, 
             CommonService commonService, ICartService cartService, 
-            IClientService clientService, ICityService cityService, IMapper mapper)
+            IClientService clientService, ICityService cityService, IMapper mapper, CommonService commonService1) : base(commonService)
         {
             this.requestService = requestService;
             this.commonService = commonService;

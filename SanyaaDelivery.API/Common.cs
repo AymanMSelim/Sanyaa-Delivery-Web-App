@@ -27,10 +27,12 @@ namespace SanyaaDelivery.API
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IRepository<AccountT> accountRepository;
         private readonly IRepository<OpreationT> operationRepository;
+        private readonly IHelperService helperService;
 
         public CommonService(IHttpContextAccessor context, ICartService cartService, 
             IClientService clientService, ICityService cityService, IGeneralSetting generalSetting, IRepository<CartT> cartRepository,
-            IRepository<EmployeeT> employeeRepository, IRepository<AccountT> accountRepository, IRepository<OpreationT> operationRepository)
+            IRepository<EmployeeT> employeeRepository, IRepository<AccountT> accountRepository, IRepository<OpreationT> operationRepository, 
+            IHelperService helperService)
         {
             this.context = context;
             this.cartService = cartService;
@@ -40,10 +42,13 @@ namespace SanyaaDelivery.API
             this.employeeRepository = employeeRepository;
             this.accountRepository = accountRepository;
             this.operationRepository = operationRepository;
+            this.helperService = helperService;
             if (context.HttpContext.User.Identity.IsAuthenticated)
             {
                 generalSetting.CurrentIsViaApp = IsViaApp();
             }
+            helperService.SetHost(GetHost());
+            helperService.SetSystemUser(GetSystemUserId());
         }
 
         public int? GetClientId(int? clientId = null)

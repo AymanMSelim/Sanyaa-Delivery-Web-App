@@ -142,7 +142,7 @@ namespace SanyaaDelivery.Application.Services
                 clientCalendarList.Add(clientCalnder);
                 if (isCleaningEmployee)
                 {
-                    tempTime = new DateTime(tempTime.Year, tempTime.Month, tempTime.Day + 1, 9, 0, 0);
+                    tempTime = tempTime.AddDays(1); 
                 }
                 else
                 {

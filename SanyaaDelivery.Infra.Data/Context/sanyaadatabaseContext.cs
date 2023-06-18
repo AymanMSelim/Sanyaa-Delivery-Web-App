@@ -220,6 +220,10 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.FcmToken)
                     .HasColumnName("fcm_token")
+                    .HasColumnType("text");  
+                
+                entity.Property(e => e.Description)
+                    .HasColumnName("description")
                     .HasColumnType("text");
 
                 entity.Property(e => e.IsActive)
@@ -1078,6 +1082,10 @@ namespace SanyaaDelivery.Infra.Data.Context
                 entity.Property(e => e.Points)
                     .HasColumnName("points")
                     .HasColumnType("int(11)");
+
+                entity.Property(e => e.RequestId)
+                   .HasColumnName("request_id")
+                   .HasColumnType("int(11)");
 
                 entity.Property(e => e.Reason)
                     .HasColumnName("reason")
@@ -3508,6 +3516,10 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("service_point")
                     .HasColumnType("int(11)");
 
+                entity.Property(e => e.SystemUserId)
+                   .HasColumnName("system_user_id")
+                   .HasColumnType("int(11)");
+
                 entity.Property(e => e.ServicePrice)
                     .HasColumnName("service_price")
                     .HasColumnType("decimal(10,2)");
@@ -4236,11 +4248,11 @@ namespace SanyaaDelivery.Infra.Data.Context
 
                 entity.Property(e => e.CompanyDiscountPercentage)
                     .HasColumnName("company_discount_percentage")
-                    .HasColumnType("decimal(10,2)");
+                    .HasColumnType("decimal(18,8)");
 
                 entity.Property(e => e.DiscountPercentage)
                     .HasColumnName("discount_percentage")
-                    .HasColumnType("decimal(10,2)");
+                    .HasColumnType("decimal(18,8)");
 
                 entity.Property(e => e.Sequence)
                     .HasColumnName("sequence")

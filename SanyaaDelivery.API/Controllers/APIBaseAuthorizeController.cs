@@ -12,6 +12,9 @@ namespace SanyaaDelivery.API.Controllers
     [Authorize]
     public class APIBaseAuthorizeController : APIBaseController
     {
-       
+        public APIBaseAuthorizeController(CommonService commonService) : base(commonService)
+        {
+
+        }
     }
 }

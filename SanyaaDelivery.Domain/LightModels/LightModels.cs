@@ -22,6 +22,8 @@ namespace SanyaaDelivery.Domain.LightModels
         public string EmployeeId { get; set; }
         public string EmployeeName { get; set; }
         public int? SubscriptionId { get; set; }
+        public string Address { get; set; }
+        public string PhoneNumber { get; set; }
     }
 
     public class CountryLight

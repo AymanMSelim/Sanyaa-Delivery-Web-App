@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using App.Global.ExtensionMethods;
+using Microsoft.Extensions.Configuration;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Enum;
 using SanyaaDelivery.Domain.Models;
@@ -120,6 +121,21 @@ namespace SanyaaDelivery.Application
                 .RequestStatusId;
         }
 
+        public static string GetSettingValue(string key)
+        {
+            if (_appSettingList.IsEmpty())
+            {
+                return string.Empty;
+            }
+            var setting = _appSettingList.FirstOrDefault(d => d.SettingKey.ToLower() == key.ToLower());
+            if (setting.IsNotNull())
+            {
+                return setting.SettingValue;
+            }
+            return string.Empty;
+        }
+
+
         public static RequestStatusT GetRequestStatus(RequestStatus requeststatus)
         {
             return _requestStatusList.FirstOrDefault(d => d.RequestStatusName.ToLower() == requeststatus.ToString().ToLower());
@@ -162,7 +178,7 @@ namespace SanyaaDelivery.Application
 
         private const int DefaultCleaningDepartmentId = 12;
 
-        private const int DefaultRequestExcutionHours = 3;
+        private const int DefaultRequestExcutionHours = 1;
 
         private const int DefaultOTPExpireMinutes = 15;
 

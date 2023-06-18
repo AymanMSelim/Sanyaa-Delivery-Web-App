@@ -16,7 +16,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IEmployeeInsuranceService employeeInsuranceService;
         private readonly CommonService commonService;
 
-        public EmployeeInsuranceController(IEmployeeInsuranceService employeeInsuranceService, CommonService commonService)
+        public EmployeeInsuranceController(IEmployeeInsuranceService employeeInsuranceService, CommonService commonService) : base(commonService)
         {
             this.employeeInsuranceService = employeeInsuranceService;
             this.commonService = commonService;

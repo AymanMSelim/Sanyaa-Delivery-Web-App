@@ -26,6 +26,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<AccountT> RegisterClientAccountAsync(ClientT client, Domain.DTOs.ClientRegisterDto clientRegisterDto);
         Task<AccountT> RegisterAccountAsync(string id, string userName, string password, int accountTypeId, 
             int systemUserId, int roleId, string fcmToken = null, bool isGuest = false, bool isActive = true, bool requireConfirmMobile = true);
-
+        Task<Result<OTPCodeDto>> ResendOTP(int accountId);
     }
 }

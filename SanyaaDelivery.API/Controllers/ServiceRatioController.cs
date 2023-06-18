@@ -14,7 +14,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IServiceRatioService serviceRatioService;
 
-        public ServiceRatioController(IServiceRatioService serviceRatioService)
+        public ServiceRatioController(IServiceRatioService serviceRatioService, CommonService commonService) : base(commonService)
         {
             this.serviceRatioService = serviceRatioService;
         }

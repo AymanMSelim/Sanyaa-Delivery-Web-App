@@ -99,6 +99,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<BroadcastRequestT>, BroadcastRequestRepository>();
             services.AddScoped<IRepository<RejectRequestT>, RequestRejectedRepository>();
             services.AddScoped<IRepository<AppNotificationT>, AppNotificationRepository>();
+            services.AddScoped<IRepository<FiredStaffT>, FiredEmployeeRepository>();
 
 
             services.AddScoped<IClientService, ClientService>();

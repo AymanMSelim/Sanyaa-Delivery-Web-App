@@ -26,6 +26,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IConfiguration configuration;
         private readonly IFawryChargeService fawryChargeService;
         private readonly IRepository<RequestT> requestRepository;
+        private readonly INotificatonService notificatonService;
         private readonly IRequestUtilityService requestUtilityService;
         private readonly IRepository<FawryChargeT> fawryChargeRepository;
         private readonly IRepository<MessagesT> messageRepository;
@@ -33,7 +34,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IFawryAPIService fawryAPIService;
 
         public FawryService(IRequestService requestService, IEmployeeService employeeService, IConfiguration configuration, 
-            IFawryAPIService fawryAPIService, IFawryChargeService fawryChargeService, IRepository<RequestT> requestRepository,
+            IFawryAPIService fawryAPIService, IFawryChargeService fawryChargeService, IRepository<RequestT> requestRepository, INotificatonService notificatonService,
             IRequestUtilityService requestUtilityService, IRepository<FawryChargeT> fawryChargeRepository, IRepository<MessagesT> messageRepository,
             IEmployeeAppAccountService employeeAppAccountService, IUnitOfWork unitOfWork)
         {
@@ -43,6 +44,7 @@ namespace SanyaaDelivery.Application.Services
             this.configuration = configuration;
             this.fawryChargeService = fawryChargeService;
             this.requestRepository = requestRepository;
+            this.notificatonService = notificatonService;
             this.requestUtilityService = requestUtilityService;
             this.fawryChargeRepository = fawryChargeRepository;
             this.messageRepository = messageRepository;
@@ -156,10 +158,13 @@ namespace SanyaaDelivery.Application.Services
                     fawryCharge.FawryRefNumber = long.Parse(result.ReferenceNumber);
                     fawryCharge.IsConfirmed = true;
                     await fawryChargeService.UpdateAsync(fawryCharge);
+                    string title = "كود فورى";
+                    string body = $"برجاء دفع مستحقاتك {fawryCharge.ChargeAmount} فى فورى الرقم المرجعى {fawryCharge.FawryRefNumber} برجاء السديد لعد ايقاف الحساب";
+                    try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, employeeId, title, body); } catch { }
                     await messageRepository.AddAsync(new MessagesT
                     {
-                        Title = "كود فورى",
-                        Body = $"برجاء دفع مستحقاتك {fawryCharge.ChargeAmount} فى فورى الرقم المرجعى {fawryCharge.FawryRefNumber} برجاء السديد لعد ايقاف الحساب",
+                        Title = title,
+                        Body = body,
                         EmployeeId = employeeId,
                         IsRead = 0,
                         MessageTimestamp = DateTime.Now.EgyptTimeNow()

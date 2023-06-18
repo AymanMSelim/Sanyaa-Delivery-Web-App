@@ -73,5 +73,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<SystemUserT> SystemUserT { get; set; }
         public ICollection<TimetableT> TimetableT { get; set; }
         public ICollection<VacationT> VacationT { get; set; }
+        public bool IsFired { get; set; }
     }
 }

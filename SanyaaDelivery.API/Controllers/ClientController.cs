@@ -23,7 +23,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly IMapper mapper;
 
         public ClientController(IClientService clientService, CommonService commonService, 
-            IClientSubscriptionService clientSubscriptionService, IClientPointService clientPointService, IMapper mapper)
+            IClientSubscriptionService clientSubscriptionService, IClientPointService clientPointService, IMapper mapper) : base(commonService)
         {
             this.clientService = clientService;
             this.commonService = commonService;
@@ -546,7 +546,7 @@ namespace SanyaaDelivery.API.Controllers
                 }
                 else 
                 {
-                    return Ok(ResultFactory<bool>.CreateErrorResponse(false, App.Global.Enums.ResultStatusCode.False));
+                    return Ok(ResultFactory<bool>.CreateSuccessResponse(false, App.Global.Enums.ResultStatusCode.False));
                 }
             }
             catch (Exception ex)

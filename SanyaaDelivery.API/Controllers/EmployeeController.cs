@@ -31,7 +31,8 @@ namespace SanyaaDelivery.API.Controllers
 
         public EmployeeController(IEmployeeService employeeService, IRequestService orderService, 
             IEmployeeAppAccountService employeeAppAccountService, CommonService commonService, ICityService cityService, 
-            IFavouriteEmployeeService favouriteEmployeeService, IClientSubscriptionService clientSubscriptionService, IEmployeeRequestService employeeRequestService, IMapper mapper)
+            IFavouriteEmployeeService favouriteEmployeeService, IClientSubscriptionService clientSubscriptionService,
+            IEmployeeRequestService employeeRequestService, IMapper mapper) : base(commonService)
         {
             this.employeeService = employeeService;
             this.orderService = orderService;
@@ -141,6 +142,7 @@ namespace SanyaaDelivery.API.Controllers
                     return Ok(ResultFactory<AppEmployeeAccountIndexDto>.ReturnEmployeeError());
                 }
                 var model = await employeeService.GetAppAccountIndex(employeeId);
+                model.EmployeeImage = commonService.GetHost() + model.EmployeeImage;
                 return Ok(ResultFactory<AppEmployeeAccountIndexDto>.CreateSuccessResponse(model));
             }
             catch (Exception ex)
@@ -270,12 +272,12 @@ namespace SanyaaDelivery.API.Controllers
 
         [HttpGet("Get/{employeeId}")]
         public async Task<ActionResult<Result<EmployeeT>>> Get(string employeeId, bool includeWorkplace = false, bool includeDepartment = false,
-            bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false, bool includeReview = false)
+            bool includeLocation = false, bool includeLogin = false, bool includeSubscription = false, bool includeReview = false, bool includeFavourite = false, bool includeOperation = false)
         {
             try
             {
                 var employee = await employeeService.GetAsync(employeeId, includeWorkplace, includeDepartment,
-                    includeLocation, includeLogin, includeSubscription, includeReview, includeReview);
+                    includeLocation, includeLogin, includeSubscription, includeReview, includeReview, includeFavourite, includeOperation);
                 return Ok(ResultFactory<EmployeeT>.CreateSuccessResponse(employee));
             }
             catch (Exception ex)
@@ -336,23 +338,22 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                if (commonService.IsViaApp())
-                {
-                    employeeId = commonService.GetEmployeeId(employeeId);
-                }
                 if (string.IsNullOrEmpty(employeeId))
                 {
                     return Ok(ResultFactory<object>.ReturnEmployeeError());
                 }
-                var clientId = commonService.GetClientId();
                 var employee = await employeeService.GetAsync(employeeId, includeReview: true, includeReviewClient: true, includeFavourite: true, includeWorkplace: true);
                 var employeeDto = mapper.Map<AppEmployeeDto>(employee);
-                var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, includeSubscription: true);
-                if (clientSubscriptionList.HasItem())
+                if (commonService.IsViaClientApp())
                 {
-                    if (clientSubscriptionList.Any(d => d.Subscription.DepartmentId == employeeDto.DepartmentId))
+                    var clientId = commonService.GetClientId();
+                    var clientSubscriptionList = await clientSubscriptionService.GetListAsync(clientId, includeSubscription: true);
+                    if (clientSubscriptionList.HasItem())
                     {
-                        employeeDto.ShowCalendar = true;
+                        if (clientSubscriptionList.Any(d => d.Subscription.DepartmentId == employeeDto.DepartmentId))
+                        {
+                            employeeDto.ShowCalendar = true;
+                        }
                     }
                 }
                 return Ok(ResultFactory<AppEmployeeDto>.CreateSuccessResponse(employeeDto));
@@ -509,6 +510,34 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<bool>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("FireEmployee")]
+        public async Task<ActionResult<Result<object>>> FireEmployee(FireEmployeeDto model)
+        {
+            try
+            {
+                var affectedRows = await employeeService.FireEmpolyeeAsync(model);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("ReturnEmployee")]
+        public async Task<ActionResult<Result<object>>> ReturnEmployee(StringIdDto model)
+        {
+            try
+            {
+                var affectedRows = await employeeService.ReturnEmployeeAsync(model.Id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
             }
         }
     }

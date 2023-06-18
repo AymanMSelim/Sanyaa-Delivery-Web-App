@@ -36,6 +36,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<SiteT> siteRepository;
         private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
         private readonly IRepository<EmployeeWorkplacesT> employeeBranchRepository;
+        private readonly IRepository<FiredStaffT> firedEmployeeRepository;
 
         public RuntimeDataService(IRepository<BranchT> branchRepository, IRepository<ClientT> clientRepository,
             IRepository<EmployeeT> employeeRepository, IRepository<DepartmentT> departmentRepository,
@@ -47,7 +48,7 @@ namespace SanyaaDelivery.Application.Services
             IRepository<CountryT> countryRepository, IRepository<ServiceRatioT> serviceRatioRepository,
             IRepository<SystemUserT> systemUserRepository, IRepository<SubscriptionT> subscriptionRepository, 
             IRepository<PromocodeT> promocodeRepository, IRepository<SiteT> siteRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository,
-            IRepository<EmployeeWorkplacesT> employeeBranchRepository)
+            IRepository<EmployeeWorkplacesT> employeeBranchRepository, IRepository<FiredStaffT> firedEmployeeRepository)
         {
             this.branchRepository = branchRepository;
             this.clientRepository = clientRepository;
@@ -71,6 +72,7 @@ namespace SanyaaDelivery.Application.Services
             this.siteRepository = siteRepository;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
             this.employeeBranchRepository = employeeBranchRepository;
+            this.firedEmployeeRepository = firedEmployeeRepository;
         }
         public async Task<RuntimeData> Get()
         {
@@ -118,7 +120,9 @@ namespace SanyaaDelivery.Application.Services
                     {
                         EmployeeId = d.EmployeeId,
                         EmployeeName = d.EmployeeName,
-                        SubscriptionId = d.SubscriptionId
+                        SubscriptionId = d.SubscriptionId,
+                        PhoneNumber = d.EmployeePhone,
+                        Address = d.EmployeeCity
                     }).ToListAsync(),
                     EmployeeSubscriptionList = await employeeSubscriptionRepository.GetListAsync(),
                     CountryLightList = await countryRepository.DbSet.Select(d => new Domain.LightModels.CountryLight
@@ -178,7 +182,8 @@ namespace SanyaaDelivery.Application.Services
                     {
                         EmployeeId = d.EmployeeId,
                         BranchId = d.BranchId
-                    }).ToListAsync()
+                    }).ToListAsync(),
+                    FiredEmployeeIdList = await firedEmployeeRepository.DbSet.Select(d => d.EmployeeId).ToListAsync()
                 };
                 return data;
             }

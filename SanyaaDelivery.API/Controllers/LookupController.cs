@@ -16,7 +16,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly ILookupService lookupService;
 
-        public LookupController(ILookupService lookupService)
+        public LookupController(ILookupService lookupService, CommonService commonService) : base(commonService)
         {
             this.lookupService = lookupService;
         }

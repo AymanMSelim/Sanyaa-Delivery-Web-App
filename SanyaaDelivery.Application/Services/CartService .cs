@@ -29,13 +29,14 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<ServiceT> serviceRepository;
         private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IHelperService helperService;
+        private readonly IRepository<ClientSubscriptionT> clientSubscriptionRepository;
         private readonly IRepository<SubscriptionServiceT> subscriptionServiceRepository;
         private readonly IUnitOfWork unitOfWork;
 
         public CartService(IRepository<CartT> cartRepo, IRepository<CartDetailsT> cartDetailsRepo, IPromocodeService promocodeService,
             ICityService cityService, IClientService clientService, IServiceRatioService serviceRatioService, IAttachmentService attachmentService,
             IEmployeeService employeeService, ISubscriptionRequestService subscriptionRequestService, IRepository<ServiceT> serviceRepository,
-            IRepository<DepartmentT> departmentRepository, IHelperService helperService,
+            IRepository<DepartmentT> departmentRepository, IHelperService helperService, IRepository<ClientSubscriptionT> clientSubscriptionRepository,
             IRepository<SubscriptionServiceT> subscriptionServiceRepository, IUnitOfWork unitOfWork)
         {
             this.cartRepo = cartRepo;
@@ -50,6 +51,7 @@ namespace SanyaaDelivery.Application.Services
             this.serviceRepository = serviceRepository;
             this.departmentRepository = departmentRepository;
             this.helperService = helperService;
+            this.clientSubscriptionRepository = clientSubscriptionRepository;
             this.subscriptionServiceRepository = subscriptionServiceRepository;
             this.unitOfWork = unitOfWork;
         }
@@ -352,7 +354,7 @@ namespace SanyaaDelivery.Application.Services
             cartDto.ServiceRatio = await serviceRatioService.GetRatioAsync(cartDto.CityId, cartDto.DepartmentId);
             if (clientSubscriptionId.HasValue)
             {
-                cartDto.IgnoreServiceDiscount = await subscriptionServiceRepository.Where(d => d.SubscriptionServiceId == clientSubscriptionId)
+                cartDto.IgnoreServiceDiscount = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
                     .Select(d => d.Subscription.IgnoreServiceDiscount).FirstOrDefaultAsync();
                 cartDto.ClientSubscriptionId = clientSubscriptionId.Value;
                 if(requestTime == null)
@@ -391,6 +393,10 @@ namespace SanyaaDelivery.Application.Services
             cartDto.CalcualteInvoicetDetails();
             cartDto.CalculateAmountPercentage();
             cartDto.AttachmentList = await attachmentService.GetListAsync((int)Domain.Enum.AttachmentType.CartImage, cart.CartId.ToString());
+            if (cartDto.AttachmentList.HasItem())
+            {
+                cartDto.AttachmentList.ForEach(d => d.FilePath = $"{helperService.GetHost().Replace("https://", "")}{d.FilePath}");
+            }
             return cartDto;
         }
 

@@ -17,7 +17,8 @@ namespace SanyaaDelivery.API.Controllers
         private readonly ICityService cityService;
         private readonly IRegionService regionService;
 
-        public AddressController(ICountryService countryService, IGovernorateService governorateService, ICityService cityService, IRegionService regionService)
+        public AddressController(ICountryService countryService, IGovernorateService governorateService, 
+            ICityService cityService, IRegionService regionService, CommonService commonService) : base(commonService)
         {
             this.countryService = countryService;
             this.governorateService = governorateService;

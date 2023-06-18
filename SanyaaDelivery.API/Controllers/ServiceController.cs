@@ -17,7 +17,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly CommonService commonService;
         private readonly IFavouriteServiceService favouriteService;
 
-        public ServiceController(IServiceService serviceService, CommonService commonService, IFavouriteServiceService favouriteService)
+        public ServiceController(IServiceService serviceService, CommonService commonService, IFavouriteServiceService favouriteService) : base(commonService)
         {
             this.serviceService = serviceService;
             this.commonService = commonService;

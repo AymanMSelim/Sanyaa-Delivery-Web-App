@@ -23,6 +23,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IGeneralSetting generalSetting;
         private readonly IRepository<AccountT> accountRepository;
         private readonly IRepository<ClientT> clientRepository;
+        private readonly INotificatonService notificatonService;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly ITokenService tokenService;
         private readonly IAttachmentService attachmentService;
@@ -32,7 +33,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IUnitOfWork unitOfWork;
 
         public RegisterService(IClientService clientService, IGeneralSetting generalSetting, IRepository<AccountT> accountRepository,
-            IRepository<ClientT> clientRepository,
+            IRepository<ClientT> clientRepository, INotificatonService notificatonService,
             IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IAttachmentService attachmentService, ISMSService smsService,
             IRepository<DepartmentT> departmentRepository, IRepository<CityT> cityRepository, IUnitOfWork unitOfWork)
         {
@@ -40,6 +41,7 @@ namespace SanyaaDelivery.Application.Services
             this.generalSetting = generalSetting;
             this.accountRepository = accountRepository;
             this.clientRepository = clientRepository;
+            this.notificatonService = notificatonService;
             this.employeeRepository = employeeRepository;
             this.tokenService = tokenService;
             this.attachmentService = attachmentService;
@@ -48,6 +50,25 @@ namespace SanyaaDelivery.Application.Services
             this.cityRepository = cityRepository;
             this.unitOfWork = unitOfWork;
         }
+
+        private string GetNewIfEmpty(string value, string newValue)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return newValue;
+            }
+            return value;
+        }
+
+        private int? GetNewIfEmpty(int? value, int? newValue)
+        {
+            if (value.HasValue && value != 0)
+            {
+                return value;
+            }
+            return newValue;
+        }
+
         public async Task<Result<ClientRegisterResponseDto>> RegisterClientAsync(ClientRegisterDto clientRegisterDto)
         {
             bool isRootTransaction = false;
@@ -314,6 +335,11 @@ namespace SanyaaDelivery.Application.Services
                     Token = tokenService.CreateToken(account),
                     AccountId = account.AccountId
                 };
+                try
+                {
+                    await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, account.AccountReferenceId, "OTP Code", $"Your OTP is {account.MobileOtpCode}");
+                }
+                catch { }
                 return ResultFactory<EmployeeRegisterResponseDto>.CreateAffectedRowsResult(affectedRows, data: response);
             }
             catch (Exception ex)
@@ -346,8 +372,9 @@ namespace SanyaaDelivery.Application.Services
                 {
                     return ResultFactory<string>.CreateNotFoundResponse("Employee not found");
                 }
-                employee.EmployeeRelativeName = relativeName;
-                employee.EmployeeRelativePhone = realtivePhone;
+                employee.EmployeePhone1 = GetNewIfEmpty(employee.EmployeePhone, phoneNumber);
+                employee.EmployeeRelativeName = GetNewIfEmpty(employee.EmployeeRelativeName, relativeName);
+                employee.EmployeeRelativePhone = GetNewIfEmpty(employee.EmployeeRelativePhone, realtivePhone);
                 var profilePicAttachment = await attachmentService.SaveFileAsync(profilePic, (int)Domain.Enum.AttachmentType.ProfilePicture, nationalId, profileExtention);
                 await attachmentService.SaveFileAsync(nationalIdBack, (int)Domain.Enum.AttachmentType.NationalIdBack, nationalId, nationalFrontExtention);
                 await attachmentService.SaveFileAsync(nationalIdFront, (int)Domain.Enum.AttachmentType.NationalIdFront, nationalId, nationalBackExtention);
@@ -356,7 +383,7 @@ namespace SanyaaDelivery.Application.Services
                 var affectedRows = 0;
                 if (isRootTransaction)
                 {
-                     affectedRows = await unitOfWork.CommitAsync(false);
+                    affectedRows = await unitOfWork.CommitAsync(false);
                 }
                 return ResultFactory<string>.CreateAffectedRowsResult(affectedRows);
             }
@@ -384,23 +411,23 @@ namespace SanyaaDelivery.Application.Services
             {
                 return (int)App.Global.Enums.ResultStatusCode.NotFound;
             }
-            employee.EmployeeGov = model.Governate;
-            employee.EmployeeCity = model.City;
-            employee.EmployeeRegion = model.Region;
-            employee.EmployeeFlatNum = model.FlatNumber;
-            employee.EmployeeBlockNum = model.BlockNumber;
-            employee.EmployeeDes = model.Description;
-            employee.EmployeeStreet = model.Street;
+            employee.EmployeeGov = GetNewIfEmpty(employee.EmployeeGov, model.Governate);
+            employee.EmployeeCity = GetNewIfEmpty(employee.EmployeeCity, model.City);
+            employee.EmployeeRegion = GetNewIfEmpty(employee.EmployeeRegion, model.Region);
+            employee.EmployeeStreet = GetNewIfEmpty(employee.EmployeeStreet, model.Street);
+            employee.EmployeeDes = GetNewIfEmpty(employee.EmployeeDes, model.Description);
+            employee.EmployeeFlatNum = GetNewIfEmpty(employee.EmployeeFlatNum, model.FlatNumber);
+            employee.EmployeeBlockNum = GetNewIfEmpty(employee.EmployeeBlockNum, model.BlockNumber);
             if (employee.EmployeeLocation.IsNull())
             {
                 employee.EmployeeLocation = new EmployeeLocation
                 {
                     EmployeeId = model.NationalId,
-                    Latitude = model.Lat,
-                    Longitude = model.Lang,
-                    Location = model.Location
                 };
             }
+            employee.EmployeeLocation.Latitude = GetNewIfEmpty(employee.EmployeeLocation.Latitude, model.Lat);
+            employee.EmployeeLocation.Location = GetNewIfEmpty(employee.EmployeeLocation.Location, model.Location);
+            employee.EmployeeLocation.Longitude = GetNewIfEmpty(employee.EmployeeLocation.Longitude, model.Lang);
             employeeRepository.Update(employee.EmployeeId, employee);
             return await employeeRepository.SaveAsync();
         }
@@ -416,20 +443,23 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("Employee not found");
             }
-            if (employee.DepartmentEmployeeT.IsEmpty())
+
+            foreach (var item in model.Departments)
             {
-                foreach (var item in model.Departments)
+                if(employee.DepartmentEmployeeT.Any(d => d.DepartmentId == item))
                 {
-                    var department = await departmentRepository.GetAsync(item);
-                    employee.DepartmentEmployeeT.Add(new DepartmentEmployeeT
-                    {
-                        DepartmentId = item,
-                        EmployeeId = model.NationalId,
-                        DepartmentName = department.DepartmentName,
-                        Percentage = department.DepartmentPercentage
-                    });
+                    continue;
                 }
+                var department = await departmentRepository.GetAsync(item);
+                employee.DepartmentEmployeeT.Add(new DepartmentEmployeeT
+                {
+                    DepartmentId = item,
+                    EmployeeId = model.NationalId,
+                    DepartmentName = department.DepartmentName,
+                    Percentage = department.DepartmentPercentage
+                });
             }
+
             if (employee.EmployeeWorkplacesT.IsEmpty())
             {
                 var city = await cityRepository.GetAsync(model.CityId);
@@ -443,11 +473,14 @@ namespace SanyaaDelivery.Application.Services
             {
                 employee.OpreationT = new OpreationT
                 {
-                    IsActive = false,
+                    IsActive = true,
                     LastActiveTime = DateTime.Now.EgyptTimeNow(),
                 };
             }
-            employee.SubscriptionId = GeneralSetting.DefaultEmployeeSubacriptionId;
+            if (employee.SubscriptionId.IsNull())
+            {
+                employee.SubscriptionId = GeneralSetting.DefaultEmployeeSubacriptionId;
+            }
             employeeRepository.Update(employee.EmployeeId, employee);
             var affectedRows = await employeeRepository.SaveAsync();
             return ResultFactory<EmployeeT>.CreateAffectedRowsResult(affectedRows, data: employee);
@@ -598,6 +631,26 @@ namespace SanyaaDelivery.Application.Services
             }
 
             
+        }
+
+
+        public async Task<Result<OTPCodeDto>> ResendOTP(int accountId)
+        {
+            var account = await accountRepository.GetAsync(accountId);
+            account.LastOtpCreationTime = DateTime.Now.EgyptTimeNow();
+            account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
+            accountRepository.Update(accountId, account);
+            await accountRepository.SaveAsync();
+            try
+            {
+                await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, account.AccountReferenceId, "OTP Code", $"Your OTP is {account.MobileOtpCode}");
+            }
+            catch { }
+            return ResultFactory<OTPCodeDto>.CreateSuccessResponse(new OTPCodeDto
+            {
+                OTPCode = account.MobileOtpCode,
+                OTPExpireTime = account.LastOtpCreationTime.Value.AddMinutes(GeneralSetting.OTPExpireMinutes)
+            });
         }
     }
 }

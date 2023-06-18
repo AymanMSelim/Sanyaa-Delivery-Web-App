@@ -15,7 +15,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly ITransactionService transactionService;
 
-        public TransactionController(ITransactionService transactionService)
+        public TransactionController(ITransactionService transactionService, CommonService commonService) : base(commonService)
         {
             this.transactionService = transactionService;
         }

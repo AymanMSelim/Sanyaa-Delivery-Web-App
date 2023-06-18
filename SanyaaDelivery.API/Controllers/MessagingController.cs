@@ -19,7 +19,7 @@ namespace SanyaaDelivery.API.Controllers
         private readonly CommonService commonService;
         private readonly INotificatonService notificatonService;
 
-        public MessagingController(IAccountService accountService, CommonService commonService, INotificatonService notificatonService)
+        public MessagingController(IAccountService accountService, CommonService commonService, INotificatonService notificatonService) : base(commonService)
         {
             this.accountService = accountService;
             this.commonService = commonService;
@@ -124,6 +124,10 @@ namespace SanyaaDelivery.API.Controllers
                     return Ok(ResultFactory<List<AppNotificationT>>.ReturnAccountError());
                 }
                 var list = await notificatonService.GetListAsync(accountId.Value);
+                if (list.HasItem())
+                {
+                    list.ForEach(d => d.Body = d.Body + $"\n {d.CreationTime}");
+                }
                 return Ok(ResultFactory<List<AppNotificationT>>.CreateSuccessResponse(list));
             }
             catch (Exception ex)

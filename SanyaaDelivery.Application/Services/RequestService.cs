@@ -44,8 +44,10 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RequestT> requestRepository;
         private readonly IRepository<RequestServicesT> requestServiceRepository;
         private readonly IRepository<AddressT> addressRepository;
+        private readonly INotificatonService notificatonService;
         private readonly IRepository<ServiceT> serviceRepository;
         private readonly IRepository<AttachmentT> attachmentRepository;
+        private readonly IOperationService operationService;
         private readonly IRepository<RequestCanceledT> cancelRequestRepository;
         private readonly IRepository<RequestDelayedT> delayRequestRepository;
         private readonly IRepository<RequestComplaintT> complaintRequestRepository;
@@ -66,8 +68,8 @@ namespace SanyaaDelivery.Application.Services
 
         public RequestService(IRepository<RequestT> requestRepository, IRepository<RequestCanceledT> cancelRequestRepository,
             IRepository<RequestDelayedT> delayRequestRepository, IRepository<RequestComplaintT> complaintRequestRepository,
-            IRepository<RequestServicesT> requestServiceRepository, IRepository<AddressT> addressRepository,
-            IRepository<ServiceT> serviceRepository, IRepository<AttachmentT> attachmentRepository,
+            IRepository<RequestServicesT> requestServiceRepository, IRepository<AddressT> addressRepository, INotificatonService notificatonService,
+            IRepository<ServiceT> serviceRepository, IRepository<AttachmentT> attachmentRepository, IOperationService operationService,
             ICartService cartService, IRepository<ClientPhonesT> phoneRepository, IRepository<EmployeeT> employeeRepository,
             IRepository<ClientSubscriptionT> clientSubscriptionRepository, ISubscriptionRequestService subscriptionRequestService,
             ICityService cityService, WhatsAppService whatsAppService, IRepository<MessagesT> messageRepository, IHelperService helperService,
@@ -80,8 +82,10 @@ namespace SanyaaDelivery.Application.Services
             //this.clientService = clientService;
             this.requestServiceRepository = requestServiceRepository;
             this.addressRepository = addressRepository;
+            this.notificatonService = notificatonService;
             this.serviceRepository = serviceRepository;
             this.attachmentRepository = attachmentRepository;
+            this.operationService = operationService;
             this.cartService = cartService;
             this.phoneRepository = phoneRepository;
             this.employeeRepository = employeeRepository;
@@ -141,8 +145,9 @@ namespace SanyaaDelivery.Application.Services
                 .Include(d => d.SystemUser)
                 .Include(d => d.Client)
                 .Include(d => d.Branch)
+                .Include(d => d.BroadcastRequestT)
                 .Include(d => d.RequestServicesT).ThenInclude(d => d.Service)
-                .FirstOrDefaultAsync();
+                .AsNoTracking().FirstOrDefaultAsync();
         }
 
         public Task<int> GetCanceledOrdersCountByEmployee(string employeeId, DateTime time)
@@ -268,199 +273,6 @@ namespace SanyaaDelivery.Application.Services
                && o.RequestCanceledT.Count == 0).CountAsync();
         }
 
-        private IQueryable<RequestT> GetRequestQuery(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
-         int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
-         bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
-         bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
-         bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
-         bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
-         bool includeDelayedT = false, bool includeFollowUpT = false, bool includeReviewT = false, bool includeSubscription = false,
-         bool includePayment = false, bool includeComplaiment = false, bool includeSite = false, bool includeBill = false,
-         bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
-         bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false)
-        {
-            var query = requestRepository.DbSet.AsQueryable();
-            if (startDate.HasValue)
-            {
-                query = query.Where(d => d.RequestTimestamp >= startDate);
-            }
-            if (endDate.HasValue)
-            {
-                query = query.Where(d => d.RequestTimestamp <= endDate);
-            }
-            if (requestId.HasValue)
-            {
-                query = query.Where(d => d.RequestId == requestId);
-            }
-            if (clientId.HasValue)
-            {
-                query = query.Where(d => d.ClientId == clientId);
-            }
-            if (systemUserId.HasValue)
-            {
-                query = query.Where(d => d.SystemUserId == systemUserId);
-            }
-            if (requestStatus.HasValue)
-            {
-                query = query.Where(d => d.RequestStatus == requestStatus);
-            }
-            if (requestStatusGroupId.HasValue)
-            {
-                query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == requestStatusGroupId);
-            }
-            if (getCanceled.HasValue)
-            {
-                query = query.Where(d => d.IsCanceled);
-            }
-            if (!string.IsNullOrEmpty(employeeId))
-            {
-                query = query.Where(d => d.EmployeeId == employeeId);
-            }
-            if (branchId.HasValue)
-            {
-                query = query.Where(d => d.BranchId == branchId.Value);
-            }
-            if (subscriptionId.HasValue)
-            {
-                query = query.Where(d => d.SubscriptionId == subscriptionId.Value);
-            }
-            if (clientSubscriptionId.HasValue)
-            {
-                query = query.Where(d => d.ClientSubscriptionId == clientSubscriptionId.Value);
-            }
-            if (siteId.HasValue)
-            {
-                query = query.Where(d => d.SiteId == siteId.Value);
-            }
-            if (isPaid.HasValue)
-            {
-                query = query.Where(d => d.RequestStagesT.PaymentFlag == isPaid.Value);
-            }
-            if (promocode.HasValue)
-            {
-                query = query.Where(d => d.PromocodeId == promocode.Value);
-            }
-            if (departmentId.HasValue)
-            {
-                query = query.Where(d => d.DepartmentId == departmentId);
-            }
-            if (isCompleted.HasValue)
-            {
-                query = query.Where(d => d.IsCompleted == isCompleted);
-            }
-            if (isFollowUp.HasValue)
-            {
-                query = query.Where(d => d.IsFollowed == isFollowUp);
-            }
-            if (isReviewed.HasValue)
-            {
-                query = query.Where(d => d.IsReviewed == isReviewed);
-            }
-            if (includeRequestService)
-            {
-                if (includeService)
-                {
-                    query = query.Include(d => d.RequestServicesT).ThenInclude(d => d.Service);
-                }
-                else
-                {
-                    query = query.Include(d => d.RequestServicesT);
-                }
-            }
-            if (includeClient)
-            {
-                query = query.Include(d => d.Client);
-            }
-            if (includeEmployee)
-            {
-                if (includeEmployeeLogin)
-                {
-                    query = query.Include(d => d.Employee)
-                        .ThenInclude(d => d.LoginT);
-                }
-                else
-                {
-                    query = query.Include(d => d.Employee);
-                }
-            }
-            if (includeStatus)
-            {
-                query = query.Include(d => d.RequestStatusNavigation);
-            }
-            if (includeCancelT)
-            {
-                query = query.Include(d => d.RequestCanceledT);
-            }
-            if (includeDelayedT)
-            {
-                query = query.Include(d => d.RequestDelayedT);
-            }
-            if (includeComplaiment)
-            {
-                query = query.Include(d => d.RequestComplaintT);
-            }
-            if (includeDiscounts)
-            {
-                query = query.Include(d => d.RequestDiscountT);
-            }
-            if (includeFollowUpT)
-            {
-                query = query.Include(d => d.FollowUpT);
-            }
-            if (includePayment)
-            {
-                query = query.Include(d => d.PaymentT);
-            }
-            if (includeSite)
-            {
-                query = query.Include(d => d.Site);
-            }
-            if (includeSubscription)
-            {
-                query = query.Include(d => d.Subscription);
-            }
-            if (includeReviewT)
-            {
-                query = query.Include(d => d.EmployeeReviewT);
-            }
-            if (includeRequestStage)
-            {
-                query = query.Include(d => d.RequestStagesT);
-            }
-            if (includeBill)
-            {
-                query = query.Include(d => d.BillNumberT);
-            }
-            if (includeFawryCharge)
-            {
-                query = query.Include(d => d.FawryChargeRequestT);
-            }
-            if (includeAddress)
-            {
-                query = query.Include(d => d.RequestedAddress);
-            }
-            if (includePhone)
-            {
-                query = query.Include(d => d.RequestedPhone);
-            }
-            if (includePromocode)
-            {
-                query = query.Include(d => d.Promocode);
-            }
-            if (includeDepartment)
-            {
-                query = query.Include(d => d.Department);
-            }
-            if (includeBranch)
-            {
-                query = query.Include(d => d.Branch);
-            }
-            if (includeSystemUser)
-            {
-                query = query.Include(d => d.SystemUser);
-            }
-            return query;
-        }
         public Task<List<RequestT>> GetList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
         int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
         bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
@@ -897,13 +709,46 @@ namespace SanyaaDelivery.Application.Services
             return query.ToListAsync();
         }
 
-        private async Task<Result<RequestT>> ValidateRequestMainData(string employeeId, DateTime requestTime, int addressId, int departmentId, bool skipEmployeeCheck = false)
+        private async Task<Result<T>> SelectTechnician<T>(int requestId, bool isViaApp)
         {
-            if (requestTime < DateTime.Now.EgyptTimeNow())
+            var request = await requestRepository.GetAsync(requestId);
+            //return await SelectTechnician<T>(request, isViaApp);
+            return null;
+        }
+
+        private async Task<Result<T>> SelectTechnician<T>(RequestT request, string employeeId, bool isViaApp, TechnicianSelectionType selectionType = TechnicianSelectionType.App)
+        {
+            if (selectionType == TechnicianSelectionType.App)
             {
-                return ResultFactory<RequestT>.CreateErrorResponseMessageFD("You can't place a request in the past, time " + requestTime.ToString(), App.Global.Enums.ResultStatusCode.Failed);
+                request.EmployeeId = employeeId;
             }
-            var address = await addressRepository.GetAsync(addressId);
+            else if (selectionType == TechnicianSelectionType.BroadcastAll)
+            {
+                var freeEmployeeIdLis = await employeeRequestService.GetFreeEmployeeIdListAsync(request.RequestTimestamp.Value, request.DepartmentId.Value, request.BranchId);
+                if (freeEmployeeIdLis.IsEmpty())
+                {
+                    return ResultFactory<T>.CreateErrorResponseMessage("No technician available at this time, please select another time");
+                }
+            }
+            //else if(selectionType == TechnicianSelectionType.)
+            //if(isViaApp || string.IsNullOrEmpty(model.EmployeeId))
+            //{
+            //    var freeEmployeeIdLis = await employeeRequestService.GetFreeEmployeeIdListAsync(model.RequestTime.Value, departmentId, branch.BranchId);
+            //    if (freeEmployeeIdLis.IsEmpty() && model.SkipCheckEmployeeStatus == false)
+            //    {
+            //        return ResultFactory<RequestT>.CreateErrorResponseMessage("No technician available at this time, please select another time");
+            //    }
+            //}
+            return null;
+        }
+
+        private async Task<Result<RequestT>> ValidateRequestMainData(AddRequestDto model, int departmentId, bool isViaApp)
+        {
+            if (model.RequestTime < DateTime.Now.EgyptTimeNow())
+            {
+                return ResultFactory<RequestT>.CreateErrorResponseMessageFD("You can't place a request in the past, time " + model.RequestTime.ToString(), App.Global.Enums.ResultStatusCode.Failed);
+            }
+            var address = await addressRepository.GetAsync(model.AddressId);
             if (address.IsNull())
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Address not found", App.Global.Enums.ResultStatusCode.NotFound);
@@ -913,9 +758,10 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Branch not found", App.Global.Enums.ResultStatusCode.NotFound);
             }
-            if (string.IsNullOrEmpty(employeeId) == false && skipEmployeeCheck == false)
+            
+            if (string.IsNullOrEmpty(model.EmployeeId) == false && model.SkipCheckEmployeeStatus == false)
             {
-                var result = await employeeRequestService.ValidateEmployeeForRequest(employeeId, requestTime, branch.BranchId, departmentId);
+                var result = await employeeRequestService.ValidateEmployeeForRequest(model.EmployeeId, model.RequestTime.Value, branch.BranchId, departmentId);
                 if (result.IsFail)
                 {
                     return result.Convert(new RequestT());
@@ -977,7 +823,6 @@ namespace SanyaaDelivery.Application.Services
 
         private async Task<Result<CartT>> GetRequestCart(ClientSubscriptionT clientSubscription, DateTime requestTime, int clientId, bool isViaApp)
         {
-            Result<RequestT> result;
             CartT cart;
             if (clientSubscription.IsNotNull())
             {
@@ -1046,7 +891,7 @@ namespace SanyaaDelivery.Application.Services
                     return cartResult.Convert(new RequestT());
                 }
                 cart = cartResult.Data;
-                result = await ValidateRequestMainData(model.EmployeeId, model.RequestTime.Value, model.AddressId.Value, cart.DepartmentId, model.SkipCheckEmployeeStatus);
+                result = await ValidateRequestMainData(model, cart.DepartmentId, isViaApp);
                 if (result.IsFail)
                 {
                     return result;
@@ -1088,15 +933,16 @@ namespace SanyaaDelivery.Application.Services
                 await AddAsync(request);
                 cart.HaveRequest = true;
                 await cartService.UpdateAsync(cart);
-                if (customCart.UsedPoints > 0)
+                if (request.UsedPoints > 0)
                 {
                     await unitOfWork.SaveAsync();
                     await clientPointService.WithdrawAsync(new ClientPointT
                     {
-                        ClientId = customCart.ClientId,
-                        Points = customCart.UsedPoints,
+                        ClientId = request.ClientId,
+                        Points = request.UsedPoints,
                         Reason = translationService.Tranlate("Request") + $" #{request.RequestId}",
-                        SystemUserId = systemUserId
+                        SystemUserId = systemUserId,
+                        RequestId = request.RequestId
                     });
                 }
                 if (model.ClientSubscriptionId.HasValue)
@@ -1113,6 +959,15 @@ namespace SanyaaDelivery.Application.Services
                         }
                     }
                 }
+                if ((isViaApp && (string.IsNullOrEmpty(model.EmployeeId))) || string.IsNullOrEmpty(model.EmployeeId))
+                {
+                    await unitOfWork.SaveAsync();
+                    var broadCastResult = await operationService.BroadcastAsync(request.RequestId);
+                    if (broadCastResult.IsFail)
+                    {
+                        return broadCastResult.Convert(request);
+                    }
+                }
                 int affectedRows = 0;
                 if (isRootTransaction)
                 {
@@ -1120,9 +975,9 @@ namespace SanyaaDelivery.Application.Services
                 }
                 if (affectedRows >= 0)
                 {
-                    var phone = await phoneRepository.GetAsync(model.PhoneId);
-                    var msg = $"Your appointment is coming up on {request.RequestTimestamp.Value.DayOfWeek} at {request.RequestTimestamp.Value.ToString("hh:mm tt")}";
-                    //whatsAppService.SendRequestDetails(phone.ClientPhone, msg);
+                    string title = "طلب جديد";
+                    string body = $"تم حجز الطلب الخاص بكم بنجاح, رقم الطلب #{request.RequestId}";
+                    try { await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body); } catch { }
                     return ResultFactory<RequestT>.CreateSuccessResponse(request);
                 }
                 else
@@ -1302,7 +1157,7 @@ namespace SanyaaDelivery.Application.Services
                         new InvoiceDetailsDto {Name = "المطلوب", Amount = Math.Round(d.CustomerPrice, 2), Bold = true },
                     },
                     AddressDescription = d.RequestedAddress.AddressDes,
-                    CanAddOrUpdate = !(d.IsCanceled || d.IsCompleted),
+                    //CanAddOrUpdate = !(d.IsCanceled || d.IsCompleted),
                     CanRejectRequest = !(d.IsCanceled || d.IsCompleted),
                     ClientName = d.Client.ClientName,
                     Location = d.RequestedAddress.Location,
@@ -1316,8 +1171,8 @@ namespace SanyaaDelivery.Application.Services
                 {
                     Id = a.AttachmentId,
                     Path = a.FilePath,
-                    DomainUrl = "https://testapp.sane3ydelivery.com",
-                    Url = "https://testapp.sane3ydelivery.com" + a.FilePath
+                    DomainUrl = helperService.GetHost(),
+                    Url = helperService.GetHost() + a.FilePath
                 }).ToListAsync();
             var otherDetails = await requestRepository.Where(d => d.RequestId == requestId)
                 .Select(d => new { d.RequestStatus, d.RequestTimestamp, d.IsCanceled, d.IsCompleted }).FirstOrDefaultAsync();
@@ -1328,17 +1183,19 @@ namespace SanyaaDelivery.Application.Services
                 request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.DoneOrCanceled;
                 return request;
             }
-            if(otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            request.ShowCallClientButton = true;
+            if (otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
             {
+                request.CanAddOrUpdate = true;
                 request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.InExcution;
                 request.ShowEndRequestButton = true;
-                request.ShowCallClientButton = true;
+                //request.ShowCallClientButton = true;
                 return request;
             }
             if(DateTime.Now.EgyptTimeNow() >= otherDetails.RequestTimestamp.Value.AddHours(-1))
             {
                 request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.GoToClient;
-                request.ShowCallClientButton = true;
+                //request.ShowCallClientButton = true;
                 request.ShowArrivalButton = true;
             }
             else
@@ -1436,18 +1293,21 @@ namespace SanyaaDelivery.Application.Services
                         Points = request.UsedPoints,
                         Reason = translationService.Tranlate("Cancel Request") + $" #{requestId}",
                         SystemUserId = systemUserId,
+                        RequestId = request.RequestId
                     });
                 }
                 if(string.IsNullOrEmpty(request.EmployeeId) is false)
                 {
-                    string message = string.Format("لقد تم الغاء الطلب رقم {0} من قبل العميل", requestId);
+                    string title = "الغاء طلب";
+                    string body = string.Format("لقد تم الغاء الطلب رقم {0} من قبل العميل", requestId);
+                    try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, request.EmployeeId, title, body); } catch { }
                     await messageRepository.AddAsync(new MessagesT
                     {
                         EmployeeId = request.EmployeeId,
                         MessageTimestamp = DateTime.Now.ToEgyptTime(),
                         IsRead = 0,
-                        Title = "الغاء طلب",
-                        Body = message
+                        Title = title,
+                        Body = body
                     });
                 }
                 if (request.ClientSubscriptionId.HasValue && resetSubscriptionMonthRequest)
@@ -1545,22 +1405,61 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> UpdateWithCartAsync(RequestT request)
         {
+            bool isRootTransaction = false;
             AddressT address;
-            if (request.RequestedAddress == null)
+            try
             {
-                address = await addressRepository.GetAsync(request.RequestedAddressId.Value);
+                isRootTransaction = unitOfWork.StartTransaction();
+                if (request.RequestedAddress == null)
+                {
+                    address = await addressRepository.GetAsync(request.RequestedAddressId.Value);
+                }
+                else
+                {
+                    address = request.RequestedAddress;
+                }
+                if (request.CartId.HasValue)
+                {
+                    if (request.UsedPoints > 0)
+                    {
+                        await clientPointService.DeletetByRequestIdAsync(request.RequestId);
+                        await unitOfWork.SaveAsync();
+                    }
+                    request.UsedPoints = 0;
+                    var customCart = await cartService.GetCartForAppAsync(request.CartId.Value, address.CityId, request.ClientSubscriptionId, request.RequestTimestamp, request);
+                    request = ConvertCustomCartToRequest(customCart, request);
+                    if (request.UsedPoints > 0)
+                    {
+                        await clientPointService.WithdrawAsync(new ClientPointT
+                        {
+                            ClientId = request.ClientId,
+                            Points = request.UsedPoints,
+                            Reason = translationService.Tranlate("Request") + $" #{request.RequestId}",
+                            SystemUserId = request.SystemUserId,
+                            RequestId = request.RequestId
+                        });
+                    }
+                }
+                requestRepository.Update(request.RequestId, request);
+                if (isRootTransaction)
+                {
+                    return await unitOfWork.CommitAsync(false);
+                }
+                return (int)App.Global.Enums.ResultStatusCode.Success;
             }
-            else
+            catch (Exception ex)
             {
-                address = request.RequestedAddress;
+                unitOfWork.RollBack();
+                return (int)App.Global.Enums.ResultStatusCode.Exception;
             }
-            if (request.CartId.HasValue)
+            finally
             {
-                var customCart = await cartService.GetCartForAppAsync(request.CartId.Value, address.CityId, request.ClientSubscriptionId, request.RequestTimestamp, request);
-                request = ConvertCustomCartToRequest(customCart, request);
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
             }
-            requestRepository.Update(request.RequestId, request);
-            return await requestRepository.SaveAsync();
+
         }
 
         public async Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId, bool skipCheckEmployee = false)
@@ -1574,15 +1473,8 @@ namespace SanyaaDelivery.Application.Services
                     return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("The selected time is not valid");
                 }
                 var request = await GetAsync(requestId);
-                if (request.IsCompleted)
-                {
-                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is already complete");
-                }
-                if (request.IsCanceled)
-                {
-                    return ResultFactory<RequestDelayedT>.CreateErrorResponseMessageFD("This request is canceled");
-                }
-
+                var requestValidation = helperService.ValidateRequest<RequestDelayedT>(request);
+                if (requestValidation.IsFail) { return requestValidation; }
                 if (string.IsNullOrEmpty(request.EmployeeId) == false)
                 {
                     if (skipCheckEmployee == false)
@@ -1593,18 +1485,21 @@ namespace SanyaaDelivery.Application.Services
                             return employeeValidateResult.Convert(new RequestDelayedT());
                         }
                     }
-                    string message = string.Format("لقد تم تاجيل الطلب رقم {0} الى ميعاد {1}", requestId, newTime.ToString());
+                    string title = "تأجبل طلب";
+                    string body = string.Format("لقد تم تاجيل الطلب رقم {0} الى ميعاد {1}", requestId, newTime.ToString());
+                    try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, request.EmployeeId, title, body); } catch { }
                     await messageRepository.AddAsync(new MessagesT
                     {
                         EmployeeId = request.EmployeeId,
                         MessageTimestamp = DateTime.Now.ToEgyptTime(),
                         IsRead = 0,
-                        Title = "تأجبل طلب",
-                        Body = message
+                        Title = title,
+                        Body = body
                     });
                 }
                 var delayRequest = new RequestDelayedT
                 {
+                    
                     DelayRequestTimestamp = request.RequestTimestamp.Value,
                     DelayRequestNewTimestamp = newTime,
                     DelayRequestReason = reason,
@@ -1787,8 +1682,18 @@ namespace SanyaaDelivery.Application.Services
             try
             {
                 isRootTransaction = unitOfWork.StartTransaction();
-                var requestServiceList = await GetServiceListAsync(requestService.RequestId);
-                if (requestServiceList.Count <= 1 && requestService.RequestServicesQuantity <= 0)
+                var request = await requestRepository.Where(d => d.RequestId == requestService.RequestId)
+                    .Include(d => d.RequestServicesT)
+                    .Include(d => d.RequestStagesT)
+                    .Include(d => d.RequestDiscountT)
+                    .FirstOrDefaultAsync();
+
+                var requestValidation = helperService.ValidateRequest<RequestServicesT>(request);
+                if (requestValidation.IsFail)
+                {
+                    return requestValidation;
+                }
+                if (request.RequestServicesT.Count <= 1 && requestService.RequestServicesQuantity <= 0)
                 {
                     return ResultFactory<RequestServicesT>.CreateErrorResponseMessageFD("Can't delete this service, the request must have at least one service");
                 }
@@ -1803,34 +1708,24 @@ namespace SanyaaDelivery.Application.Services
                     return cartResult.Convert(requestService);
                 }
                 requestService.AddTimestamp = DateTime.Now;
-                var requestServiceFound = requestServiceList.FirstOrDefault(d => d.ServiceId == requestService.ServiceId);
+                var requestServiceFound = request.RequestServicesT.FirstOrDefault(d => d.ServiceId == requestService.ServiceId);
                 if (requestServiceFound.IsNotNull())
                 {
                     if (requestService.RequestServicesQuantity <= 0)
                     {
+                        //request.RequestServicesT.Remove(requestServiceFound);
                         await requestServiceRepository.DeleteAsync(requestServiceFound.RequestServiceId);
                     }
                     else
                     {
                         requestServiceFound.RequestServicesQuantity = requestService.RequestServicesQuantity;
-                        requestServiceRepository.Update(requestServiceFound.RequestServiceId, requestServiceFound);
                     }
                 }
                 else
                 {
-                    await requestServiceRepository.AddAsync(requestService);
+                    request.RequestServicesT.Add(requestService);
                 }
                 await unitOfWork.SaveAsync();
-                var requestList = await GetList(requestId: requestService.RequestId, includeRequestService: true, includeRequestStage: true, includeDiscounts: true);
-                var request = requestList.FirstOrDefault();
-                if (request.IsCanceled)
-                {
-                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is canceled");
-                }
-                if (request.IsCompleted)
-                {
-                    return ResultFactory<RequestServicesT>.CreateErrorResponseMessage("This request is complete");
-                }
                 await UpdateWithCartAsync(request);
                 int affectedRows = 0;
                 if (isRootTransaction)
@@ -1946,5 +1841,6 @@ namespace SanyaaDelivery.Application.Services
             requestRepository.Update(request.RequestId, request);
             return await requestRepository.SaveAsync();
         }
+
     }
 }

@@ -6,8 +6,11 @@
 
   <ItemGroup>
     <Compile Remove="DTOs\**" />
+    <Compile Remove="Services\TechnicianSelectionServices\**" />
     <EmbeddedResource Remove="DTOs\**" />
+    <EmbeddedResource Remove="Services\TechnicianSelectionServices\**" />
     <None Remove="DTOs\**" />
+    <None Remove="Services\TechnicianSelectionServices\**" />
   </ItemGroup>
 
   <ItemGroup>

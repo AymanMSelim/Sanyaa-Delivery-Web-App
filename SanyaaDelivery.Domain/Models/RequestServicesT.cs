@@ -15,6 +15,7 @@ namespace SanyaaDelivery.Domain.Models
         public decimal ServiceMaterialCost { get; set; }
         public int ServicePoint { get; set; }
 
+        public int? SystemUserId { get; set; }
         public RequestT Request { get; set; }
         public ServiceT Service { get; set; }
     }

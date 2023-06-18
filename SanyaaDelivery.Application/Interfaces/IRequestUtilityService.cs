@@ -13,7 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null, bool activeEmployeeAccount = false);
         Task<Result<List<PaymentT>>> PayAllAsync(string employeeId, int systemUserId, decimal? amount = null);
         Task<Result<object>> CompleteAsync(int requestId, int systemUserId);
-        Task<Result<object>> FollowAsync(FollowUpT followUp);
+        Task<Result<FollowUpT>> FollowAsync(FollowUpT followUp);
         Task<List<EmployeeNotPaidRequestSummaryDto>> GetNotPaidSummaryAsync(DateTime? startTime = null,
             DateTime? endTime = null, int? departmentId = null, string employeeId = null, int? requestId = null);
         Task<List<EmployeeNotPaidRequestDto>> GetNotPaidAsync(string employeeId);
@@ -23,5 +23,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<Result<object>> ResetRequestAsync(int requestId);
         Task<bool> IsHaveUnPaidRequestExceed3Days(string employeeId);
         Task<Result<object>> ConfirmArrivalAsync(int id);
+        Task<bool> IsEmployeeCanEditRequest(int id);
     }
 }

@@ -27,12 +27,13 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RejectRequestT> rejectRequestRepository;
         private readonly IEmployeeRequestService employeeRequestService;
         private readonly IHelperService helperService;
+        private readonly INotificatonService notificatonService;
         private readonly IUnitOfWork unitOfWork;
 
         public OperationService(IRepository<RequestT> requestRepository, IRepository<BroadcastRequestT> broadcastRequestRepository, 
             IRepository<EmployeeT> employeeRepository, IRepository<OpreationT> opreationRepository, ITranslationService translationService,
             IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<RejectRequestT> rejectRequestRepository, 
-            IEmployeeRequestService employeeRequestService, IHelperService helperService, IUnitOfWork unitOfWork)
+            IEmployeeRequestService employeeRequestService, IHelperService helperService, INotificatonService notificatonService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
             this.broadcastRequestRepository = broadcastRequestRepository;
@@ -43,6 +44,7 @@ namespace SanyaaDelivery.Application.Services
             this.rejectRequestRepository = rejectRequestRepository;
             this.employeeRequestService = employeeRequestService;
             this.helperService = helperService;
+            this.notificatonService = notificatonService;
             this.unitOfWork = unitOfWork;
         }
 
@@ -55,10 +57,17 @@ namespace SanyaaDelivery.Application.Services
                 {
                     return ResultFactory<object>.CreateNotFoundResponse("Request not found");
                 }
+                var validationResult = helperService.ValidateRequest<object>(request, model.EmployeeId);
+                if (validationResult.IsFail)
+                {
+                    return validationResult;
+                }
                 request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Waiting);
                 requestRepository.Update(request.RequestId, request);
                 int affectedRows = await requestRepository.SaveAsync();
-
+                string title = $"طلب رقم {request.RequestId}";
+                string body = "تم تعيين عامل/عاملة على الطلب الخاص بكم";
+                try { await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body); } catch { }
                 return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
             }
             catch (Exception ex)
@@ -81,13 +90,11 @@ namespace SanyaaDelivery.Application.Services
             var activeRequestList = new List<AppRequestDto>();
             if (operation.IsActive)
             {
-                //var employeeDepartmentIdList = await employeeDepartmentRepository.Where(d => d.EmployeeId == employeeId)
-                //   .Select(d => d.DepartmentId)
-                //   .ToListAsync();
-                var broadcastStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Broadcast);
+                var notAssignStatusList = helperService.GetNotAssignStatusList();
                 var waitingApproveStatus = GeneralSetting.GetRequestStatusId(RequestStatus.WaitingApprove);
                 broadcastRequstList = await broadcastRequestRepository
-                    .Where(d => d.Status == Domain.Enum.BroadcastStatus.Pending.ToString() && d.Request.RequestStatus == broadcastStatus && d.EmployeeId == employeeId)
+                    .Where(d => d.Status == Domain.Enum.BroadcastStatus.Pending.ToString() && notAssignStatusList.Contains(d.Request.RequestStatus) 
+                    && d.Request.EmployeeId == null && d.EmployeeId == employeeId)
                     .Select(d => new AppRequestDto
                     {
                         Date = d.Request.RequestTimestamp.Value.ToString("yyyy-MM-dd"),
@@ -98,7 +105,7 @@ namespace SanyaaDelivery.Application.Services
                         RequestId = d.RequestId,
                         Time = d.Request.RequestTimestamp.Value.ToString("hh:mm tt"),
                         Services = string.Join(", ", d.Request.RequestServicesT.Select(t => t.Service.ServiceName).ToList())
-                    }).ToListAsync();
+                    }).Distinct().ToListAsync();
                 waitingApproveRequstList = await requestRepository.Where(d => d.RequestStatus == waitingApproveStatus && d.EmployeeId == employeeId)
                          .Select(d => new AppRequestDto
                          {
@@ -111,20 +118,7 @@ namespace SanyaaDelivery.Application.Services
                              Time = d.RequestTimestamp.Value.ToString("hh:mm tt"),
                              Services = string.Join(", ", d.RequestServicesT.Select(t => t.Service.ServiceName).ToList())
                          }).ToListAsync();
-                //activeRequest = await requestRepository
-                //    .Where(d => d.RequestStatus == broadcastStatus && d.IsCanceled == false)
-                //    .Where(d => d.BroadcastRequestT.Any(t => t.EmployeeId == employeeId && t.Status == Domain.Enum.BroadcastStatus.Pending.ToString()))
-                //    .Select(d => new AppRequestDto
-                //    {
-                //        Date = d.RequestTimestamp.Value.ToString("yyyy-MM-dd"),
-                //        RequestStatus = translationService.Translate(d.RequestStatusNavigation.RequestStatusName),
-                //        DayOfWeek = translationService.Translate(d.RequestTimestamp.Value.DayOfWeek.ToString()),
-                //        Department = d.Department.DepartmentName,
-                //        RequestCaption = translationService.Translate("Request") + " #" + d.RequestId,
-                //        RequestId = d.RequestId,
-                //        Time = d.RequestTimestamp.Value.ToString("hh:mm tt"),
-                //        Services = string.Join(", ", d.RequestServicesT.Select(t => t.Service.ServiceName).ToList())
-                //    }).ToListAsync();
+                
                 var broadcastIdList = broadcastRequstList.Select(d => d.RequestId).ToList();
                 if (broadcastIdList.HasItem())
                 {
@@ -155,7 +149,8 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<BroadcastRequestDetailsDto> GetRequestDetailsAsync(BroadcastRequestActionDto model)
         {
-            var broadcastRequest = await broadcastRequestRepository.Where(d => d.EmployeeId == model.EmployeeId && d.RequestId == model.RequestId)
+            var broadcastRequest = await broadcastRequestRepository
+                .Where(d => d.EmployeeId == model.EmployeeId && d.RequestId == model.RequestId && d.Status == Domain.Enum.BroadcastStatus.Pending.ToString())
                 .FirstOrDefaultAsync();
             if (broadcastRequest.IsNotNull())
             {
@@ -204,7 +199,8 @@ namespace SanyaaDelivery.Application.Services
         {
             try
             {
-                var broadcastRequest = await broadcastRequestRepository.Where(d => d.RequestId == model.RequestId && d.EmployeeId == model.EmployeeId)
+                var broadcastRequest = await broadcastRequestRepository
+                    .Where(d => d.RequestId == model.RequestId && d.EmployeeId == model.EmployeeId && d.Status != Domain.Enum.BroadcastStatus.Rejected.ToString())
                     .FirstOrDefaultAsync();
                 if (broadcastRequest.IsNotNull())
                 {
@@ -228,10 +224,15 @@ namespace SanyaaDelivery.Application.Services
             {
                 isRootTransaction = unitOfWork.StartTransaction();
                 var request = await requestRepository.GetAsync(model.RequestId);
-                var requestValidationResult = helperService.ValidateRequest<RejectRequestT>(request, model.EmployeeId);
+                var requestValidationResult = helperService.ValidateRequest<RejectRequestT>(request, model.EmployeeId, true);
                 if (requestValidationResult.IsFail)
                 {
                     return requestValidationResult;
+                }
+                var inExcution = GeneralSetting.GetRequestStatusId(RequestStatus.InExcution);
+                if (request.RequestStatus == inExcution)
+                {
+                    return ResultFactory<RejectRequestT>.CreateErrorResponseMessageFD("This request in progress, can't be rejected");
                 }
                 request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Rejected);
                 request.EmployeeId = null;
@@ -318,9 +319,10 @@ namespace SanyaaDelivery.Application.Services
                 var employeeValidationResult = await employeeRequestService.ValidateEmployeeForRequest(model.EmployeeId, request.RequestTimestamp.Value, request.BranchId, request.DepartmentId, request.RequestId);
                 if (employeeValidationResult.IsFail)
                 {
-                    return ResultFactory<BroadcastRequestT>.CreateErrorResponseMessageFD("You not available at this request time");
+                    return employeeValidationResult.Convert(new BroadcastRequestT());
                 }
-                var broadcastRequest = await broadcastRequestRepository.Where(d => d.RequestId == model.RequestId && d.EmployeeId == model.EmployeeId)
+                var broadcastRequest = await broadcastRequestRepository
+                    .Where(d => d.RequestId == model.RequestId && d.EmployeeId == model.EmployeeId && d.Status == BroadcastStatus.Pending.ToString())
                     .FirstOrDefaultAsync();
                 if (broadcastRequest.IsNotNull())
                 {
@@ -355,28 +357,69 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<List<BroadcastRequestT>>> BroadcastAsync(int requestId)
         {
-            var requestDetails = await requestRepository.Where(d => d.RequestId == requestId)
-                .Select(d => new { d.RequestId, d.RequestTimestamp, d.DepartmentId, d.BranchId })
+            var request = await requestRepository.Where(d => d.RequestId == requestId)
                 .FirstOrDefaultAsync();
+            var validationResult = helperService.ValidateRequest<List<BroadcastRequestT>>(request);
+            if (validationResult.IsFail)
+            {
+                return validationResult;
+            }
+            if (!string.IsNullOrEmpty(request.EmployeeId))
+            {
+                return ResultFactory<List<BroadcastRequestT>>
+                   .CreateErrorResponseMessage("This request is assign to an employee, can't be broadcasted");
+            }
             var employeeIdList = await employeeRequestService
-                .GetFreeEmployeeListAsync(requestDetails.RequestTimestamp.Value, requestDetails.DepartmentId.Value, requestDetails.BranchId);
+                .GetFreeEmployeeIdListAsync(request.RequestTimestamp.Value, request.DepartmentId.Value, request.BranchId);
             if (employeeIdList.IsEmpty())
             {
                 return ResultFactory<List<BroadcastRequestT>>
-                    .CreateErrorResponseMessage("No employee available at this time, please select another time");
+                    .CreateErrorResponseMessage("No technician available at this time, please select another time");
             }
-            var broadcast = employeeIdList.Select(d => new BroadcastRequestT
+            var pendingBroadcastEmployeeIdList = await broadcastRequestRepository
+               .Where(d => d.RequestId == requestId && d.Status == BroadcastStatus.Pending.ToString())
+               .Select(d => d.EmployeeId)
+               .ToListAsync();
+            var employeeIdBroadcastList = employeeIdList.Except(pendingBroadcastEmployeeIdList).ToList();
+            var broadcast = employeeIdBroadcastList.Select(d => new BroadcastRequestT
             {
                 CreationTime = DateTime.Now.EgyptTimeNow(),
                 EmployeeId = d,
-                IsListed = false,
-                IsSeen = false,
                 RequestId = requestId,
                 Status = BroadcastStatus.Pending.ToString(),
             }).ToList();
-            await broadcastRequestRepository.DbSet.AddRangeAsync(broadcast);
+
+            if (broadcast.HasItem())
+            {
+                await broadcastRequestRepository.DbSet.AddRangeAsync(broadcast);
+            }
+            var broadcastStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Broadcast);
+            request.RequestStatus = broadcastStatus;
+            requestRepository.Update(request.RequestId, request);
             var affectedRows = await broadcastRequestRepository.SaveAsync();
+            string title = $"طلب جديد #{requestId}";
+            string body = $"يوجد طلب جديد, من فضلك قم بالتفاعل معه سريعا";
+            foreach (var id in employeeIdList)
+            {
+                try { await notificatonService.SendFirebaseNotificationAsync(AccountType.Employee, id, title, body); } catch { }
+            }
+            //broadcast.ForEach(d => d.Request = null);
             return ResultFactory<List<BroadcastRequestT>>.CreateAffectedRowsResult(affectedRows, data: broadcast);
+        }
+
+        public async Task BroadcastTask()
+        {
+            var requestIdList = await requestRepository.Where(d => d.IsCanceled == false && d.IsCompleted == false && d.EmployeeId == null)
+                .Select(d => d.RequestId)
+                .ToListAsync();
+            if (requestIdList.IsEmpty())
+            {
+                return;
+            }
+            foreach (var id in requestIdList)
+            {
+                try { await BroadcastAsync(id); } catch { }
+            }
         }
     }
 }

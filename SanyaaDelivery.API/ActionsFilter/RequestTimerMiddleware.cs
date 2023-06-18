@@ -30,7 +30,7 @@ namespace SanyaaDelivery.API.ActionsFilter
             await _next(context);
             sw.Stop();
             var elapsed = sw.ElapsedMilliseconds;
-            message = $"Time {DateTime.Now.EgyptTimeNow()} Request #{currentRequest} {context.Request.Path} End, Elapsed {elapsed} Milliseconds\n";
+            message = $"Time {DateTime.Now.EgyptTimeNow()} Request #{currentRequest} {context.Request.Path} End, Elapsed {elapsed} Milliseconds, Status code = {context.Response.StatusCode}\n";
             System.IO.File.AppendAllText($@"wwwroot\timer\timer-{DateTime.Now.EgyptTimeNow().ToString("yyyy-MM-dd HH")}.txt", message);
             // Do something with elapsed time, such as logging or storing in a database
         }

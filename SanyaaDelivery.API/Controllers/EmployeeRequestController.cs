@@ -14,7 +14,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IEmployeeRequestService employeeRequestService;
 
-        public EmployeeRequestController(IEmployeeRequestService employeeRequestService)
+        public EmployeeRequestController(IEmployeeRequestService employeeRequestService, CommonService commonService) : base(commonService)
         {
             this.employeeRequestService = employeeRequestService;
         }

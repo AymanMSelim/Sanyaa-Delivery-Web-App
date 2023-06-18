@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Domain.OtherModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,8 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IRepository<CityT> cityRepository;
         private readonly IRepository<RegionT> regionRepository;
-
+        public string Host { get; private set; }
+        public int SystemUserId { get; private set; }
         public HelperService(IRepository<ClientSubscriptionT> clientSubscriptionRepository, IRepository<DepartmentT> departmentRepository,
              IRepository<CityT> cityRepository, IRepository<RegionT> regionRepository)
         {
@@ -93,7 +95,7 @@ namespace SanyaaDelivery.Application.Services
             return ResultFactory<string>.CreateSuccessResponse();
         }
 
-        public Result<T> ValidateRequest<T>(RequestT request, string employeeId = null)
+        public Result<T> ValidateRequest<T>(RequestT request, string employeeId = null, bool checkEmployee = false)
         {
             if (request.IsNull())
             {
@@ -111,8 +113,77 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<T>.CreateErrorResponseMessageFD(message: "This request not belong to this employee");
             }
+            if(checkEmployee && request.EmployeeId != employeeId)
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD(message: "This request not belong to this employee");
+            }
             return ResultFactory<T>.CreateSuccessResponse();
         }
 
+        public Result<T> ValidateFollowUpRequest<T>(RequestT request)
+        {
+            if (request.IsCompleted is false && request.IsCanceled is false)
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD("This request is not completed or canceled to follow up");
+            }
+            if (request.IsFollowed)
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD("This request is already followed");
+            }
+            return ResultFactory<T>.CreateSuccessResponse();
+        }
+
+        public void SetHost(string host)
+        {
+            Host = host;
+        }
+
+        public string GetHost()
+        {
+            return Host;
+        }
+
+        public DepartmentTimeWhereBetween GetDepartmentTimeBetween(int departmentId, DateTime dateTime)
+        {
+            return GetDepartmentTimeBetween(new List<int> { departmentId }, dateTime);
+        }
+
+        public DepartmentTimeWhereBetween GetDepartmentTimeBetween(List<int> departmentIdList, DateTime dateTime)
+        {
+            DateTime startTime;
+            DateTime endTime;
+            if (departmentIdList.Contains(GeneralSetting.CleaningDepartmentId))
+            {
+                startTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 1);
+                endTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, 23, 59, 57);
+            }
+            else
+            {
+                startTime = dateTime.AddHours(-GeneralSetting.RequestExcutionHours);
+                endTime = dateTime.AddHours(GeneralSetting.RequestExcutionHours);
+            }
+            return new DepartmentTimeWhereBetween { StartTime = startTime, EndTime = endTime };
+        }
+
+        public List<sbyte> GetNotAssignStatusList()
+        {
+            return new List<sbyte>
+            {
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.Broadcast),
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.NotSet),
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.Rejected),
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.Delayed),
+            };
+        }
+
+        public void SetSystemUser(int systemUserId)
+        {
+            SystemUserId = systemUserId;
+        }
+
+        public int GetSystemUser()
+        {
+            return SystemUserId;
+        }
     }
 }

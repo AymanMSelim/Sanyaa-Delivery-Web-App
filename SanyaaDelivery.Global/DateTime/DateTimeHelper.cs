@@ -33,13 +33,13 @@ namespace App.Global.DateTimeHelper
             return new DateTime(date.Value.Year, date.Value.Month, date.Value.Day, 0, 0, 0);
         }
 
-        public static DateTime GetStartWorkingDayTimeS(DateTime? date = null)
+        public static DateTime GetStartWorkingDayTimeS(DateTime? date = null, int startHour = 9)
         {
             if (date == null)
             {
-                return new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 9, 0, 0);
+                return new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, startHour, 0, 0);
             }
-            return new DateTime(date.Value.Year, date.Value.Month, date.Value.Day, 9, 0, 0);
+            return new DateTime(date.Value.Year, date.Value.Month, date.Value.Day, startHour, 0, 0);
         }
 
         public static DateTime GetEndTimeOfDayS(DateTime? date = null)

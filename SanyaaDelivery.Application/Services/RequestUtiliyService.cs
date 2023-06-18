@@ -25,13 +25,14 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<FollowUpT> followUpRepository;
         private readonly IRepository<ClientPointT> pointRepository;
         private readonly IRepository<ClientT> clientRepository;
+        private readonly INotificatonService notificatonService;
         private readonly IRepository<MessagesT> messageRepository;
         private readonly IEmployeeAppAccountService employeeAppAccountService;
         private readonly IHelperService helperService;
         private readonly IUnitOfWork unitOfWork;
 
         public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService,
-            IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IRepository<ClientT> clientRepository,
+            IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IRepository<ClientT> clientRepository, INotificatonService notificatonService,
             IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IHelperService helperService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
@@ -40,6 +41,7 @@ namespace SanyaaDelivery.Application.Services
             this.followUpRepository = followUpRepository;
             this.pointRepository = pointRepository;
             this.clientRepository = clientRepository;
+            this.notificatonService = notificatonService;
             this.messageRepository = messageRepository;
             this.employeeAppAccountService = employeeAppAccountService;
             this.helperService = helperService;
@@ -130,25 +132,23 @@ namespace SanyaaDelivery.Application.Services
             request.RequestStagesT.SentTimestamp = DateTime.Now.EgyptTimeNow();
             request.IsCanceled = false;
             request.IsCompleted = false;
+            request.IsFollowed = false;
             requestRepository.Update(request.RequestId, request);
             var affectedRows = await requestRepository.SaveAsync();
             return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
         }
 
-        public async Task<Result<object>> FollowAsync(FollowUpT followUp)
+        public async Task<Result<FollowUpT>> FollowAsync(FollowUpT followUp)
         {
             bool isRootTransaction = false;
             try
             {
                 unitOfWork.StartTransaction();
                 var request = await requestRepository.DbSet.FirstOrDefaultAsync(d => d.RequestId == followUp.RequestId);
-                if (request.IsCompleted is false && request.IsCanceled is false)
+                var requestValidation = helperService.ValidateFollowUpRequest<FollowUpT>(request);
+                if (requestValidation.IsFail)
                 {
-                    return ResultFactory<object>.CreateErrorResponseMessageFD("This request is not completed or canceled o follow up");
-                }
-                if (request.IsFollowed)
-                {
-                    return ResultFactory<object>.CreateErrorResponseMessageFD("This request is already followed");
+                    return requestValidation;
                 }
                 request.IsFollowed = true;
                 request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.FollowUp);
@@ -160,12 +160,12 @@ namespace SanyaaDelivery.Application.Services
                 {
                     affectedRows = await unitOfWork.CommitAsync(false);
                 }
-                return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+                return ResultFactory<FollowUpT>.CreateAffectedRowsResult(affectedRows);
             }
             catch (Exception ex)
             {
                 unitOfWork.RollBack();
-                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<object>(ex);
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<FollowUpT>(ex);
             }
             finally
             {
@@ -223,7 +223,6 @@ namespace SanyaaDelivery.Application.Services
                      EmployeeId = d.Key.EmployeeId,
                      EmployeeName = d.Key.EmployeeName,
                      EmployeePhone = d.Key.EmployeePhone,
-                     AccountState = d.Key.AccountState,
                      //IncreaseDiscountTotal = d.IncreaseDiscountT.Sum(s => s.IncreaseDiscountValue),
                      TotalUnPaidRequestCount = d.Count(),
                      TotalCompanyPercentage = d.Sum(s => s.CompanyPercentageAmount),
@@ -325,15 +324,19 @@ namespace SanyaaDelivery.Application.Services
                     };
                     await paymentRepository.AddAsync(payment);
                 }
+                string title = "دفع طلب #" + requestId;
+                string body = "تم دفع الطلب #" + requestId;
+                try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, request.EmployeeId, title, body); } catch { }
                 var message = new MessagesT
                 {
                     
-                    Title = "دفع طلب #" + requestId,
-                    Body = "تم دفع الطلب #" + requestId,
+                    Title = title,
+                    Body = body,
                     EmployeeId = request.EmployeeId,
                     IsRead = 0,
                     MessageTimestamp = DateTime.Now.EgyptTimeNow()
                 };
+
                 await messageRepository.AddAsync(message);
                 if (activeEmployeeAccount)
                 {
@@ -415,6 +418,18 @@ namespace SanyaaDelivery.Application.Services
             requestRepository.Update(request.RequestId, request);
             var affectedRows = await requestRepository.SaveAsync();
             return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+        }
+
+        public async Task<bool> IsEmployeeCanEditRequest(int id)
+        {
+            var status = await requestRepository.Where(d => d.RequestId == id)
+                .Select(d => d.RequestStatus)
+                .FirstOrDefaultAsync();
+            if(status == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            {
+                return true;
+            }
+            return false;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace SanyaaDelivery.API.Controllers
     {
         private readonly IEmpDeptService empDeptService;
 
-        public EmpDeptController(IEmpDeptService empDeptService)
+        public EmpDeptController(IEmpDeptService empDeptService, CommonService commonService) : base(commonService)
         {
             this.empDeptService = empDeptService;
         }

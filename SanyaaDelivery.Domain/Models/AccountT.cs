@@ -40,5 +40,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<AccountRoleT> AccountRoleT { get; set; }
         public ICollection<FirebaseCloudT> FirebaseCloudT { get; set; }
         public ICollection<TokenT> TokenT { get; set; }
+        public string Description { get; set; }
     }
 }
