@@ -425,6 +425,21 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+
+        [HttpPost("ChangeRequestTime")]
+        public async Task<ActionResult<Result<RequestDelayedT>>> ChangeRequestTime(ChangeRequestTimeDto model)
+        {
+            try
+            {
+                var result = await requestService.ChangeTimeAsync(model.RequestId, model.Time, model.Reason, commonService.GetSystemUserId(), model.SkipCheckEmployee);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<RequestDelayedT>.CreateExceptionResponse(ex));
+            }
+        }
+
         [HttpPost("ReAssignEmployee")]
         public async Task<ActionResult<Result<AppEmployeeDto>>> ReAssignEmployee(ReAssignEmployeeDto employeeDto)
         {

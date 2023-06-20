@@ -1795,6 +1795,10 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnName("is_new_employee")
                     .HasColumnType("bit(1)");
 
+                entity.Property(e => e.IsFired)
+                  .HasColumnName("is_fired")
+                  .HasColumnType("bit(1)");
+
                 entity.Property(e => e.SubscriptionId)
                     .HasColumnName("subscription_id")
                     .HasColumnType("int(11)");
