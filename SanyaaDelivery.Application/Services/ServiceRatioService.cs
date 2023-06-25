@@ -125,6 +125,7 @@ namespace SanyaaDelivery.Application.Services
         public async Task<decimal> GetRatioAsync(int cityId, int departmentId)
         {
             var ratio = await serviceRatioDetailsRepository.Where(d => d.DepartmentId == departmentId && d.CityId == cityId)
+                .OrderBy(d => d.ServiceRatioDetailsId)
                 .Select(d => d.ServiceRatio.Ratio).LastOrDefaultAsync();
             if (ratio.IsNull() || ratio == 0)
             {

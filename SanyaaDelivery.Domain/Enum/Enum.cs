@@ -92,7 +92,7 @@ namespace SanyaaDelivery.Domain.Enum
         Canceled = 0,
         Delayed = 1,
         Rejected = 2,
-        Accepted = 3,
+        StartExcution = 3,
         Broadcast = 4,
         WaitingApprove = 5,
         NotSet = 10,

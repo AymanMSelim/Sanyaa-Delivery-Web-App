@@ -105,7 +105,7 @@ namespace SanyaaDelivery.Application.Services
                         RequestId = d.RequestId,
                         Time = d.Request.RequestTimestamp.Value.ToString("hh:mm tt"),
                         Services = string.Join(", ", d.Request.RequestServicesT.Select(t => t.Service.ServiceName).ToList())
-                    }).Distinct().ToListAsync();
+                    }).ToListAsync();
                 waitingApproveRequstList = await requestRepository.Where(d => d.RequestStatus == waitingApproveStatus && d.EmployeeId == employeeId)
                          .Select(d => new AppRequestDto
                          {
@@ -357,8 +357,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<List<BroadcastRequestT>>> BroadcastAsync(int requestId)
         {
-            var request = await requestRepository.Where(d => d.RequestId == requestId)
-                .FirstOrDefaultAsync();
+            var request = await requestRepository.GetAsync(requestId);
             var validationResult = helperService.ValidateRequest<List<BroadcastRequestT>>(request);
             if (validationResult.IsFail)
             {
@@ -380,8 +379,12 @@ namespace SanyaaDelivery.Application.Services
                .Where(d => d.RequestId == requestId && d.Status == BroadcastStatus.Pending.ToString())
                .Select(d => d.EmployeeId)
                .ToListAsync();
-            var employeeIdBroadcastList = employeeIdList.Except(pendingBroadcastEmployeeIdList).ToList();
-            var broadcast = employeeIdBroadcastList.Select(d => new BroadcastRequestT
+            var rejectRequestEmployeeIdList = await rejectRequestRepository.Where(d => d.RequestId == requestId)
+                .Select(d => d.EmployeeId)
+                .ToListAsync();
+            employeeIdList = employeeIdList.Except(pendingBroadcastEmployeeIdList).ToList();
+            employeeIdList = employeeIdList.Except(rejectRequestEmployeeIdList).ToList();
+            var broadcast = employeeIdList.Select(d => new BroadcastRequestT
             {
                 CreationTime = DateTime.Now.EgyptTimeNow(),
                 EmployeeId = d,

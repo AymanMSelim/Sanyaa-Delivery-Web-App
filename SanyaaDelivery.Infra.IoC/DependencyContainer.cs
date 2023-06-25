@@ -83,7 +83,6 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<FollowUpT>, FollowUpRepository>();
             services.AddScoped<IRepository<FawryChargeT>, FawryChargeRepository>();
             services.AddScoped<IRepository<FawryChargeRequestT>, FawryChargeRequestRepository>();
-            services.AddScoped<IRepository<TranslatorT>, TranslationRepository>();
             services.AddScoped<IRepository<RequestStatusT>, RequestStatusRepository>();
             services.AddScoped<IRepository<FavouriteEmployeeT>, FavouriteEmployeeRepository>();
             services.AddScoped<IRepository<SiteT>, SiteRepository>();
@@ -100,6 +99,7 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IRepository<RejectRequestT>, RequestRejectedRepository>();
             services.AddScoped<IRepository<AppNotificationT>, AppNotificationRepository>();
             services.AddScoped<IRepository<FiredStaffT>, FiredEmployeeRepository>();
+            services.AddScoped<IRepository<TranslatorT>, TranslatorRepository>();
 
 
             services.AddScoped<IClientService, ClientService>();
@@ -153,12 +153,12 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<IOperationService, OperationService>();
             services.AddScoped<IVacationService, VacationService>();
             services.AddScoped<IEmployeeInsuranceService, EmployeeInsuranceService>();
-            services.AddScoped<ISMSService, SMSMisrService>();
             services.AddScoped<INotificatonService, NotificatonService>();
+            services.AddScoped<IFawryChargeService, FawryChargeService>();
 
+            services.AddSingleton<ISMSService, SMSMisrService>();
             services.AddSingleton<Translator, Translator>();
             services.AddSingleton<IFawryAPIService, FawryAPIService>();
-            services.AddSingleton<IFawryChargeService, FawryChargeService>();
             services.AddSingleton<ITranslationService, TranslationService>();
             services.AddSingleton<DateTimeHelperService, DateTimeHelperService>();
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();

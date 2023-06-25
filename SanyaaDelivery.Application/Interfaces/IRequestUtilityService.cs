@@ -20,9 +20,12 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<EmployeeAppPaymentIndexDto> GetEmployeeAppPaymentIndex(string employeeId);
         Task<Result<object>> SetAsUnReviewedAsync(int requestId);
         Task<Result<object>> SetReviewedAsync(int requestId);
+        Task<Result<object>> StartRequestAsync(int requestId, string employeeId);
         Task<Result<object>> ResetRequestAsync(int requestId);
         Task<bool> IsHaveUnPaidRequestExceed3Days(string employeeId);
         Task<Result<object>> ConfirmArrivalAsync(int id);
         Task<bool> IsEmployeeCanEditRequest(int id);
+        Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model);
+
     }
 }

@@ -23,6 +23,7 @@ using SanyaaDelivery.Application.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using App.Global.DTOs;
+using Microsoft.Extensions.Hosting;
 
 namespace SanyaaDelivery.API
 {
@@ -40,6 +41,10 @@ namespace SanyaaDelivery.API
         {
             try
             {
+                services.AddControllers()
+                  .AddNewtonsoftJson(options =>
+                  options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+                );
                 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                .AddJwtBearer(options =>
                {
@@ -51,14 +56,13 @@ namespace SanyaaDelivery.API
                        ValidateIssuer = false
                    };
                });
-                services.AddMvc()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_2_1).AddJsonOptions(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
                 services.AddDbContext<SanyaaDatabaseContext>(options =>
-                    options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")));
+                    options.UseMySQL(Configuration.GetConnectionString("sanyaaDatabaseContext")));
 
 
-               // services.AddDbContext<SanyaaDatabaseContext>(options =>
-               //options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")).EnableSensitiveDataLogging(true).UseLoggerFactory(new LoggerFactory().AddConsole()));
+
+                // services.AddDbContext<SanyaaDatabaseContext>(options =>
+                //options.UseMySql(Configuration.GetConnectionString("sanyaaDatabaseContext")).EnableSensitiveDataLogging(true).UseLoggerFactory(new LoggerFactory().AddConsole()));
 
                 DependencyContainer.RegisterServices(services);
                 services.AddHttpContextAccessor();
@@ -91,10 +95,11 @@ namespace SanyaaDelivery.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Application.IGeneralSetting generalSetting, ITranslationService translationService)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, Application.IGeneralSetting generalSetting, ITranslationService translationService)
         {
             try
             {
+                app.UseRouting();
                 if (env.IsDevelopment())
                 {
                     app.UseDeveloperExceptionPage();
@@ -107,6 +112,7 @@ namespace SanyaaDelivery.API
                 app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
+                app.UseAuthorization();
                 app.UseStaticFiles(new StaticFileOptions()
                 {
                     OnPrepareResponse = (context) =>
@@ -114,27 +120,16 @@ namespace SanyaaDelivery.API
                         if (!context.File.PhysicalPath.ToLower().Contains("public") && !context.Context.User.Identity.IsAuthenticated)
                         {
                             context.Context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                            //throw new Exception("Not authenticated");
                             var response = ResultFactory<object>.CreateErrorResponseMessageFD("NotAuthenticated", App.Global.Enums.ResultStatusCode.NotAuthenticated);
                             context.Context.Response.WriteAsync(App.Global.Serialization.Json.Serialize(response));
                         }
                     }
                 });
                 app.UseMiddleware<UnauthorizedResponseMiddleware>();
-                //app.UseExceptionHandler(c => c.Run(async context =>
-                //{
-                //    var exception = context.Features
-                //        .Get<IExceptionHandlerPathFeature>()
-                //        .Error;
-                //    var response = new { error = exception.Message };
-                //    await context.Response.(response);
-                //}));
-                app.UseMvc();
-                //app.UseSwagger();
-                //app.UseSwaggerUI(c =>
-                //{
-                //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sanyaa API v1");
-                //});
+                app.UseEndpoints(opts =>
+                {
+                    opts.MapDefaultControllerRoute();
+                });                //app.UseSwagger();
                 App.Global.Firebase.FirebaseMessaging.Initalize(env.WebRootPath + "/firebase.json", env.WebRootPath + "/empFirebase.json");
 
             }

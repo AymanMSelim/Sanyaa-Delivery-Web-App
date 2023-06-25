@@ -21,6 +21,10 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RegionT> regionRepository;
         public string Host { get; private set; }
         public int SystemUserId { get; private set; }
+
+        public bool IsViaApp { get; set; }
+        public bool IsViaClientApp { get; set; }
+        public bool IsViaEmpApp { get; set; }
         public HelperService(IRepository<ClientSubscriptionT> clientSubscriptionRepository, IRepository<DepartmentT> departmentRepository,
              IRepository<CityT> cityRepository, IRepository<RegionT> regionRepository)
         {
@@ -184,6 +188,22 @@ namespace SanyaaDelivery.Application.Services
         public int GetSystemUser()
         {
             return SystemUserId;
+        }
+
+        public List<sbyte> GetExcutionStatusList()
+        {
+            return new List<sbyte>
+            {
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.InExcution),
+                GeneralSetting.GetRequestStatusId(Domain.Enum.RequestStatus.StartExcution)
+            };
+        }
+
+        public void SetViaApp(bool isViaApp, bool isViaClientApp, bool isViaEmpApp)
+        {
+            this.IsViaApp = isViaApp;
+            this.IsViaEmpApp = isViaEmpApp;
+            this.IsViaClientApp = isViaClientApp;
         }
     }
 }

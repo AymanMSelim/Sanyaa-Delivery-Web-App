@@ -98,6 +98,7 @@ namespace SanyaaDelivery.Application.Services
                 if (requestList.HasItem())
                 {
                     request = requestList
+                        .OrderBy(d => d.RequestId)
                         .LastOrDefault(
                         d => d.RequestTimestamp.HasValue &&
                         d.RequestTimestamp.Value.Year == tempTime.Year &&
@@ -106,6 +107,7 @@ namespace SanyaaDelivery.Application.Services
                     if(request == null)
                     {
                         request = requestList
+                        .OrderBy(d => d.RequestId)
                         .LastOrDefault(
                         d => d.RequestTimestamp.HasValue &&
                         d.RequestTimestamp.Value.Year == tempTime.Year &&
@@ -272,7 +274,7 @@ namespace SanyaaDelivery.Application.Services
                 {
                     Id = 5,
                     Name = "تم الغاء الطلب",
-                    ActionTime = request.RequestCanceledT.LastOrDefault().CancelRequestTimestamp.ToString("yyyy MMM dd hh:mm tt"),
+                    ActionTime = request.RequestCanceledT.OrderBy(d => d.RequestId).LastOrDefault().CancelRequestTimestamp.ToString("yyyy MMM dd hh:mm tt"),
                 }
                 );
             }

@@ -13,6 +13,7 @@ namespace SanyaaDelivery.Domain.Models
         public sbyte RequestStatusId { get; set; }
         public string RequestStatusName { get; set; }
         public string RequestStatusDes { get; set; }
+        public string Color { get; set; }
         public int? RequestStatusGroupId { get; set; }
 
         public RequestStatusGroupT RequestStatusGroup { get; set; }

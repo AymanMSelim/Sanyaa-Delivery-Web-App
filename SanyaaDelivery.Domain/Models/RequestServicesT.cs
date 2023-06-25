@@ -18,5 +18,6 @@ namespace SanyaaDelivery.Domain.Models
         public int? SystemUserId { get; set; }
         public RequestT Request { get; set; }
         public ServiceT Service { get; set; }
+        public SystemUserT SystemUser { get; set; }
     }
 }

@@ -81,6 +81,10 @@ namespace SanyaaDelivery.Application.Services
         public async Task<Stream> GetStreamAsync(int id)
         {
             var attachment = await repo.GetAsync(id);
+            if (attachment.IsNull())
+            {
+                return null;
+            }
             var file = await System.IO.File.ReadAllBytesAsync($"wwwroot{attachment.FilePath.Replace("/", @"\")}");
             return new MemoryStream(file);
         }
@@ -148,7 +152,7 @@ namespace SanyaaDelivery.Application.Services
             {
                 return item;
             }
-            var attachment = attachmentList.LastOrDefault(d => d.AttachmentType == type);
+            var attachment = attachmentList.OrderBy(d => d.AttachmentId).LastOrDefault(d => d.AttachmentType == type);
             if (attachment.IsNotNull())
             {
                 item.FileName = attachment.FileName;

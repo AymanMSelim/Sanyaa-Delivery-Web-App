@@ -29,9 +29,10 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             DbSet.Remove(entity);
         }
 
-        public Task<Entity> GetAsync(object id)
+        public async Task<Entity> GetAsync(object id)
         {
-            return DbSet.FindAsync(id);
+            var entity = await DbSet.FindAsync(id);
+            return entity;
         }
 
         public Task<List<Entity>> GetListAsync()
@@ -39,9 +40,9 @@ namespace SanyaaDelivery.Infra.Data.Repositories
             return DbSet.ToListAsync();
         }
 
-        public Task AddAsync(Entity entity)
+        public async Task AddAsync(Entity entity)
         {
-            return DbSet.AddAsync(entity);
+            await DbSet.AddAsync(entity);
         }
 
         public void Update(object id, Entity updatedEntity)

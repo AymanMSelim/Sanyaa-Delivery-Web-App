@@ -1,8 +1,0 @@
-Time 4/3/2023 11:17:15 PM Request #0 Start
-Time 4/3/2023 11:18:12 PM Request #0 End, Elapsed 57 second
-Time 4/3/2023 11:18:25 PM Request #1 Start
-Time 4/3/2023 11:18:32 PM Request #1 End, Elapsed 7 second
-Time 4/3/2023 11:18:36 PM Request #2 Start
-Time 4/3/2023 11:18:43 PM Request #2 End, Elapsed 7 second
-Time 4/3/2023 11:29:41 PM Request #0 /api/cart/getcustomappcart Start
-Time 4/3/2023 11:29:53 PM Request #0 /api/cart/getcustomappcart End, Elapsed 11472 Milliseconds

@@ -61,7 +61,6 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> UpdateAsync(RequestT request);
         Task<Result<RequestCanceledT>> CancelAsync(int requestId, string reason, int systemUserId, bool resetSubscriptionMonthRequest = true);
         Task<Result<RequestDelayedT>> ChangeTimeAsync(int requestId, DateTime newTime, string reason, int systemUserId, bool skipCheckEmployee = false);
-        Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model);
         Task<int> AddComplaintAsync(RequestComplaintT requestComplaint);
         Task<int?> GetCartIdAsync(int requestId);
         Task<Result<RequestT>> AddAsync(AddRequestDto model, bool isViaApp, int systemUserId);

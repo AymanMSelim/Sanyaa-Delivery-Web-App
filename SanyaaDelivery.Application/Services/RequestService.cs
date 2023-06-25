@@ -1157,8 +1157,6 @@ namespace SanyaaDelivery.Application.Services
                         new InvoiceDetailsDto {Name = "المطلوب", Amount = Math.Round(d.CustomerPrice, 2), Bold = true },
                     },
                     AddressDescription = d.RequestedAddress.AddressDes,
-                    //CanAddOrUpdate = !(d.IsCanceled || d.IsCompleted),
-                    CanRejectRequest = !(d.IsCanceled || d.IsCompleted),
                     ClientName = d.Client.ClientName,
                     Location = d.RequestedAddress.Location,
                     Lat = d.RequestedAddress.Latitude,
@@ -1178,29 +1176,49 @@ namespace SanyaaDelivery.Application.Services
                 .Select(d => new { d.RequestStatus, d.RequestTimestamp, d.IsCanceled, d.IsCompleted }).FirstOrDefaultAsync();
 
             request.Tracking = await GetEmpAppRequestTrackingAsync(otherDetails.IsCanceled, requestId);
+            request.ShowRejectRequestButton = true;
+            if(otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.Waiting)
+                || otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.Delayed))
+            {
+                request.AddressDescription = "-";
+                request.FlatNumber =  0;
+                request.BlockNumber = 0;
+                request.ClientName = "-";
+                request.Phone = "-";
+                request.Location = "-";
+                request.Lat = null;
+                request.Lng =  null;
+                if (DateTime.Now.EgyptTimeNow() >= otherDetails.RequestTimestamp.Value.AddHours(-3))
+                {
+                    request.ShowStartRequestButton = true;
+                }
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.Waiting;
+                return request;
+            }
+            
             if (otherDetails.IsCanceled || otherDetails.IsCompleted)
             {
                 request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.DoneOrCanceled;
+                request.ShowRejectRequestButton = false;
                 return request;
             }
-            request.ShowCallClientButton = true;
             if (otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
             {
-                request.CanAddOrUpdate = true;
-                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.InExcution;
-                request.ShowEndRequestButton = true;
-                //request.ShowCallClientButton = true;
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.GoToClient;
+                request.ShowCallClientButton = true;
+                request.ShowChangeTimeButton = true;
+                request.ShowArrivalButton = true;
                 return request;
             }
-            if(DateTime.Now.EgyptTimeNow() >= otherDetails.RequestTimestamp.Value.AddHours(-1))
+            if (otherDetails.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.StartExcution))
             {
-                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.GoToClient;
-                //request.ShowCallClientButton = true;
-                request.ShowArrivalButton = true;
-            }
-            else
-            {
-                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.Waiting;
+                request.Tracking.SelectedItemId = (int)EmployeeRequestTrackingItem.InExcution;
+                request.ShowCallClientButton = true;
+                request.ShowChangeTimeButton = true;
+                request.ShowRejectRequestButton = false;
+                request.CanAddOrUpdate = true;
+                request.ShowEndRequestButton = true;
+                return request;
             }
             return request;
         }
@@ -1319,6 +1337,13 @@ namespace SanyaaDelivery.Application.Services
                         return ResultFactory<RequestCanceledT>.CreateErrorResponseMessage("Error while reset subscription month requests");
                     }
                 }
+                try
+                {
+                    string title = $"طلب #{request.RequestId}";
+                    string body = $"عزيزى العميل, تم إلغاء الطلب الخاص بكم, فى حالة وجود أى شكاوى الرجاء الاتصال بنا";
+                    await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body);
+                }
+                catch { }
                 int affectedRows = 0;
                 if (isRootTransaction)
                 {
@@ -1496,6 +1521,13 @@ namespace SanyaaDelivery.Application.Services
                         Title = title,
                         Body = body
                     });
+                    try
+                    {
+                        title = $"طلب #{request.RequestId}";
+                        body = $"عزيزى العميل, تم تغيير تنفيذ ميعاد الطلب الخاص بكم إلى {request.RequestTimestamp.ToString()}";
+                        await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body);
+                    }
+                    catch { }
                 }
                 var delayRequest = new RequestDelayedT
                 {
@@ -1530,46 +1562,6 @@ namespace SanyaaDelivery.Application.Services
                 }
             }
            
-        }
-
-        public async Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model)
-        {
-            EmployeeT employee = null;
-            var request = await GetAsync(model.RequestId);
-            if (request.IsCompleted)
-            {
-                return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("This request is already complete");
-            }
-            if (request.IsCanceled)
-            {
-                return ResultFactory<EmployeeT>.CreateErrorResponseMessageFD("This request is canceled");
-            }
-            if (model.RequestTime.HasValue)
-            {
-                request.RequestTimestamp = model.RequestTime;
-            }
-            if (string.IsNullOrEmpty(model.EmployeeId))
-            {
-                request.EmployeeId = null;
-                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.NotSet);
-            }
-            else
-            {
-                request.EmployeeId = model.EmployeeId;
-                if (model.SkipCheckEmployee == false)
-                {
-                    var employeeValidateResult = await employeeRequestService.ValidateEmployeeForRequest(model.EmployeeId, request.RequestTimestamp.Value, request.BranchId, request.DepartmentId, model.RequestId);
-                    if (employeeValidateResult.IsFail)
-                    {
-                        return employeeValidateResult;
-                    }
-                }
-                request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Waiting);
-                    employee = await employeeRepository.GetAsync(model.EmployeeId);
-            }
-            request.IsReviewed = false;
-            var affectedRows = await UpdateAsync(request);
-            return ResultFactory<EmployeeT>.CreateAffectedRowsResult(affectedRows, data: employee);
         }
 
         public async Task<int> AddComplaintAsync(RequestComplaintT requestComplaint)

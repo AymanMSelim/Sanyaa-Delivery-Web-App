@@ -1,8 +1,10 @@
 ﻿using App.Global.ExtensionMethods;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.Enum;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data.Context;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,10 +70,6 @@ namespace SanyaaDelivery.Application
             }
         }
 
-        static Interfaces.IAccountTypeService _accountTypeService;
-        static Interfaces.IRoleService _roleService;
-        private readonly IAppSettingService appSettingService;
-
         private static List<AccountTypeT> _accountTypeList;
 
         private static List<RoleT> _roleList;
@@ -89,29 +87,26 @@ namespace SanyaaDelivery.Application
         public static List<AppSettingT> AppSetting { get => _appSettingList; private set => _appSettingList = value; }
 
         public static List<TranslatorT> TranslationList { get => _translationList; private set => _translationList = value; }
+        public static List<RequestStatusT> RequestStatusList { get => _requestStatusList; private set => _requestStatusList = value; }
 
-        public GeneralSetting(Interfaces.IAccountTypeService accountTypeService, 
-            Interfaces.IRoleService roleService, Interfaces.IAppSettingService appSettingService, IRequestStatusService requestStatusService,
-            IConfiguration configuration)
+        public GeneralSetting(IServiceProvider serviceProvider)
         {
-            _accountTypeService = accountTypeService;
-            _roleService = roleService;
-            this.appSettingService = appSettingService;
+            var context = serviceProvider.GetRequiredService<SanyaaDatabaseContext>();
             if (_roleList == null || _roleList.Count == 0)
             {
-                _roleList = _roleService.GetList().Result;
+                _roleList = context.RoleT.ToList();
             }
             if (_accountTypeList == null || _accountTypeList.Count == 0)
             {
-                _accountTypeList = _accountTypeService.GetList().Result;
+                _accountTypeList = context.AccountTypeT.ToList();
             }
             if (_appSettingList == null || _appSettingList.Count == 0)
             {
-                _appSettingList = appSettingService.GetListAsync().Result;
+                _appSettingList = context.AppSettingT.ToList();
             }
             if(_requestStatusList == null)
             {
-                _requestStatusList = requestStatusService.GetListAsync().Result;
+                _requestStatusList = context.RequestStatusT.ToList();
             }
         }
 

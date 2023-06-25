@@ -64,16 +64,23 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<Result<AppNotificationT>> SendFirebaseNotificationAsync(Domain.Enum.AccountType accountType, string referenceId, string title, string body)
         {
-            int accountTypeInt = (int)accountType;
-            var accountId = await accountRepository.Where(d => d.AccountTypeId == accountTypeInt && d.AccountReferenceId == referenceId)
-                .Select(d =>  d.AccountId)
-                .FirstOrDefaultAsync();
-            return await SendFirebaseNotificationAsync(new AppNotificationT
+            try
             {
-                AccountId = accountId,
-                Body = body,
-                Title = title,
-            });
+                int accountTypeInt = (int)accountType;
+                var accountId = await accountRepository.Where(d => d.AccountTypeId == accountTypeInt && d.AccountReferenceId == referenceId)
+                    .Select(d => d.AccountId)
+                    .FirstOrDefaultAsync();
+                return await SendFirebaseNotificationAsync(new AppNotificationT
+                {
+                    AccountId = accountId,
+                    Body = body,
+                    Title = title,
+                });
+            }
+            catch (Exception ex)
+            {
+                return ResultFactory<AppNotificationT>.CreateExceptionResponse(ex);
+            }
         }
     }
 }

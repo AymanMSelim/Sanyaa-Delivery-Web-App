@@ -76,7 +76,8 @@ namespace SanyaaDelivery.Application.Services
             bool includeDepartment = false, bool includeSubscriptionService = false, bool includeService = false,
             bool includeAddress = false, bool includePhone = false)
         {
-            var query = repo.Where(d => d.IsCanceled == false && (d.ExpireDate == null || d.ExpireDate.Value > DateTime.Now.ToEgyptTime()));
+            DateTime dateTimeNow = DateTime.Now.ToEgyptTime();
+            var query = repo.Where(d => d.IsCanceled == false && (d.ExpireDate == null || d.ExpireDate.Value > dateTimeNow));
             if (includeSubscription)
             {
                 if (includeDepartment)

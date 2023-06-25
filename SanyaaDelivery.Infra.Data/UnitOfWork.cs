@@ -36,7 +36,7 @@ namespace SanyaaDelivery.Infra.Data
                 if (NoOfTransaction <= 1)
                 {
                     var affectedRows = await context.SaveChangesAsync();
-                    _contextTransaction.Commit();
+                    await _contextTransaction.CommitAsync();
                     _isCommit = true;
                     return affectedRows;
                 }
@@ -49,17 +49,17 @@ namespace SanyaaDelivery.Infra.Data
             else
             {
                 var affectedRows = await context.SaveChangesAsync();
-                _contextTransaction.Commit();
+                await _contextTransaction.CommitAsync();
                 _isCommit = true;
                 return affectedRows;
             }
         }
 
-        public void RollBack()
+        public async void RollBack()
         {
             if(_contextTransaction != null)
             {
-                _contextTransaction.Rollback();
+                await _contextTransaction.RollbackAsync();
                 _isRollBack = true;
             }
         }
@@ -93,15 +93,15 @@ namespace SanyaaDelivery.Infra.Data
             //}
         }
 
-        public void Dispose()
+        public async void Dispose()
         {
             if (_contextTransaction != null)
             {
                 if (_isRollBack == false && _isCommit == false)
                 {
-                    _contextTransaction.Rollback();
+                    await _contextTransaction.RollbackAsync();
                 }
-                _contextTransaction.Dispose();
+                await _contextTransaction.DisposeAsync();
                 _contextTransaction = null;
             }
         }

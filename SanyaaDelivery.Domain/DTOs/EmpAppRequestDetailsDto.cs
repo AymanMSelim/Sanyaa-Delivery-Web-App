@@ -47,6 +47,9 @@ namespace SanyaaDelivery.Domain.DTOs
         public bool ShowCallClientButton { get; set; }
         public bool ShowArrivalButton { get; set; }
         public bool ShowEndRequestButton { get; set; }
+        public bool ShowRejectRequestButton { get; set; }
+        public bool ShowChangeTimeButton { get; set; }
+        public bool ShowStartRequestButton { get; set; }
         public string Note { get; set; }
         public string Status { get; set; }
     }

@@ -29,10 +29,11 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly ITokenService tokenService;
         private readonly IRegisterService registerService;
+        private readonly INotificatonService notificatonService1;
 
         public LoginService(ISystemUserService systemUserService, IRepository<AccountT> accountRepository, IRepository<ClientT> clientRepository,
             IRepository<ClientPhonesT> clientPhoneRepository, IUnitOfWork unitOfWork, ISMSService smsService, INotificatonService notificatonService,
-            IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IRegisterService registerService)
+            IRepository<EmployeeT> employeeRepository, ITokenService tokenService, IRegisterService registerService, INotificatonService notificatonService1)
         {
             this.systemUserService = systemUserService;
             this.accountRepository = accountRepository;
@@ -44,6 +45,7 @@ namespace SanyaaDelivery.Application.Services
             this.employeeRepository = employeeRepository;
             this.tokenService = tokenService;
             this.registerService = registerService;
+            this.notificatonService1 = notificatonService1;
         }
 
         private Result<EmployeeLoginResponseDto> ValidateEmployeeLogin(EmployeeT employee)
@@ -290,7 +292,21 @@ namespace SanyaaDelivery.Application.Services
             account.MobileOtpCode = App.Global.Generator.GenerateOTPCode(4);
             account.LastOtpCreationTime = DateTime.Now.EgyptTimeNow();
             accountRepository.Update(account.AccountId, account);
-            _ = smsService.SendOTPAsync(clientPhone, account.MobileOtpCode);
+            if (string.IsNullOrEmpty(account.FcmToken))
+            {
+                _ = smsService.SendOTPAsync(clientPhone, account.MobileOtpCode);
+            }
+            else
+            {
+                try
+                {
+                    await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, account.AccountReferenceId, "OTP", $"Your sanyaa delivery OTP is {account.MobileOtpCode}");
+                }
+                catch
+                {
+                    _ = smsService.SendOTPAsync(clientPhone, account.MobileOtpCode);
+                }
+            }
             var affectedRows = await accountRepository.SaveAsync();
             return ResultFactory<OTPCodeDto>.CreateAffectedRowsResult(affectedRows, data: new OTPCodeDto
             {

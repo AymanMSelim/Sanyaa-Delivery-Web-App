@@ -1,8 +1,11 @@
 ﻿using App.Global.ExtensionMethods;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Infra.Data.Context;
+using SanyaaDelivery.Infra.Data.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,13 +16,16 @@ namespace SanyaaDelivery.Application.Services
 {
     public class TranslationService : ITranslationService
     {
-        private readonly IRepository<TranslatorT> repo;
+        private SanyaaDatabaseContext context;
 
         public static List<TranslatorT> TranslationList { get; set; }
-        public TranslationService(IRepository<TranslatorT> repo)
+        public TranslationService(IServiceProvider serviceProvider)
         {
-            this.repo = repo;
-            TranslationList = repo.DbSet.ToList();
+            if (TranslationList.IsEmpty())
+            {
+                this.context = serviceProvider.GetRequiredService<SanyaaDatabaseContext>();
+                TranslationList = context.TranslatorT.ToList();
+            }
             App.Global.Translation.Translator.TranslationList = TranslationList.Select(d => new App.Global.Translation.Translation
             {
                 Key = d.Key,
@@ -43,18 +49,18 @@ namespace SanyaaDelivery.Application.Services
 
         public List<TranslatorT> GetList()
         {
-            return repo.DbSet.ToList();
+            return context.TranslatorT.ToList();
         }
 
         public Task<List<TranslatorT>> GetListAsync(string searchValue)
         {
             if (string.IsNullOrEmpty(searchValue))
             {
-                return repo.DbSet.ToListAsync();
+                return context.TranslatorT.ToListAsync();
             }
             else
             {
-                return repo.Where(d => d.Key.Contains(searchValue))
+                return context.TranslatorT.Where(d => d.Key.Contains(searchValue))
                     .ToListAsync();
             }
         }
@@ -62,8 +68,8 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> AddAsync(TranslatorT translator)
         {
-            await repo.AddAsync(translator);
-            var affectedRows = await repo.SaveAsync();
+            await context.TranslatorT.AddAsync(translator);
+            var affectedRows = await context.SaveChangesAsync();
             TranslationList.Add(translator);
             App.Global.Translation.Translator.TranslationList.Add(new App.Global.Translation.Translation
             {
@@ -89,8 +95,8 @@ namespace SanyaaDelivery.Application.Services
                 LangId = translator.LangId,
                 Value = translator.Value
             });
-            repo.Update(translator.TranslatorId, translator);
-            return repo.SaveAsync();
+            context.TranslatorT.Update(translator);
+            return context.SaveChangesAsync();
         }
     }
 }

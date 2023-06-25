@@ -183,7 +183,8 @@ namespace SanyaaDelivery.Application.Services
                         EmployeeId = d.EmployeeId,
                         BranchId = d.BranchId
                     }).ToListAsync(),
-                    FiredEmployeeIdList = await firedEmployeeRepository.DbSet.Select(d => d.EmployeeId).ToListAsync()
+                    FiredEmployeeIdList = await firedEmployeeRepository.DbSet.Select(d => d.EmployeeId).ToListAsync(),
+                    RequestStatusList = GeneralSetting.RequestStatusList
                 };
                 return data;
             }

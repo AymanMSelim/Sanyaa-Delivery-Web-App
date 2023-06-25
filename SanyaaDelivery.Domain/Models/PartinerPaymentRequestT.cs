@@ -10,5 +10,6 @@ namespace SanyaaDelivery.Domain.Models
 
         public PartinerPaymentT Payment { get; set; }
         public RequestT Request { get; set; }
+        public int Id { get; set; }
     }
 }

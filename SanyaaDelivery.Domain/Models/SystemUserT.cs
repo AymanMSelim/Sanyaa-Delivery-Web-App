@@ -62,5 +62,6 @@ namespace SanyaaDelivery.Domain.Models
         public ICollection<SiteT> SiteT { get; set; }
         public ICollection<TransactionT> TransactionT { get; set; }
         public ICollection<VacationT> VacationT { get; set; }
+        public ICollection<RequestServicesT> RequestServicesT { get; set; }
     }
 }

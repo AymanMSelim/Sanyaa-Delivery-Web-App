@@ -14,6 +14,8 @@ using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Infra.Data.Context;
 using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.Enum;
+using System.Reflection.Metadata.Ecma335;
+using SanyaaDelivery.Infra.Data.Repositories;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -24,15 +26,20 @@ namespace SanyaaDelivery.Application.Services
         private readonly ITranslationService translationService;
         private readonly IRepository<FollowUpT> followUpRepository;
         private readonly IRepository<ClientPointT> pointRepository;
+        private readonly IEmployeeRequestService employeeRequestService;
+        private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IRepository<ClientT> clientRepository;
         private readonly INotificatonService notificatonService;
+        private readonly IRepository<RejectRequestT> rejectRequestRepository;
+        private readonly IOperationService operationService;
         private readonly IRepository<MessagesT> messageRepository;
         private readonly IEmployeeAppAccountService employeeAppAccountService;
         private readonly IHelperService helperService;
         private readonly IUnitOfWork unitOfWork;
 
         public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService,
-            IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IRepository<ClientT> clientRepository, INotificatonService notificatonService,
+            IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IEmployeeRequestService employeeRequestService, IRepository<EmployeeT> employeeRepository,
+            IRepository<ClientT> clientRepository, INotificatonService notificatonService, IRepository<RejectRequestT> rejectRequestRepository, IOperationService operationService,
             IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IHelperService helperService, IUnitOfWork unitOfWork)
         {
             this.requestRepository = requestRepository;
@@ -40,8 +47,12 @@ namespace SanyaaDelivery.Application.Services
             this.translationService = translationService;
             this.followUpRepository = followUpRepository;
             this.pointRepository = pointRepository;
+            this.employeeRequestService = employeeRequestService;
+            this.employeeRepository = employeeRepository;
             this.clientRepository = clientRepository;
             this.notificatonService = notificatonService;
+            this.rejectRequestRepository = rejectRequestRepository;
+            this.operationService = operationService;
             this.messageRepository = messageRepository;
             this.employeeAppAccountService = employeeAppAccountService;
             this.helperService = helperService;
@@ -81,6 +92,13 @@ namespace SanyaaDelivery.Application.Services
                     client.ClientPoints += request.RequestPoints;
                     clientRepository.Update(client.ClientId, client);
                 }
+                string title = $"طلب #{request.RequestId}";
+                try
+                {
+                    string body = $"عزيزى العميل, تم تنقيذ الطلب الخاص بكم بنجاح فى حالة وجود أى شكاوى برجاء الاتصال بنا";
+                    await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body);
+                }
+                catch { }
                 int affectedRows = 0;
                 if (isRootTransaction)
                 {
@@ -282,8 +300,9 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<bool> IsHaveUnPaidRequestExceed3Days(string employeeId)
         {
+            DateTime dateTime3DayAgo = DateTime.Now.EgyptTimeNow().AddHours(-3);
             return requestRepository.DbSet
-                .AnyAsync(d => d.EmployeeId == employeeId && d.IsPaid == false && d.RequestTimestamp.Value <= DateTime.Now.EgyptTimeNow().AddHours(-3));
+                .AnyAsync(d => d.EmployeeId == employeeId && d.IsPaid == false && d.RequestTimestamp.Value <= dateTime3DayAgo);
         }
 
         public async Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null, bool activeEmployeeAccount = true)
@@ -410,11 +429,11 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
             var requestValidation = helperService.ValidateRequest<object>(request);
             if (requestValidation.IsFail) { return requestValidation; }
-            if(request.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            if(request.RequestStatus == GeneralSetting.GetRequestStatusId(RequestStatus.StartExcution))
             {
                 return ResultFactory<object>.CreateErrorResponseMessageFD("This request is already confirmed");
             }
-            request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.InExcution);
+            request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.StartExcution);
             requestRepository.Update(request.RequestId, request);
             var affectedRows = await requestRepository.SaveAsync();
             return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
@@ -425,11 +444,126 @@ namespace SanyaaDelivery.Application.Services
             var status = await requestRepository.Where(d => d.RequestId == id)
                 .Select(d => d.RequestStatus)
                 .FirstOrDefaultAsync();
-            if(status == GeneralSetting.GetRequestStatusId(RequestStatus.InExcution))
+            if(status == GeneralSetting.GetRequestStatusId(RequestStatus.StartExcution))
             {
                 return true;
             }
             return false;
+        }
+
+        public async Task<Result<object>> StartRequestAsync(int requestId, string employeeId)
+        {
+            var request = await requestRepository.GetAsync(requestId);
+            var requestValidation = helperService.ValidateRequest<object>(request, employeeId);
+            if (requestValidation.IsFail) { return requestValidation; }
+
+            var inExcutionStatus = helperService.GetExcutionStatusList();
+            var inExcutionRequestCount = await requestRepository
+                .DbSet.CountAsync(d => d.EmployeeId == employeeId && inExcutionStatus.Contains(d.RequestStatus));
+            if(inExcutionRequestCount > 0)
+            {
+                return ResultFactory<object>.CreateErrorResponseMessageFD("You have un complete pending request, please take action for them first");
+            }
+
+            var previousRequestCount = await requestRepository
+               .DbSet.CountAsync(d => d.EmployeeId == employeeId && d.IsCompleted == false && d.IsCanceled == false && d.RequestTimestamp < request.RequestTimestamp);
+            if (previousRequestCount > 0)
+            {
+                return ResultFactory<object>.CreateErrorResponseMessageFD("You have an incomplete order before this order, please delay, cancel or complete it first");
+            }
+
+            var status = GeneralSetting.GetRequestStatusId(RequestStatus.InExcution);
+            request.RequestStatus = status;
+            requestRepository.Update(requestId, request);
+            var affectedRows = await requestRepository.SaveAsync();
+            string title = $"طلب #{request.RequestId}";
+            try
+            {
+                string body = $"عزيزى العميل, العامل/العاملة قى الطريق إليكم";
+                await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body);
+            }
+            catch { }
+            return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
+        }
+
+        public async Task<Result<EmployeeT>> ReAssignEmployeeAsync(ReAssignEmployeeDto model)
+        {
+            EmployeeT employee = null;
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                var request = await requestRepository.GetAsync(model.RequestId);
+                var requestValidation = helperService.ValidateRequest<EmployeeT>(request);
+                if (requestValidation.IsFail) { return requestValidation; }
+                if (model.RequestTime.HasValue)
+                {
+                    request.RequestTimestamp = model.RequestTime;
+                }
+                if (string.IsNullOrEmpty(model.EmployeeId))
+                {
+                    if (helperService.IsViaClientApp)
+                    {
+                        await rejectRequestRepository.AddAsync(new RejectRequestT
+                        {
+                            EmployeeId = request.EmployeeId,
+                            RejectRequestTimestamp = DateTime.Now.EgyptTimeNow(),
+                            RequestId = model.RequestId
+                        });
+                    }
+                    request.EmployeeId = null;
+                    request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.NotSet);
+                    await unitOfWork.SaveAsync();
+                    await operationService.BroadcastAsync(model.RequestId);
+                }
+                else
+                {
+                    request.EmployeeId = model.EmployeeId;
+                    if (model.SkipCheckEmployee == false)
+                    {
+                        var employeeValidateResult = await employeeRequestService.ValidateEmployeeForRequest(model.EmployeeId, request.RequestTimestamp.Value, request.BranchId, request.DepartmentId, model.RequestId);
+                        if (employeeValidateResult.IsFail)
+                        {
+                            return employeeValidateResult;
+                        }
+                    }
+                    request.RequestStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Waiting);
+                    employee = await employeeRepository.GetAsync(model.EmployeeId);
+                    string title = $"طلب #{request.RequestId}";
+                    try 
+                    {
+                        string body = $"لقد تم تعيين العامل/العاملة {employee.EmployeeName} على الطلب الخاص بكم";
+                        await notificatonService.SendFirebaseNotificationAsync(AccountType.Client, request.ClientId.ToString(), title, body); 
+                    } catch { }
+                    try
+                    {
+                        string body = $"لقد تم اختيارك على الطلب رقم {request.RequestId} برجاء المراجعة";
+                        await notificatonService.SendFirebaseNotificationAsync(AccountType.Employee, request.EmployeeId.ToString(), title, body);
+                    }
+                    catch { }
+                }
+                request.IsReviewed = false;
+                requestRepository.Update(request.RequestId, request);
+                int affectedRows = -1;
+                if (isRootTransaction)
+                {
+                    affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return ResultFactory<EmployeeT>.CreateAffectedRowsResult(affectedRows, data: employee);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return App.Global.Logging.LogHandler.PublishExceptionReturnResponse<EmployeeT>(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+           
         }
     }
 }
