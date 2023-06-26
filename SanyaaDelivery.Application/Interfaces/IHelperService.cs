@@ -13,6 +13,7 @@ namespace SanyaaDelivery.Application.Interfaces
         public bool IsViaApp { get; set; }
         public bool IsViaClientApp { get; set; }
         public bool IsViaEmpApp { get; set; }
+        public int CurrentSystemUserId { get; set; }
 
         Task<decimal> GetMinimumChargeAsync(int? cityId = null, int? departmentId = null);
         Task<Result<string>> ValidateClientSubscription(int clientSubscriptionId);

@@ -1491,7 +1491,11 @@ namespace SanyaaDelivery.Infra.Data.Context
                entity.Property(e => e.MaxUnPaidAmount)
                     .HasDefaultValueSql("'NULL'")
                     .HasColumnType("int(11)")
-                    .HasColumnName("max_unpaid_amount");
+                    .HasColumnName("max_unpaid_amount"); 
+                entity.Property(e => e.MinInsuranceAmountMustPaid)
+                    .HasDefaultValueSql("'NULL'")
+                    .HasColumnType("int(11)")
+                    .HasColumnName("min_insurance_amount_must_paid");
             });
 
             modelBuilder.Entity<EmployeeT>(entity =>
@@ -1824,8 +1828,22 @@ namespace SanyaaDelivery.Infra.Data.Context
                     .HasColumnType("int(11)")
                     .HasColumnName("charge_id");
                 entity.Property(e => e.RequestId)
+                    .HasDefaultValueSql("'NULL'")
                     .HasColumnType("int(11)")
                     .HasColumnName("request_id");
+
+                entity.Property(e => e.Type)
+                   .HasDefaultValueSql("'1'")
+                   .HasColumnType("int(11)")
+                   .HasColumnName("type");
+
+                entity.Property(e => e.Amount)
+                   .HasColumnType("decimal(10,2)")
+                   .HasColumnName("amount");
+
+                entity.Property(e => e.Description)
+                   .HasColumnType("varchar(45)")
+                   .HasColumnName("description");
 
                 entity.HasOne(d => d.Charge).WithMany(p => p.FawryChargeRequestT)
                     .HasForeignKey(d => d.ChargeId)

@@ -362,6 +362,9 @@ namespace SanyaaDelivery.Application
             }
         }
 
+        public static int RequestInsurancePercentge = 5;
+
+        public static int FawrySystemUserId = 700;
 
         public static int DefaultEmployeeSubacriptionId = 1;
     }

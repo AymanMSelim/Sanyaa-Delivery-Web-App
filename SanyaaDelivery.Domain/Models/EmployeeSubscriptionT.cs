@@ -16,6 +16,7 @@ namespace SanyaaDelivery.Domain.Models
         public int? MaxRequestPrice { get; set; }
         public int? MaxRequestCount { get; set; }
         public int? MaxUnPaidAmount { get; set; }
+        public int? MinInsuranceAmountMustPaid { get; set; }
 
         public ICollection<EmployeeT> EmployeeT { get; set; }
     }

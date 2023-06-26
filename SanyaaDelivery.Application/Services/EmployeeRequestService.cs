@@ -17,6 +17,7 @@ namespace SanyaaDelivery.Application.Services
     public class EmployeeRequestService : IEmployeeRequestService
     {
         private readonly IRepository<RequestT> requestRepository;
+        private readonly IEmployeeSubscriptionService employeeSubscriptionService;
         private readonly IRepository<DepartmentEmployeeT> employeeDepartmentRepository;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IHelperService helperService;
@@ -25,11 +26,12 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<VacationT> vacationRepository;
         private readonly SanyaaDatabaseContext dbContext;
 
-        public EmployeeRequestService(IRepository<RequestT> requestRepository, 
+        public EmployeeRequestService(IRepository<RequestT> requestRepository, IEmployeeSubscriptionService employeeSubscriptionService,
             IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<EmployeeT> employeeRepository, IHelperService helperService,
             IRepository<CityT> cityRepository, IRepository<AddressT> addressRepository, IRepository<VacationT> vacationRepository, SanyaaDatabaseContext dbContext)
         {
             this.requestRepository = requestRepository;
+            this.employeeSubscriptionService = employeeSubscriptionService;
             this.employeeDepartmentRepository = employeeDepartmentRepository;
             this.employeeRepository = employeeRepository;
             this.helperService = helperService;
@@ -188,6 +190,11 @@ namespace SanyaaDelivery.Application.Services
                     {
                         var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The price of this request exceeds the maximum order price for the subscribed package");
                     }
+                }
+                var isPaidMinAmount = await employeeSubscriptionService.IsHasMinimumAmountPaidAsync(employeeId);
+                if(isPaidMinAmount is false)
+                {
+                    var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The minimum required percentage of the insurance amount has not been paid. Please make the payment and try again");
                 }
             }
             return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);

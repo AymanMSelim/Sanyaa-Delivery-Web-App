@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace SanyaaDelivery.API.Controllers
 {
-    public class FawryController : APIBaseController
+    public class FawryController : APIBaseAuthorizeController
     {
         private readonly IFawryService fawryService;
         private readonly IConfiguration configuration;
@@ -63,6 +63,47 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
             }
         }
+
+
+
+        [HttpPost("GenerateRefNumberForInsrance")]
+        public async Task<ActionResult<Result<App.Global.Models.Fawry.FawryRefNumberResponse>>> GenerateRefNumberForInsrance(StringIdDto model)
+        {
+            try
+            {
+                model.Id = commonService.GetEmployeeId(model.Id);
+                if (string.IsNullOrEmpty(model.Id))
+                {
+                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.ReturnEmployeeError());
+                }
+                var result = await fawryService.SendInsuranceAsync(model.Id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("GenerateRefNumberForInsranceAmount")]
+        public async Task<ActionResult<Result<App.Global.Models.Fawry.FawryRefNumberResponse>>> GenerateRefNumberForInsranceAmount(GenerateRefNumberForInsuranceDto model)
+        {
+            try
+            {
+                model.EmployeeId = commonService.GetEmployeeId(model.EmployeeId);
+                if (string.IsNullOrEmpty(model.EmployeeId))
+                {
+                    return Ok(ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.ReturnEmployeeError());
+                }
+                var result = await fawryService.SendInsuranceAmountAsync(model.EmployeeId, model.Amount);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<App.Global.Models.Fawry.FawryRefNumberResponse>.CreateExceptionResponse(ex));
+            }
+        }
+
 
         [HttpGet("StartFarwy")]
         public async Task<ActionResult<Result<List<App.Global.Models.Fawry.FawryRefNumberResponse>>>> StartFarwy(bool ignoreValidFawryRequest = false)

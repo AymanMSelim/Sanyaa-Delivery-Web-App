@@ -22,7 +22,6 @@ namespace SanyaaDelivery.Application.Services
     {
         private readonly IUnitOfWork unitOfWork;
         private readonly IRequestService requestService;
-        private readonly IEmployeeService employeeService;
         private readonly IConfiguration configuration;
         private readonly IFawryChargeService fawryChargeService;
         private readonly IRepository<RequestT> requestRepository;
@@ -30,17 +29,17 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRequestUtilityService requestUtilityService;
         private readonly IRepository<FawryChargeT> fawryChargeRepository;
         private readonly IRepository<MessagesT> messageRepository;
-        private readonly IEmployeeAppAccountService employeeAppAccountService;
+        private readonly IRepository<EmployeeT> employeeRepository;
+        private readonly IEmployeeSubscriptionService employeeSubscriptionService;
         private readonly IFawryAPIService fawryAPIService;
 
-        public FawryService(IRequestService requestService, IEmployeeService employeeService, IConfiguration configuration, 
+        public FawryService(IRequestService requestService, IConfiguration configuration, 
             IFawryAPIService fawryAPIService, IFawryChargeService fawryChargeService, IRepository<RequestT> requestRepository, INotificatonService notificatonService,
             IRequestUtilityService requestUtilityService, IRepository<FawryChargeT> fawryChargeRepository, IRepository<MessagesT> messageRepository,
-            IEmployeeAppAccountService employeeAppAccountService, IUnitOfWork unitOfWork)
+            IRepository<EmployeeT> employeeRepository, IEmployeeSubscriptionService employeeSubscriptionService, IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
             this.requestService = requestService;
-            this.employeeService = employeeService;
             this.configuration = configuration;
             this.fawryChargeService = fawryChargeService;
             this.requestRepository = requestRepository;
@@ -48,25 +47,40 @@ namespace SanyaaDelivery.Application.Services
             this.requestUtilityService = requestUtilityService;
             this.fawryChargeRepository = fawryChargeRepository;
             this.messageRepository = messageRepository;
-            this.employeeAppAccountService = employeeAppAccountService;
+            this.employeeRepository = employeeRepository;
+            this.employeeSubscriptionService = employeeSubscriptionService;
             this.fawryAPIService = fawryAPIService;
             fawryAPIService.InitialAPI(configuration["FawryAPI"].ToString(), GeneralSetting.SendFawrySMS);
         }
 
         
 
-        public List<App.Global.Models.Fawry.FawryChargeItem> ConvertRequestToChargeItem(List<RequestT> requestList)
+        public List<App.Global.Models.Fawry.FawryChargeItem> ConvertRequestToChargeItem(List<RequestT> requestList, bool includeInsuranceAmount)
         {
-            return requestList.Where(d => d.CompanyPercentageAmount > 0).Select(d => new App.Global.Models.Fawry.FawryChargeItem
+            List<App.Global.Models.Fawry.FawryChargeItem> list = new List<FawryChargeItem>();
+            var requestItemList = requestList.Where(d => d.CompanyPercentageAmount > 0).Select(d => new App.Global.Models.Fawry.FawryChargeItem
             {
                 Description = $"Request #{d.RequestId}",
                 ItemId = d.RequestId.ToString(),
                 Price = Math.Round(d.CompanyPercentageAmount, 2),
                 Quantity = 1
             }).ToList();
+            list.AddRange(requestItemList);
+            if (includeInsuranceAmount)
+            {
+                var insuranceItemList = requestList.Where(d => d.CompanyPercentageAmount > 0).Select(d => new App.Global.Models.Fawry.FawryChargeItem
+                {
+                    Description = $"Request insurance percentage #{d.RequestId}",
+                    ItemId = d.RequestId.ToString(),
+                    Price = Math.Round(d.CompanyPercentageAmount * (GeneralSetting.RequestInsurancePercentge / 100), 2),
+                    Quantity = 1
+                }).ToList();
+                list.AddRange(insuranceItemList);
+            }
+            return list;
         }
 
-        public App.Global.Models.Fawry.FawryRequest PrepareFawryRequest(List<App.Global.Models.Fawry.FawryChargeItem> fawryChargeItems, EmployeeT employee)
+        public App.Global.Models.Fawry.FawryRequest PrepareFawryRequest(List<App.Global.Models.Fawry.FawryChargeItem> fawryChargeItems, EmployeeT employee, int expireInDays = 3)
         {
             App.Global.Models.Fawry.FawryRequest fawryRequest = new App.Global.Models.Fawry.FawryRequest
             {
@@ -80,8 +94,7 @@ namespace SanyaaDelivery.Application.Services
                 MerchantCode = configuration["FawryMarchantCode"].ToString(),
                 CurrencyCode = "EGP",
                 Language = "ar-eg",
-                MerchantRefNum = 66666,
-                PaymentExpiry = (long)DateTime.Now.AddDays(3).Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds,
+                PaymentExpiry = (long)DateTime.Now.AddDays(expireInDays).Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds,
                 PaymentMethod = App.Global.Enums.FawryPaymentMethod.PAYATFAWRY.ToString(),
             };
             return fawryRequest;
@@ -93,7 +106,7 @@ namespace SanyaaDelivery.Application.Services
             try
             {
                 isRootTransaction = unitOfWork.StartTransaction();
-                var employee = await employeeService.GetAsync(employeeId);
+                var employee = await employeeRepository.GetAsync(employeeId);
                 if (employee.IsNull())
                 {
                     return ResultFactory<FawryRefNumberResponse>.CreateNotFoundResponse("This employee not found");
@@ -115,12 +128,14 @@ namespace SanyaaDelivery.Application.Services
                 {
                     return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessage("There is a an un complete request, please review");
                 }
-                var chargeItem = ConvertRequestToChargeItem(requestList);
+                var isInsuranceAmountCompleted = await employeeSubscriptionService.IsInsuranceAmountCompletedAsync(employeeId);
+                var includeInsurance = !isInsuranceAmountCompleted;
+                var chargeItem = ConvertRequestToChargeItem(requestList, includeInsurance);
                 if (chargeItem.IsEmpty())
                 {
                     foreach (var request in requestList)
                     {
-                        await requestUtilityService.PayAsync(request.RequestId, 700, 0);
+                        await requestUtilityService.PayAsync(request.RequestId, GeneralSetting.FawrySystemUserId, 0);
                     }
                     var affecredRows = 0;
                     if (isRootTransaction)
@@ -136,14 +151,29 @@ namespace SanyaaDelivery.Application.Services
                     ChargeExpireDate = DateTime.Now.AddDays(3),
                     ChargeStatus = App.Global.Enums.FawryRequestStatus.NEW.ToString(),
                     EmployeeId = employeeId,
-                    FawryChargeRequestT = requestList.Select(d => new FawryChargeRequestT
-                    {
-                        RequestId = d.RequestId,
-                    }).ToList(),
                     RecordTimestamp = DateTime.Now.EgyptTimeNow(),
                     IsConfirmed = false
                 };
-
+                fawryCharge.FawryChargeRequestT = requestList.Select(d => new FawryChargeRequestT
+                {
+                    RequestId = d.RequestId,
+                    Amount = d.CompanyPercentageAmount,
+                    Type = ((int)Domain.Enum.FawryRequestType.Request),
+                    Description = "Request #" + d.RequestId,
+                }).ToList();
+                if(includeInsurance)
+                {
+                    foreach (var request in requestList)
+                    {
+                        fawryCharge.FawryChargeRequestT.Add(new FawryChargeRequestT
+                        {
+                            Amount = Math.Round(request.CompanyPercentageAmount * (GeneralSetting.RequestInsurancePercentge / 100), 2),
+                            Description = "Request insurance percentege #" + request.RequestId,
+                            RequestId = request.RequestId,
+                            Type = ((int)Domain.Enum.FawryRequestType.Insurance)
+                        });
+                    }
+                }
                 await fawryChargeService.AddAsync(fawryCharge);
                 var affectedRows = await unitOfWork.SaveAsync();
                 if (affectedRows < 0)
@@ -274,18 +304,23 @@ namespace SanyaaDelivery.Application.Services
                 isRootTransaction = unitOfWork.StartTransaction();
                 foreach (var item in fawryCharge.FawryChargeRequestT)
                 {
-                    var result = await requestUtilityService.PayAsync(item.RequestId, 700, null, false);
-                    await unitOfWork.SaveAsync();
-                    if (result.IsFail)
+                    if(item.Type == ((int)Domain.Enum.FawryRequestType.Request)) 
                     {
-                        return result.StatusCode;
+                        var result = await requestUtilityService.PayAsync(item.RequestId.Value, GeneralSetting.FawrySystemUserId, null, false);
+                        if (result.IsFail) { return ((int)App.Global.Enums.ResultStatusCode.Failed); }                    
                     }
+                    else if (item.Type == ((int)Domain.Enum.FawryRequestType.Insurance))
+                    {
+                        var affectedRows = await employeeSubscriptionService.AddPaymentAmountAsync(fawryCharge.EmployeeId, item.Amount, item.RequestId);
+                        if (affectedRows <= 0) { return ((int)App.Global.Enums.ResultStatusCode.Failed); }
+                    }
+                    await unitOfWork.SaveAsync();
                 }
-                bool haveUnPaidRequest = await requestUtilityService.IsHaveUnPaidRequestExceed3Days(fawryCharge.EmployeeId);
-                if (haveUnPaidRequest == false)
-                {
-                    await employeeAppAccountService.ActiveAccountAsync(fawryCharge.EmployeeId);
-                }
+                //bool haveUnPaidRequest = await requestUtilityService.IsHaveUnPaidRequestExceed3Days(fawryCharge.EmployeeId);
+                //if (haveUnPaidRequest == false)
+                //{
+                //    await employeeAppAccountService.ActiveAccountAsync(fawryCharge.EmployeeId);
+                //}
                 if (isRootTransaction)
                 {
                     return await unitOfWork.CommitAsync(false);
@@ -363,6 +398,7 @@ namespace SanyaaDelivery.Application.Services
             }
             return true;
         }
+
         public async Task<int> CallbackNotification(FawryNotificationCallback model)
         {
             if(Convert.ToInt32(model.MerchantRefNumber) < 14000)
@@ -409,6 +445,102 @@ namespace SanyaaDelivery.Application.Services
                 }
             }
            
+        }
+
+        public async Task<Result<FawryRefNumberResponse>> SendInsuranceAmountAsync(string employeeId, decimal amount)
+        {
+            bool isRootTransaction = false;
+            try
+            {
+                isRootTransaction = unitOfWork.StartTransaction();
+                var employee = await employeeRepository.GetAsync(employeeId);
+                if (employee.IsNull())
+                {
+                    return ResultFactory<FawryRefNumberResponse>.CreateNotFoundResponse("This employee not found");
+                }
+                var chargeItem = new List<FawryChargeItem>
+                {
+                    new FawryChargeItem
+                    {
+                        Description = "Insurance amount",
+                        ItemId = "1",
+                        Price = Math.Round(amount, 2),
+                        Quantity = 1
+                    }
+                };
+                int expireInDays = 10;
+                var fawryRequest = PrepareFawryRequest(chargeItem, employee, expireInDays);
+                var fawryCharge = new FawryChargeT
+                {
+                    ChargeAmount = fawryRequest.Amount,
+                    ChargeExpireDate = DateTime.Now.AddDays(expireInDays),
+                    ChargeStatus = App.Global.Enums.FawryRequestStatus.NEW.ToString(),
+                    EmployeeId = employeeId,
+                    RecordTimestamp = DateTime.Now.EgyptTimeNow(),
+                    IsConfirmed = false
+                };
+                fawryCharge.FawryChargeRequestT = chargeItem.Select(d => new FawryChargeRequestT
+                {
+                    Amount = d.Price,
+                    Type = ((int)Domain.Enum.FawryRequestType.Insurance),
+                    Description = "Insurance amount",
+                }).ToList();
+                await fawryChargeService.AddAsync(fawryCharge);
+                var affectedRows = await unitOfWork.SaveAsync();
+                if (affectedRows < 0)
+                {
+                    return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessage("Failed to add fawry charge service");
+                }
+                fawryRequest.MerchantRefNum = fawryCharge.SystemId;
+                fawryAPIService.SetFawryRequest(fawryRequest, configuration["FawrySecurityCode"].ToString());
+                var result = await fawryAPIService.GetRefNumberAsync();
+                if (result.IsNotNull() && !string.IsNullOrEmpty(result.ReferenceNumber))
+                {
+                    fawryCharge.FawryRefNumber = long.Parse(result.ReferenceNumber);
+                    fawryCharge.IsConfirmed = true;
+                    await fawryChargeService.UpdateAsync(fawryCharge);
+                    string title = "كود فورى - سداد التأمين";
+                    string body = $"برجاء دفع مبلغ التأمي {fawryCharge.ChargeAmount} فى فورى الرقم المرجعى {fawryCharge.FawryRefNumber} برجاء السداد حتى تستطيع قبول الطلبات";
+                    try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, employeeId, title, body); } catch { }
+                    await messageRepository.AddAsync(new MessagesT
+                    {
+                        Title = title,
+                        Body = body,
+                        EmployeeId = employeeId,
+                        IsRead = 0,
+                        MessageTimestamp = DateTime.Now.EgyptTimeNow()
+                    });
+                    if (isRootTransaction)
+                    {
+                        affectedRows = await unitOfWork.CommitAsync(false);
+                    }
+                    return ResultFactory<FawryRefNumberResponse>.CreateAffectedRowsResult(affectedRows, data: result);
+                }
+                return ResultFactory<FawryRefNumberResponse>.CreateErrorResponse(date: result);
+            }
+            catch (Exception ex)
+            {
+                unitOfWork.RollBack();
+                return ResultFactory<FawryRefNumberResponse>.CreateExceptionResponse(ex);
+            }
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
+        }
+
+        public async Task<Result<FawryRefNumberResponse>> SendInsuranceAsync(string employeeId)
+        {
+            var insuranceAmount = await employeeSubscriptionService.GetMustPaidAmountAsync(employeeId);
+            if(insuranceAmount > 0)
+            {
+                return await SendInsuranceAmountAsync(employeeId, insuranceAmount);
+            }
+            return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("This employee has paid min insurance amount");
         }
     }
 }

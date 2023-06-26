@@ -33,6 +33,13 @@ namespace SanyaaDelivery.Domain.Enum
         Add = 2
     }
 
+    public enum FawryRequestType
+    {
+        Request = 1,
+        Insurance = 2
+    }
+
+
     public enum LandingScreenItemType
     {
         Banner = 1,

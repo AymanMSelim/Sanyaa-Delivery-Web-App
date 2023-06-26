@@ -20,7 +20,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<CityT> cityRepository;
         private readonly IRepository<RegionT> regionRepository;
         public string Host { get; private set; }
-        public int SystemUserId { get; private set; }
+        public int CurrentSystemUserId { get; set; }
 
         public bool IsViaApp { get; set; }
         public bool IsViaClientApp { get; set; }
@@ -182,12 +182,12 @@ namespace SanyaaDelivery.Application.Services
 
         public void SetSystemUser(int systemUserId)
         {
-            SystemUserId = systemUserId;
+            CurrentSystemUserId = systemUserId;
         }
 
         public int GetSystemUser()
         {
-            return SystemUserId;
+            return CurrentSystemUserId;
         }
 
         public List<sbyte> GetExcutionStatusList()

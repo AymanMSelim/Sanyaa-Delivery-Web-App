@@ -152,9 +152,9 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<ILookupService, LookupService>();
             services.AddScoped<IOperationService, OperationService>();
             services.AddScoped<IVacationService, VacationService>();
-            services.AddScoped<IEmployeeInsuranceService, EmployeeInsuranceService>();
             services.AddScoped<INotificatonService, NotificatonService>();
             services.AddScoped<IFawryChargeService, FawryChargeService>();
+            services.AddScoped<IEmployeeSubscriptionService, EmployeeSubscriptionService>();
 
             services.AddSingleton<ISMSService, SMSMisrService>();
             services.AddSingleton<Translator, Translator>();
@@ -164,8 +164,6 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
 
         }
-
-
     }
 
     public class MappingClass : Profile

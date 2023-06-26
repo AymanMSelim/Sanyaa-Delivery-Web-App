@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.DTOs;
+using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,12 +14,13 @@ namespace SanyaaDelivery.API.Controllers
     
     public class EmployeeInsuranceController : APIBaseAuthorizeController
     {
-        private readonly IEmployeeInsuranceService employeeInsuranceService;
+        private readonly IEmployeeSubscriptionService employeeSubscriptionService;
         private readonly CommonService commonService;
 
-        public EmployeeInsuranceController(IEmployeeInsuranceService employeeInsuranceService, CommonService commonService) : base(commonService)
+        public EmployeeInsuranceController(IEmployeeSubscriptionService employeeSubscriptionService, 
+            CommonService commonService) : base(commonService)
         {
-            this.employeeInsuranceService = employeeInsuranceService;
+            this.employeeSubscriptionService = employeeSubscriptionService;
             this.commonService = commonService;
         }
 
@@ -35,7 +37,7 @@ namespace SanyaaDelivery.API.Controllers
                 {
                     return Ok(ResultFactory<EmployeeInsuranceIndexDto>.ReturnEmployeeError());
                 }
-                var model = await employeeInsuranceService.GetIndexAsync(employeeId);
+                var model = await employeeSubscriptionService.GetIndexAsync(employeeId);
                 return Ok(ResultFactory<EmployeeInsuranceIndexDto>.CreateSuccessResponse(model));
             }
             catch (Exception ex)
@@ -43,5 +45,50 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, ResultFactory<EmployeeInsuranceIndexDto>.CreateExceptionResponse(ex));
             }
         }
+
+        
+        [HttpGet("GetPaymentCustomList/{employeeId}")]
+        public async Task<ActionResult<Result<List<InsurancePaymentDto>>>> GetPaymentCustomList(string employeeId)
+        {
+            try
+            {
+                var model = await employeeSubscriptionService.GetPaymentCustomListAsync(employeeId);
+                return Ok(ResultFactory<List<InsurancePaymentDto>>.CreateSuccessResponse(model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<InsurancePaymentDto>>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("AddPayment")]
+        public async Task<ActionResult<Result<InsurancePaymentT>>> AddPayment(InsurancePaymentT model)
+        {
+            try
+            {
+                var affectedRows = await employeeSubscriptionService.AddPaymentAsync(model);
+                return Ok(ResultFactory<InsurancePaymentT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<InsurancePaymentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("DeletePayment")]
+        public async Task<ActionResult<Result<InsurancePaymentT>>> DeletePayment(IntIdDto model)
+        {
+            try
+            {
+                var affectedRows = await employeeSubscriptionService.DeletePaymentAsync(model.Id);
+                return Ok(ResultFactory<InsurancePaymentT>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<InsurancePaymentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+
     }
 }
