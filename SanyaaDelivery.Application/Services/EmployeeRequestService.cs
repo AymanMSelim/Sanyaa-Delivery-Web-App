@@ -112,6 +112,7 @@ namespace SanyaaDelivery.Application.Services
                 .Include(d => d.DepartmentEmployeeT)
                 .Include(d => d.EmployeeWorkplacesT)
                 .Include(d => d.OpreationT)
+                .Include(d => d.Subscription)
                 .FirstOrDefaultAsync();
             if (employee.IsNull())
             {
@@ -125,10 +126,6 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<EmployeeT>.CreateNotFoundResponse("Employee not active");
             }
-            //if (employee.LoginT.IsNotNull() && employee.LoginT.LoginAccountState == false)
-            //{
-            //    return ResultFactory<EmployeeT>.CreateErrorResponseMessage("Employee account not active");
-            //}
             if (employee.FiredStaffT.IsNotNull())
             {
                 return ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee is fired");
@@ -159,6 +156,39 @@ namespace SanyaaDelivery.Application.Services
                 var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("This employee have request in this time");
                 result.Message += string.Join(" , ", requestIdList);
                 return result;
+            }
+            if (employee.Subscription.IsNotNull())
+            {
+                if (employee.Subscription.MaxUnPaidAmount.HasValue)
+                {
+                    var unPaidRequestAmounts = await requestRepository
+                        .Where(d => d.EmployeeId == employeeId && d.IsPaid == false && d.IsCanceled == false && d.IsCompleted)
+                        .SumAsync(d => d.CompanyPercentageAmount);
+                    if (unPaidRequestAmounts > (decimal)employee.Subscription.MaxUnPaidAmount.Value)
+                    {
+                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The value of the unpaid requests exceeds the allowed value for the subscribed package. Please pay the unpaid requests first");
+                    }
+                }
+                if (employee.Subscription.MaxRequestCount.HasValue)
+                {
+                    DateTime startDayOfMonth = App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS(dateTime);
+                    DateTime endDayOfMonth = App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS(dateTime);
+                    var completeRequestPerMonth = await requestRepository
+                       .Where(d => d.EmployeeId == employeeId && d.IsCanceled == false && d.IsCompleted && d.RequestTimestamp >= startDayOfMonth && d.RequestTimestamp <= endDayOfMonth)
+                       .CountAsync();
+                    if (completeRequestPerMonth > employee.Subscription.MaxRequestCount.Value)
+                    {
+                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The number of requests for the subscribed package has been reached for the month");
+                    }
+                }
+                if(employee.Subscription.MaxRequestPrice.HasValue)
+                {
+                    var requestAmount = await requestRepository.Where(d => d.RequestId == requestId).Select(d => d.CustomerPrice).FirstOrDefaultAsync();
+                    if (requestAmount > employee.Subscription.MaxRequestPrice.Value)
+                    {
+                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The price of this request exceeds the maximum order price for the subscribed package");
+                    }
+                }
             }
             return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);
         }
