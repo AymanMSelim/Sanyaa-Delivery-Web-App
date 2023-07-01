@@ -38,12 +38,11 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("PayAll")]
-        public async Task<ActionResult<Result<List<PaymentT>>>> PayAll(PayAllRequestDto payAllRequestDto)
+        public async Task<ActionResult<Result<List<PaymentT>>>> PayAll(PayAllRequestDto model)
         {
             try
             {
-                int systemUserId = commonService.GetSystemUserId();
-                var result = await requestUtilityService.PayAllAsync(payAllRequestDto.EmployeeId, systemUserId, payAllRequestDto.TotalAmount);
+                var result = await requestUtilityService.PayAllAsync(model);
                 return Ok(result);
             }
             catch (Exception ex)

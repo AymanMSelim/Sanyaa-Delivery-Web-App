@@ -362,7 +362,7 @@ namespace SanyaaDelivery.Application
             }
         }
 
-        public static int RequestInsurancePercentge = 5;
+        public static decimal RequestInsurancePercentge = 5;
 
         public static int FawrySystemUserId = 700;
 

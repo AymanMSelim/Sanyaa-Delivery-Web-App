@@ -18,7 +18,7 @@ namespace SanyaaDelivery.Application.Services
         {
             this.systemUserRepository = systemUserRepository;
         }
-        public Task<SystemUserT> Get(string userName)
+        public Task<SystemUserT> GetAsync(string userName)
         {
             return systemUserRepository.Where(u => u.SystemUserUsername == userName).SingleOrDefaultAsync();
         }

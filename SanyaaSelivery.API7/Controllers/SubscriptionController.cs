@@ -304,6 +304,7 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<ClientSubscriptionT>>(ex));
             }
         }
+
         [HttpGet("GetSubscriptionList/{departmentId?}")]
         public async Task<ActionResult<Result<List<SubscriptionDto>>>> GetSubscriptionList(int? departmentId = null)
         {
@@ -421,5 +422,22 @@ namespace SanyaaDelivery.API.Controllers
                 return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<ClientSubscriptionT>(ex));
             }
         }
+
+        [HttpGet("GetSubscriberList")]
+        public async Task<ActionResult<Result<List<SubscriberDto>>>> GetSubscriberList(int? clientId = null, string? clientName = null, string? clientPhone = null, 
+            int? branchId = null, int? departmentId = null, bool? isExpired = null, bool? isActive = null, bool? isCanceled = null, int? subscriptionId = null, bool? isContract = null)
+        {
+            try
+            {
+                var subscriberList = await clientSubscriptionService.GetSubscriberListAsync(clientId, clientName, clientPhone, branchId, departmentId, isExpired, isActive, isCanceled, subscriptionId, isContract);
+                return Ok(ResultFactory<List<SubscriberDto>>.CreateSuccessResponse(subscriberList));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, App.Global.Logging.LogHandler.PublishExceptionReturnResponse<List<SubscriberDto>>(ex));
+            }
+        }
+
+
     }
 }

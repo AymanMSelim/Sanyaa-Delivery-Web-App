@@ -83,8 +83,10 @@ app.MapControllers();
 App.Global.Firebase.FirebaseMessaging.Initalize("firebase.json", "empFirebase.json");
 try
 {
-    var operationService = builder.Services.BuildServiceProvider().GetService<IOperationService>();
-    Hangfire.RecurringJob.AddOrUpdate(() => operationService.BroadcastTask(), Cron.MinuteInterval(10));
+    //var operationService = builder.Services.BuildServiceProvider().GetService<IOperationService>();
+    var taskService = builder.Services.BuildServiceProvider().GetService<ITaskService>();
+    //Hangfire.RecurringJob.AddOrUpdate(() => operationService.BroadcastTask(), Cron.MinuteInterval(10));
+    Hangfire.RecurringJob.AddOrUpdate("Broadcast Notification Task", () => taskService.BroadcastNotificationTask(), Cron.MinuteInterval(5));
 }
 catch (Exception ex)
 {

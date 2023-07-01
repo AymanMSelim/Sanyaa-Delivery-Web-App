@@ -92,7 +92,7 @@ namespace SanyaaDelivery.API.Controllers
                 var response = ResultFactory<SystemUserT>.CreateModelNotValidResponse("Empty username or password");
                 return Ok(response);
             }
-            var result = await loginService.SystemUserLoginAsync(user.Username, user.Password);
+            var result = await loginService.LoginSystemUserAsync(user.Username, user.Password, user.Version);
             if (result.IsFail)
             {
                 return result;

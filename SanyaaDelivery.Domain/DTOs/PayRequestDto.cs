@@ -8,6 +8,6 @@ namespace SanyaaDelivery.Domain.DTOs
     public class PayRequestDto
     {
         public int RequestId { get; set; }
-        public decimal? Amount { get; set; }
+        public decimal Amount { get; set; }
     }
 }

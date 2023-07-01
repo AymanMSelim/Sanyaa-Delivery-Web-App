@@ -12,6 +12,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public string Password { get; set; }
 
         public int? AccountType { get; set; }
+        public int Version { get; set; }
     }
 
     public class ClientLoginDto

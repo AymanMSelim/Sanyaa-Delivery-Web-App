@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using App.Global.DateTimeHelper;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using SanyaaDelivery.Domain.OtherModels;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -34,6 +35,7 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> AddPaymentAmountAsync(string employeeId, decimal amount, int? requestId = null)
         {
+            if (amount <= 0) { return ((int)App.Global.Enums.ResultStatusCode.Success); }
             var payment = new InsurancePaymentT
             {
                 Amount = Convert.ToInt32(amount),
@@ -42,6 +44,7 @@ namespace SanyaaDelivery.Application.Services
                 ReferenceId = requestId,
                 ReferenceType = ((int)Domain.Enum.InsurancePaymentType.Add),
                 SystemUserId = helperService.CurrentSystemUserId,
+                Description = translationService.Translate("Insurance")
             };
             if (requestId.HasValue)
             {
@@ -58,20 +61,8 @@ namespace SanyaaDelivery.Application.Services
                  .FirstOrDefaultAsync();
             if (subscriptionMinAmount.IsNull()) { return 0; }
 
-            var amounts = await insurancePaymentRepository
-                .Where(d => d.EmployeeId == employeeId)
-                .GroupBy(d => d.ReferenceType)
-                .Select(g => new {
-                    ReferenceType = g.Key,
-                    Amount = g.Sum(d => d.Amount)
-                })
-                .ToListAsync();
-
-            var addAmount = amounts.FirstOrDefault(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Add))
-                .Amount;
-            var withdrawAmount = amounts.FirstOrDefault(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Withdraw))
-                .Amount;
-            var paidAmount = addAmount - withdrawAmount;
+            var amounts = await GetInsuranceAmounts(employeeId);
+            var paidAmount = amounts.AddAmount - amounts.WithdrawAmount;
             if(paidAmount >= subscriptionMinAmount)
             {
                 return 0;
@@ -82,6 +73,36 @@ namespace SanyaaDelivery.Application.Services
             }
         }
 
+        private async Task<InsuranceAmounts> GetInsuranceAmounts(string employeeId)
+        {
+            InsuranceAmounts insuranceAmounts = new InsuranceAmounts();
+            var amounts = await insurancePaymentRepository
+               .Where(d => d.EmployeeId == employeeId)
+               .GroupBy(d => d.ReferenceType)
+               .Select(g => new {
+                   ReferenceType = g.Key,
+                   Amount = g.Sum(d => d.Amount)
+               })
+               .ToListAsync();
+            if (amounts.IsEmpty()) { return insuranceAmounts; }
+
+            var addAmount = amounts.Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Add))
+                .Select(d => d.Amount)
+                .FirstOrDefault();
+            if (addAmount.HasValue)
+            {
+                insuranceAmounts.AddAmount = addAmount.Value;
+            }
+            var withdrawAmount = amounts.Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Withdraw))
+                .Select(d => d.Amount)
+                .FirstOrDefault();
+            if (withdrawAmount.HasValue)
+            {
+                insuranceAmounts.WithdrawAmount = withdrawAmount.Value;
+            }
+            return insuranceAmounts;
+        }
+
         public async Task<decimal> GetRemainInsuranceAmountAsync(string employeeId)
         {
             var insuranceAmount = await employeeRepository.Where(d => d.EmployeeId == employeeId)
@@ -89,20 +110,8 @@ namespace SanyaaDelivery.Application.Services
                 .FirstOrDefaultAsync();
             if (insuranceAmount.IsNull()) { return 0; }
 
-            var amounts = await insurancePaymentRepository
-                .Where(d => d.EmployeeId == employeeId)
-                .GroupBy(d => d.ReferenceType)
-                .Select(g => new {
-                    ReferenceType = g.Key,
-                    Amount = g.Sum(d => d.Amount)
-                })
-                .ToListAsync();
-
-            var addAmount = amounts.FirstOrDefault(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Add))
-                .Amount;
-            var withdrawAmount = amounts.FirstOrDefault(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Withdraw))
-                .Amount;
-            var paidAmount = addAmount - withdrawAmount;
+            var amounts = await GetInsuranceAmounts(employeeId);
+            var paidAmount = amounts.AddAmount - amounts.WithdrawAmount;
             if (paidAmount >= insuranceAmount)
             {
                 return 0;
@@ -153,26 +162,51 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<EmployeeInsuranceIndexDto> GetIndexAsync(string employeeId)
         {
-            var index = await employeeRepository.Where(d => d.EmployeeId == employeeId)
-                .Select(d => new EmployeeInsuranceIndexDto
-                {
-                    SubscriptionCaptionTop = translationService.Translate("You subscripe in package"),
-                    SubscriptionCaptionDown = translationService.Translate("Insurance"),
-                    SubscriptionCaption = d.Subscription.InsuranceAmount + " " + translationService.Translate("EGP"),
-                    SubscriptionPaidAmountCaption = translationService.Translate("We recive") + " " + d.InsurancePaymentT.Sum(t => t.Amount) + " " + translationService.Translate("Remain") + " " + (d.Subscription.InsuranceAmount.Value - d.InsurancePaymentT.Sum(t => t.Amount.Value)) + " " + translationService.Translate("EGP"),
-                    PaymentList = d.InsurancePaymentT.Select(t => new InsurancePaymentDto
-                    {
-                        Id = t.InsurancePaymentId,
-                        Amount = t.Amount.Value,
-                        Date = t.CreationTime.ToString(),
-                        Description = t.Description,
-                        Type = t.ReferenceType.ToString()
-                    }).ToList()
-                }).FirstOrDefaultAsync();
-            foreach (var item in index.PaymentList)
+            int insuranceAmount = 0;
+            int remainAmount = 0;
+            var employee = await employeeRepository.Where(d => d.EmployeeId == employeeId)
+             .Include(d => d.Subscription)
+             .Include(d => d.InsurancePaymentT)
+             .FirstOrDefaultAsync();
+
+            if (employee.Subscription.InsuranceAmount.HasValue)
             {
-                item.Type = translationService.Translate(((Domain.Enum.InsurancePaymentType)Convert.ToInt32(item.Type)).ToString());
+                insuranceAmount = employee.Subscription.InsuranceAmount.Value;
             }
+            var addAmount = employee.InsurancePaymentT
+                .Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Add))
+                .Sum(d => d.Amount.Value);
+            var withdrawAmount = employee.InsurancePaymentT
+                .Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Withdraw))
+                .Sum(d => d.Amount.Value);
+
+            var paidAmount = addAmount - withdrawAmount;
+
+            var index = new EmployeeInsuranceIndexDto
+            {
+                SubscriptionCaptionTop = translationService.Translate("You subscripe in package"),
+                SubscriptionCaptionDown = translationService.Translate("Insurance"),
+                SubscriptionCaption = insuranceAmount + " " + translationService.Translate("EGP"),
+                PaymentList = employee.InsurancePaymentT
+                .OrderByDescending(d => d.CreationTime)
+                .Select(t => new InsurancePaymentDto
+                {
+                    Id = t.InsurancePaymentId,
+                    Amount = t.Amount.Value,
+                    Date = t.CreationTime.Value.ToShortDateString(),
+                    Description = t.Description,
+                    Type = translationService.Translate(((Domain.Enum.InsurancePaymentType)t.ReferenceType).ToString())
+                }).ToList()
+            };
+            if (employee.Subscription.InsuranceAmount.HasValue)
+            {
+                insuranceAmount = employee.Subscription.InsuranceAmount.Value;
+            }
+            if(insuranceAmount - paidAmount > 0)
+            {
+                remainAmount = insuranceAmount - paidAmount;
+            }
+            index.SubscriptionPaidAmountCaption = $"{translationService.Translate("We recive")} {paidAmount} {translationService.Translate("Remain")} {remainAmount}";
             return index;
         }
 
@@ -207,6 +241,54 @@ namespace SanyaaDelivery.Application.Services
         {
             return insurancePaymentRepository.Where(d => d.EmployeeId == employeeId)
                 .ToListAsync();
+        }
+
+        public Task<InsurancePaymentT> GetPaymentAsync(int id)
+        {
+           return insurancePaymentRepository.GetAsync(id);
+        }
+
+        public async Task<List<EmployeeInsuranceInfo>> GetEmployeeInsuranceInfoAsync(List<string> employeeIdList)
+        {
+            var list = await employeeRepository.Where(d => employeeIdList.Contains(d.EmployeeId))
+                .Select(d => new EmployeeInsuranceInfo
+                {
+                    EmployeeId = d.EmployeeId,
+                    InsuranceAmount = d.Subscription.InsuranceAmount.Value,
+                    InsuranceMinAmount = d.Subscription.MinInsuranceAmountMustPaid.Value,
+                    SubsriptionId = d.SubscriptionId.Value,
+                    SubsriptionName = d.Subscription.Description,
+                    TotalAdd = d.InsurancePaymentT.Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Add)).Sum(d => d.Amount.Value),
+                    TotalWithdraw = d.InsurancePaymentT.Where(d => d.ReferenceType == ((int)Domain.Enum.InsurancePaymentType.Withdraw)).Sum(d => d.Amount.Value),
+                }).ToListAsync();
+
+            foreach (var item in list)
+            {
+                item.PaidAmount = item.TotalAdd - item.TotalWithdraw;
+                if(item.PaidAmount >= item.InsuranceAmount)
+                {
+                    item.IsCompleteInsuranceAmount = true;
+                }
+                else
+                {
+                    item.RemainAmount = item.InsuranceAmount - item.PaidAmount;
+                }
+                if(item.PaidAmount >= item.InsuranceMinAmount)
+                {
+                    item.IsCompleteMinAmount = true;
+                }
+                else
+                {
+                    item.RemainMinAmount = item.InsuranceMinAmount - item.PaidAmount;
+                }
+            }
+            return list;
+        }
+
+        public async Task<EmployeeInsuranceInfo> GetEmployeeInsuranceInfoAsync(string employeeId)
+        {
+            var list = await GetEmployeeInsuranceInfoAsync(new List<string> { employeeId });
+            return list.FirstOrDefault();
         }
     }
 }

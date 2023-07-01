@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using App.Global.ExtensionMethods;
+using System.Collections.Generic;
+using System.IO;
 using static App.Global.Enums;
 
 namespace App.Global.DTOs
@@ -82,9 +84,18 @@ namespace App.Global.DTOs
             return Result;
         }
 
-        public static Result<T> CreateSuccessResponse(T date = default, ResultStatusCode resultStatusCode = ResultStatusCode.Success, string message = "Opreation done successfully", ResultAleartType resultAleartType = ResultAleartType.None)
+        public static Result<T> CreateSuccessResponse(T data = default, ResultStatusCode resultStatusCode = ResultStatusCode.Success, string message = "Opreation done successfully", ResultAleartType resultAleartType = ResultAleartType.None)
         {
-            return new Result<T>(SUCCESS_CODE, resultStatusCode.ToString(), message, 0, ((int)resultAleartType), date);
+            int count = 0;
+            if (data.IsNotNull())
+            {
+                count = 1;
+                if (data.GetType() == typeof(List<>))
+                {
+                    count = ((dynamic)data).Count;
+                }
+            }
+            return new Result<T>(SUCCESS_CODE, resultStatusCode.ToString(), message, count, ((int)resultAleartType), data);
         }
 
         public static Result<T> CreateSuccessResponseSD(T date = default, ResultStatusCode resultStatusCode = ResultStatusCode.Success, string message = "Opreation done successfully")

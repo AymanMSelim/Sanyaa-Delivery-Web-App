@@ -68,5 +68,10 @@ namespace App.Global.ExtensionMethods
             }
             return DateTime.Now.ToString("yyyy-MM-dd 23:59:59.999");
         }
+
+        public static bool IsNotNullOrEmpty(this string str)
+        {
+            return !string.IsNullOrEmpty(str);
+        }
     }
 }

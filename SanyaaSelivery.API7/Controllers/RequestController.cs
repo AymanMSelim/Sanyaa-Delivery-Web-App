@@ -330,17 +330,15 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpGet("GetList")]
-        public async Task<ActionResult<Result<List<RequestDto>>>> GetList(int? requestId = null, int? branchId = null, DateTime? startDate = null, DateTime? endDate = null,
+        [HttpGet("GetCustomList")]
+        public async Task<ActionResult<Result<List<RequestDto>>>> GetCustomList(int? requestId = null, int? branchId = null, DateTime? startDate = null, DateTime? endDate = null,
             string? employeeId = null, int? clientId = null, int? departmentId = null, int? status = null, int? systemUserId = null,
-            bool? isCompleted = null, bool? isCanceled = null, bool? isReviewed = null, bool? isFollowUp = null, bool? isPaid = null, bool includeEmployeeLogin = false)
+            bool? isCompleted = null, bool? isCanceled = null, bool? isReviewed = null, bool? isFollowUp = null, bool? isPaid = null)
         {
             try
             {
-                var list = await requestService.GetCustomList(requestId: requestId, branchId: branchId, startDate: startDate, endDate: endDate, employeeId: employeeId, clientId: clientId, departmentId: departmentId, requestStatus: status,
-                    getCanceled: isCanceled, isPaid: isPaid, isCompleted: isCompleted, isFollowUp: isFollowUp, isReviewed: isReviewed, systemUserId: systemUserId,
-                    includeAddress: true, includePhone: true, includeClient: true, includeDepartment: true, includeSubscription: true, includeRequestService: true, includeService: true,
-                    includeEmployee: true, includeStatus: true, includeBranch: true, includeSystemUser: true, includeEmployeeLogin: includeEmployeeLogin);
-                //var mapList = mapper.Map<List<RequestDto>>(list);
+                var list = await requestService.GetCustomListAsync(requestId: requestId, branchId: branchId, startDate: startDate, endDate: endDate, employeeId: employeeId, clientId: clientId, departmentId: departmentId, requestStatus: status,
+                    isCanceled: isCanceled, isPaid: isPaid, isCompleted: isCompleted, isFollowUp: isFollowUp, isReviewed: isReviewed, systemUserId: systemUserId);
                 return ResultFactory<List<RequestDto>>.CreateSuccessResponse(list);
             }
             catch (Exception ex)

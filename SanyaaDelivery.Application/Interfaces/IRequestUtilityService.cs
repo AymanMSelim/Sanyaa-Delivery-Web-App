@@ -10,8 +10,8 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IRequestUtilityService
     {
-        Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null, bool activeEmployeeAccount = false);
-        Task<Result<List<PaymentT>>> PayAllAsync(string employeeId, int systemUserId, decimal? amount = null);
+        Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal amount, bool? isCompleteInsurancePayment = null);
+        Task<Result<List<PaymentT>>> PayAllAsync(PayAllRequestDto model);
         Task<Result<object>> CompleteAsync(int requestId, int systemUserId);
         Task<Result<FollowUpT>> FollowAsync(FollowUpT followUp);
         Task<List<EmployeeNotPaidRequestSummaryDto>> GetNotPaidSummaryAsync(DateTime? startTime = null,

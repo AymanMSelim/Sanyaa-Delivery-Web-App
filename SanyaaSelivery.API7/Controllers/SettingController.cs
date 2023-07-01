@@ -87,6 +87,13 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [AllowAnonymous]
+        [HttpGet("WakeUp")]
+        public ActionResult WakeUp()
+        {
+            return Ok();
+        }
+
         [HttpGet("GetEmployeeAppRegisterPolicy")]
         public ActionResult<Result<string>> GetEmployeeAppRegisterPolicy()
         {

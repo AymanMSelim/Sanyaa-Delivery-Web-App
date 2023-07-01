@@ -8,6 +8,6 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface ISystemUserService
     {
-        Task<SystemUserT> Get(string userName);
+        Task<SystemUserT> GetAsync(string userName);
     }
 }

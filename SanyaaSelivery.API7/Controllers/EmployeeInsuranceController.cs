@@ -61,12 +61,40 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpGet("GetPayment/{id}")]
+        public async Task<ActionResult<Result<InsurancePaymentT>>> GetPayment(int id)
+        {
+            try
+            {
+                var model = await employeeSubscriptionService.GetPaymentAsync(id);
+                return Ok(ResultFactory<InsurancePaymentT>.CreateSuccessResponse(model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<InsurancePaymentT>.CreateExceptionResponse(ex));
+            }
+        }
+
         [HttpPost("AddPayment")]
         public async Task<ActionResult<Result<InsurancePaymentT>>> AddPayment(InsurancePaymentT model)
         {
             try
             {
                 var affectedRows = await employeeSubscriptionService.AddPaymentAsync(model);
+                return Ok(ResultFactory<InsurancePaymentT>.CreateAffectedRowsResult(affectedRows, data: model));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<InsurancePaymentT>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("UpdatePayment")]
+        public async Task<ActionResult<Result<InsurancePaymentT>>> UpdatePayment(InsurancePaymentT model)
+        {
+            try
+            {
+                var affectedRows = await employeeSubscriptionService.UpdatePaymentAsync(model);
                 return Ok(ResultFactory<InsurancePaymentT>.CreateAffectedRowsResult(affectedRows, data: model));
             }
             catch (Exception ex)

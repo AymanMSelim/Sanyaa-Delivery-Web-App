@@ -12,6 +12,8 @@ using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.OtherModels;
 using App.Global.DTOs;
 using App.Global.DateTimeHelper;
+using Microsoft.EntityFrameworkCore.Query.Internal;
+using App.Global.ExtensionMethods;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -122,9 +124,44 @@ namespace SanyaaDelivery.Application.Services
             return await employeeRepository.SaveAsync();
         }
 
-        public EmployeeDto GetCustomInfo(string id)
+        public Task<List<EmployeeDto>> GetCustomListAsync(string id = null, string name = null, string phone = null, int? departmentId = null, int? branchId = null, bool? isNewEmployee = null)
         {
-            throw new NotImplementedException();
+            var query = employeeRepository.DbSet.AsQueryable();
+            if (id.IsNotNullOrEmpty())
+            {
+                query = query.Where(d => d.EmployeeId == id);
+            }
+            if (name.IsNotNullOrEmpty())
+            {
+                query = query.Where(d => d.EmployeeName.Contains(name));
+            }
+            if (phone.IsNotNullOrEmpty())
+            {
+                query = query.Where(d => d.EmployeePhone == phone);
+            }
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.DepartmentEmployeeT.Any(t => t.DepartmentId == departmentId));
+            }
+            if (branchId.HasValue)
+            {
+                query = query.Where(d => d.EmployeeWorkplacesT.Any(t => t.BranchId == branchId));
+            }
+            if (isNewEmployee.HasValue)
+            {
+                query = query.Where(d => d.IsNewEmployee == isNewEmployee);
+            }
+            return query.OrderByDescending(d => d.EmployeeHireDate)
+                .Select(d => new EmployeeDto
+                {
+                    EmployeeId = d.EmployeeId,
+                    Address = $"{d.EmployeeCity}, {d.EmployeeRegion}",
+                    CreationTime = d.EmployeeHireDate.Value,
+                    Deparment = string.Join(',', d.DepartmentEmployeeT.Select(d => d.Department.DepartmentName).ToList()),
+                    WorkPlace = string.Join(',', d.EmployeeWorkplacesT.Select(d => d.Branch.BranchName).ToList()),
+                    EmployeeName = d.EmployeeName,
+                    EmployeePhone = d.EmployeePhone,
+                }).ToListAsync();
         }
 
         public Task<int> UpdateAsync(EmployeeT employee)

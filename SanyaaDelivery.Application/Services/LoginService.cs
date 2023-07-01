@@ -169,9 +169,9 @@ namespace SanyaaDelivery.Application.Services
             return ResultFactory<AccountT>.CreateSuccessResponse();
         }
 
-        public async Task<Result<SystemUserT>> SystemUserLoginAsync(string userName, string password, int? version = null)
+        public async Task<Result<SystemUserT>> LoginSystemUserAsync(string userName, string password, int? version = null)
         {
-            var systemUser = await systemUserService.Get(userName);
+            var systemUser = await systemUserService.GetAsync(userName);
             if (systemUser.IsNull())
             {
                 return ResultFactory<SystemUserT>.CreateNotFoundResponse("This user not found");
@@ -179,6 +179,15 @@ namespace SanyaaDelivery.Application.Services
             if (systemUser.SystemUserPass != password)
             {
                 return ResultFactory<SystemUserT>.CreateErrorResponseMessage("User or password incorrect");
+            }
+            if(version.HasValue)
+            {
+                var versionRow = GeneralSetting.GetSettingValue("Version");
+                var versionList = versionRow.Split(',');
+                if(!versionList.Contains(version.ToString())) 
+                {
+                    return ResultFactory<SystemUserT>.CreateErrorResponseMessage("This version is no longer supported");
+                }
             }
             return ResultFactory<SystemUserT>.CreateSuccessResponse(systemUser);
         }

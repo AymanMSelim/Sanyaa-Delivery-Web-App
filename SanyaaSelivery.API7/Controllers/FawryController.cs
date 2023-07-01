@@ -165,6 +165,7 @@ namespace SanyaaDelivery.API.Controllers
             }
             catch (Exception ex)
             {
+                App.Global.Logging.LogHandler.PublishException(ex);
                 return StatusCode(500);
             }
         }

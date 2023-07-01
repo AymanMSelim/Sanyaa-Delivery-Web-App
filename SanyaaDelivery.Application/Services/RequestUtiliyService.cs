@@ -16,6 +16,7 @@ using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain.Enum;
 using System.Reflection.Metadata.Ecma335;
 using SanyaaDelivery.Infra.Data.Repositories;
+using SanyaaDelivery.Domain.OtherModels;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -24,6 +25,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<RequestT> requestRepository;
         private readonly IRepository<PaymentT> paymentRepository;
         private readonly ITranslationService translationService;
+        private readonly IEmployeeSubscriptionService employeeSubscriptionService;
         private readonly IRepository<FollowUpT> followUpRepository;
         private readonly IRepository<ClientPointT> pointRepository;
         private readonly IEmployeeRequestService employeeRequestService;
@@ -37,7 +39,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IHelperService helperService;
         private readonly IUnitOfWork unitOfWork;
 
-        public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService,
+        public RequestUtiliyService(IRepository<RequestT> requestRepository, IRepository<PaymentT> paymentRepository, ITranslationService translationService, IEmployeeSubscriptionService employeeSubscriptionService,
             IRepository<FollowUpT> followUpRepository, IRepository<ClientPointT> pointRepository, IEmployeeRequestService employeeRequestService, IRepository<EmployeeT> employeeRepository,
             IRepository<ClientT> clientRepository, INotificatonService notificatonService, IRepository<RejectRequestT> rejectRequestRepository, IOperationService operationService,
             IRepository<MessagesT> messageRepository, IEmployeeAppAccountService employeeAppAccountService, IHelperService helperService, IUnitOfWork unitOfWork)
@@ -45,6 +47,7 @@ namespace SanyaaDelivery.Application.Services
             this.requestRepository = requestRepository;
             this.paymentRepository = paymentRepository;
             this.translationService = translationService;
+            this.employeeSubscriptionService = employeeSubscriptionService;
             this.followUpRepository = followUpRepository;
             this.pointRepository = pointRepository;
             this.employeeRequestService = employeeRequestService;
@@ -194,23 +197,59 @@ namespace SanyaaDelivery.Application.Services
             }
         }
 
-        public Task<List<EmployeeNotPaidRequestDto>> GetNotPaidAsync(string employeeId)
+        public async Task<List<EmployeeNotPaidRequestDto>> GetNotPaidAsync(string employeeId)
         {
-            var data = requestRepository.Where(r => r.IsCanceled == false && r.IsCompleted && r.IsPaid == false && r.EmployeeId == employeeId)
+            var employeeInsuranceInfo = await employeeSubscriptionService.GetEmployeeInsuranceInfoAsync(employeeId);
+            var data = await requestRepository.Where(r => r.IsCanceled == false && r.IsCompleted && r.IsPaid == false && r.EmployeeId == employeeId)
                 .Include(d => d.RequestStagesT)
                 .Select(d => new EmployeeNotPaidRequestDto
                 {
                     CompanyPercentage = d.CompanyPercentageAmount,
-                    DueTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault(),
+                    DueTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault().ToString("yyyy-MM-dd hh:mm tt"),
                     EmployeePercentage = d.EmployeePercentageAmount,
-                    FinishTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault(),
+                    FinishTime = d.RequestStagesT.FinishTimestamp.GetValueOrDefault().ToString("yyyy-MM-dd hh:mm tt"),
                     Price = d.CustomerPrice,
                     RequestId = d.RequestId,
                 }).ToListAsync();
+
+            if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
+            {
+                foreach (var item in data)
+                {
+                    var amounts = GetPercentageAfterInsurance(employeeInsuranceInfo.IsCompleteInsuranceAmount, item.EmployeePercentage, item.CompanyPercentage);
+                    item.EmployeePercentage = amounts.EmployeeAmountPercentage;
+                    item.CompanyPercentage = amounts.CompanyAmountPercentage;
+                    item.InsuranceAmount = amounts.InsuranceAmountPercentage;
+                }
+            }
+            if (employeeInsuranceInfo.IsCompleteMinAmount is false)
+            {
+                data.Add(new EmployeeNotPaidRequestDto
+                {
+                    RequestId = 0,
+                    DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                    EmployeePercentage = 0,
+                    FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                    CompanyPercentage = employeeInsuranceInfo.RemainMinAmount,
+                    Note = "طلب دفع أقل قيمة تأمين متبقية",
+                });
+            }
+            if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
+            {
+                data.Add(new EmployeeNotPaidRequestDto
+                {
+                    RequestId = 1,
+                    DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                    EmployeePercentage = 0,
+                    FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                    CompanyPercentage = employeeInsuranceInfo.RemainAmount,
+                    Note = "طلب دفع قيمة التأمين المتبقية",
+                });
+            }
             return data;
         }
 
-        public Task<List<EmployeeNotPaidRequestSummaryDto>> GetNotPaidSummaryAsync(DateTime? startTime = null,
+        public async Task<List<EmployeeNotPaidRequestSummaryDto>> GetNotPaidSummaryAsync(DateTime? startTime = null,
             DateTime? endTime = null, int? departmentId = null, string employeeId = null, int? requestId = null)
         {
             var query = requestRepository.Where(r => r.IsCanceled == false && r.IsCompleted && r.IsPaid == false);
@@ -234,23 +273,34 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.EmployeeId == employeeId);
             }
-            var data = query
-                .GroupBy(d => new { d.EmployeeId, d.Employee.EmployeeName, d.Employee.EmployeePhone, AccountState = d.Employee.LoginT.LoginAccountState })
+            var data = await query
+                .GroupBy(d => new { d.EmployeeId, d.Employee.EmployeeName, d.Employee.EmployeePhone })
                  .Select(d => new EmployeeNotPaidRequestSummaryDto
                  {
                      EmployeeId = d.Key.EmployeeId,
                      EmployeeName = d.Key.EmployeeName,
                      EmployeePhone = d.Key.EmployeePhone,
-                     //IncreaseDiscountTotal = d.IncreaseDiscountT.Sum(s => s.IncreaseDiscountValue),
                      TotalUnPaidRequestCount = d.Count(),
                      TotalCompanyPercentage = d.Sum(s => s.CompanyPercentageAmount),
                      TotalEmployeePercentage = d.Sum(s => s.EmployeePercentageAmount),
                      TotalUnPaidRequestCost = d.Sum(s => s.CustomerPrice)
                  }).ToListAsync();
+            var employeeInsuanceInfoList = await employeeSubscriptionService.GetEmployeeInsuranceInfoAsync(data.Select(d => d.EmployeeId).ToList());
+            foreach (var item in employeeInsuanceInfoList)
+            {
+                if(item.IsCompleteInsuranceAmount is false)
+                {
+                    var paymentRaw = data.FirstOrDefault(d => d.EmployeeId == item.EmployeeId);
+                    var amounts = GetPercentageAfterInsurance(item.IsCompleteInsuranceAmount, paymentRaw.TotalEmployeePercentage, paymentRaw.TotalCompanyPercentage);
+                    paymentRaw.TotalEmployeePercentage = amounts.EmployeeAmountPercentage;
+                    paymentRaw.TotalCompanyPercentage = amounts.CompanyAmountPercentage;
+                    paymentRaw.TotalInsurancePercentage = amounts.InsuranceAmountPercentage;
+                }
+            }
             return data;
         }
 
-        public async Task<Result<List<PaymentT>>> PayAllAsync(string employeeId, int systemUserId, decimal? amount = null)
+        public async Task<Result<List<PaymentT>>> PayAllAsync(PayAllRequestDto model)
         {
             List<PaymentT> paymentList;
             bool isRootTransaction = false;
@@ -258,24 +308,15 @@ namespace SanyaaDelivery.Application.Services
             {
                 paymentList = new List<PaymentT>();
                 isRootTransaction = unitOfWork.StartTransaction();
-                var requestList = await GetNotPaidAsync(employeeId);
-                if (requestList is null || requestList.Count == 0)
+                var isCompleteInsuranceAmount = await employeeSubscriptionService.IsInsuranceAmountCompletedAsync(model.EmployeeId);
+                foreach (var request in model.RequestList)
                 {
-                    return ResultFactory<List<PaymentT>>.CreateErrorResponseMessageFD("This employee have no un paid requests");
-                }
-                foreach (var request in requestList)
-                {
-                    var result = await PayAsync(request.RequestId, systemUserId, request.CompanyPercentage, false);
+                    var result = await PayAsync(request.RequestId, helperService.CurrentSystemUserId, request.Amount, isCompleteInsuranceAmount);
                     if (result.IsFail)
                     {
                         return result.Convert(paymentList);
                     }
                     paymentList.Add(result.Data);
-                }
-                bool haveUnPaidRequest = await IsHaveUnPaidRequestExceed3Days(employeeId);
-                if (haveUnPaidRequest == false)
-                {
-                    await employeeAppAccountService.ActiveAccountAsync(employeeId);
                 }
                 int affectedRows = 0;
                 if (isRootTransaction)
@@ -305,50 +346,65 @@ namespace SanyaaDelivery.Application.Services
                 .AnyAsync(d => d.EmployeeId == employeeId && d.IsPaid == false && d.RequestTimestamp.Value <= dateTime3DayAgo);
         }
 
-        public async Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal? amount = null, bool activeEmployeeAccount = true)
+        private async Task<Result<decimal>> GetInsuranceAmount(RequestT request, decimal amount, bool? isCompleteInsuranceAmount = null)
         {
+            if (isCompleteInsuranceAmount.IsNull())
+            {
+                isCompleteInsuranceAmount = await employeeSubscriptionService.IsInsuranceAmountCompletedAsync(request.EmployeeId);
+            }
+            if (isCompleteInsuranceAmount.Value)
+            {
+                return ResultFactory<decimal>.CreateSuccessResponse(0);
+            }
+            var amounts = GetPercentageAfterInsurance(isCompleteInsuranceAmount.Value, request.EmployeePercentageAmount, request.CompanyPercentageAmount);
+            if(amounts.CompanyAmountPercentage != amount)
+            {
+                return ResultFactory<decimal>.CreateErrorResponseMessage("Invaid amount value, please refersh and try again");
+            }
+            return ResultFactory<decimal>.CreateSuccessResponse(amounts.InsuranceAmountPercentage);
+        }
+
+        public async Task<Result<PaymentT>> PayAsync(int requestId, int systemUserId, decimal amount, bool? isCompleteInsurancePayment = null)
+        {
+            decimal insuranceAmount = 0;
             bool isRootTransaction = false;
             try
             {
                 isRootTransaction = unitOfWork.StartTransaction();
+                if (amount.IsNull()) { return ResultFactory<PaymentT>.CreateErrorResponseMessage("Amount can't be null"); }
                 var request = await requestRepository.DbSet.Where(d => d.RequestId == requestId)
                     .Include(d => d.RequestStagesT)
                     .Include(d => d.PaymentT)
                     .FirstOrDefaultAsync();
-                if (request.IsCompleted is false)
+                var requestValidation = helperService.ValidateRequestForPayment<PaymentT>(request);
+                if (requestValidation.IsFail) { return requestValidation; }
+                var insuranceAmountResult = await GetInsuranceAmount(request, amount, isCompleteInsurancePayment);
+                if (insuranceAmountResult.IsFail)
                 {
-                    return ResultFactory<PaymentT>.CreateErrorResponseMessageFD("This request not complete");
+                    return ResultFactory<PaymentT>.CreateErrorResponseMessage(insuranceAmountResult.Message);
                 }
-                if (request.IsCanceled)
-                {
-                    return ResultFactory<PaymentT>.CreateErrorResponseMessageFD("This request is canceled");
-                }
-                if (request.IsPaid.HasValue && request.IsPaid.Value)
-                {
-                    return ResultFactory<PaymentT>.CreateSuccessResponse(message: "This request is already paid");
-                }
+                insuranceAmount = insuranceAmountResult.Data;
                 request.IsPaid = true;
                 request.RequestStagesT.PaymentFlag = true;
                 requestRepository.Update(requestId, request);
                 await unitOfWork.SaveAsync();
-                PaymentT payment = request.PaymentT;
-                if (payment.IsNull())
+                var payment = new PaymentT
                 {
-                    payment = new PaymentT
-                    {
-                        Payment = amount.HasValue ? (double)amount : (double)request.CompanyPercentageAmount,
-                        PaymentTimestamp = DateTime.Now.EgyptTimeNow(),
-                        RequestId = request.RequestId,
-                        SystemUserId = systemUserId
-                    };
-                    await paymentRepository.AddAsync(payment);
+                    Payment = (double)request.CompanyPercentageAmount,
+                    PaymentTimestamp = DateTime.Now.EgyptTimeNow(),
+                    RequestId = request.RequestId,
+                    SystemUserId = systemUserId
+                };
+                await paymentRepository.AddAsync(payment);
+                if (insuranceAmount > 0)
+                {
+                    await employeeSubscriptionService.AddPaymentAmountAsync(request.EmployeeId, insuranceAmount, requestId);
                 }
                 string title = "دفع طلب #" + requestId;
                 string body = "تم دفع الطلب #" + requestId;
                 try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, request.EmployeeId, title, body); } catch { }
                 var message = new MessagesT
                 {
-                    
                     Title = title,
                     Body = body,
                     EmployeeId = request.EmployeeId,
@@ -357,14 +413,14 @@ namespace SanyaaDelivery.Application.Services
                 };
 
                 await messageRepository.AddAsync(message);
-                if (activeEmployeeAccount)
-                {
-                    bool haveUnPaidRequest = await IsHaveUnPaidRequestExceed3Days(request.EmployeeId);
-                    if (haveUnPaidRequest == false)
-                    {
-                        await employeeAppAccountService.ActiveAccountAsync(request.EmployeeId);
-                    }
-                }
+                //if (activeEmployeeAccount)
+                //{
+                //    bool haveUnPaidRequest = await IsHaveUnPaidRequestExceed3Days(request.EmployeeId);
+                //    if (haveUnPaidRequest == false)
+                //    {
+                //        await employeeAppAccountService.ActiveAccountAsync(request.EmployeeId);
+                //    }
+                //}
                 int affectedRows = 0;
                 if (isRootTransaction)
                 {
@@ -386,8 +442,23 @@ namespace SanyaaDelivery.Application.Services
             }
         }
 
+        private PercentageAfterInsuranceAmounts GetPercentageAfterInsurance(bool isCompleteInsuranceAmount, decimal employeePercentage, decimal companyPercentage)
+        {
+            var totalAmount = employeePercentage + companyPercentage;
+            var percentage = totalAmount * (GeneralSetting.RequestInsurancePercentge / 100);
+            var employeeAmountPercentage = employeePercentage - percentage;
+            var companyAmountPercentage = companyPercentage + percentage;
+            return new PercentageAfterInsuranceAmounts
+            {
+                EmployeeAmountPercentage = Math.Round(employeeAmountPercentage, 2),
+                CompanyAmountPercentage = Math.Round(companyAmountPercentage, 2),
+                InsuranceAmountPercentage = Math.Round(percentage, 2),
+            };
+        }
+
         public async Task<EmployeeAppPaymentIndexDto> GetEmployeeAppPaymentIndex(string employeeId)
         {
+            var employeeInsuranceInfo = await employeeSubscriptionService.GetEmployeeInsuranceInfoAsync(employeeId);
             DateTime startMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS();
             DateTime endMonthDate = App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS();
             string maxsabTranslation = translationService.Translate("Maxsab");
@@ -395,31 +466,80 @@ namespace SanyaaDelivery.Application.Services
             string companyPercentageTranslation = translationService.Translate("CompanyPercentage");
             string lastDuoDateTranslation = translationService.Translate("LastDuoDate");
             string egpTranslation = translationService.Translate("EGP");
+            string insuranceTranslation = translationService.Translate("Insurance");
+
             var monthlyRequest = await requestRepository
                 .Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.RequestTimestamp >= startMonthDate && d.RequestTimestamp <= endMonthDate)
                 .Select(d => new { d.NetPrice, d.EmployeePercentageAmount })
                 .ToListAsync();
-            var unPaidRequest = await requestRepository.Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.IsPaid == false)
-                .Select(d => new EmployeeAppPaymentRequestItemDto
+
+            var unPaidRequestList = await requestRepository.Where(d => d.EmployeeId == employeeId && d.IsCompleted && d.IsPaid == false)
+                .Select(d => new
                 {
                     Address = d.RequestedAddress.City.CityName + ", " + d.RequestedAddress.Region.RegionName,
-                    ClientName = d.Client.ClientName,
-                    RequestId = d.RequestId,
-                    RequestCaption = requestTranslation + " #" + d.RequestId,
-                    EmployeeAmountPercentageDescription = maxsabTranslation + " " + d.EmployeePercentageAmount + " " + egpTranslation,
-                    CompanyAmountPercentageDescription = companyPercentageTranslation + " " + d.CompanyPercentageAmount + " " + egpTranslation,
+                    d.Client.ClientName,
+                    d.RequestId,
+                    EmployeeAmountPercentage = d.EmployeePercentageAmount,
+                    CompanyAmountPercentage = d.CompanyPercentageAmount,
                     RequestTimestamp = d.RequestTimestamp.Value
                 }).ToListAsync();
-            foreach (var item in unPaidRequest)
+
+            var unPaidRequestCustomList = new List<EmployeeAppPaymentRequestItemDto>();
+            foreach (var item in unPaidRequestList)
             {
-                item.DuoDateDecription = lastDuoDateTranslation + " " + item.RequestTimestamp.AddDays(3).ToShortDateString();
+                var temp = new EmployeeAppPaymentRequestItemDto
+                {
+                    Address = item.Address,
+                    ClientName = item.ClientName,
+                    RequestId = item.RequestId,
+                    RequestCaption = requestTranslation + " #" + item.RequestId,
+                    DuoDateDecription = lastDuoDateTranslation + " " + item.RequestTimestamp.AddDays(3).ToShortDateString()
+                };
+                if (employeeInsuranceInfo.IsCompleteInsuranceAmount)
+                {
+                    temp.EmployeeAmountPercentageDescription = $"{maxsabTranslation} {item.EmployeeAmountPercentage} {egpTranslation}";
+                    temp.CompanyAmountPercentageDescription = $"{companyPercentageTranslation} {item.CompanyAmountPercentage} {egpTranslation}";
+                }
+                else
+                {
+                    var percentageAfterInsurance = GetPercentageAfterInsurance(employeeInsuranceInfo.IsCompleteInsuranceAmount, item.EmployeeAmountPercentage, item.CompanyAmountPercentage);
+                    temp.EmployeeAmountPercentageDescription = $"{maxsabTranslation} {percentageAfterInsurance.EmployeeAmountPercentage} {egpTranslation}";
+                    temp.CompanyAmountPercentageDescription = $"{companyPercentageTranslation} {percentageAfterInsurance.CompanyAmountPercentage} {egpTranslation}\n{percentageAfterInsurance.InsuranceAmountPercentage} {insuranceTranslation}";
+                }
+                unPaidRequestCustomList.Add(temp);
+            }
+            if(employeeInsuranceInfo.IsCompleteMinAmount is false)
+            {
+                unPaidRequestCustomList.Add(new EmployeeAppPaymentRequestItemDto
+                {
+                    Address = "-",
+                    ClientName = "تأمين",
+                    RequestId = 0,
+                    DuoDateDecription = lastDuoDateTranslation + " " + DateTime.Now.ToShortDateString(),
+                    CompanyAmountPercentageDescription = "-",
+                    EmployeeAmountPercentageDescription = $"{employeeInsuranceInfo.RemainMinAmount} EGP",
+                    RequestCaption = "طلب دفع أقل قيمة تأمين متبقية",
+                });
+            }
+            if(employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
+            {
+                unPaidRequestCustomList.Add(new EmployeeAppPaymentRequestItemDto
+                {
+                    Address = "-",
+                    ClientName = "تأمين",
+                    RequestId = 1,
+                    DuoDateDecription = lastDuoDateTranslation + " " + DateTime.Now.ToShortDateString(),
+                    CompanyAmountPercentageDescription = "-",
+                    EmployeeAmountPercentageDescription = $"{employeeInsuranceInfo.RemainAmount} EGP",
+                    RequestCaption = "طلب دفع قيمة التأمين المتبقية",
+                });
             }
             return new EmployeeAppPaymentIndexDto
             {
                 EmployeeAmountPercentage = monthlyRequest.Sum(d => d.EmployeePercentageAmount).ToString() + " ج",
                 EmployeeAmountPercentageCaption = translationService.Translate("Your percentage this month is"),
                 EmployeeAmountPercentageDescription = $"{translationService.Translate("You do")} {monthlyRequest.Count} {translationService.Translate("Requests with total cost")} {monthlyRequest.Sum(d => d.NetPrice)} {egpTranslation}",
-                RequestList = unPaidRequest
+                RequestList = unPaidRequestCustomList
             };
         }
 

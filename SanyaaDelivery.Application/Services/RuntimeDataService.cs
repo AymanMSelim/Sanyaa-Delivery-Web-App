@@ -74,7 +74,7 @@ namespace SanyaaDelivery.Application.Services
             this.employeeBranchRepository = employeeBranchRepository;
             this.firedEmployeeRepository = firedEmployeeRepository;
         }
-        public async Task<RuntimeData> Get()
+        public async Task<RuntimeData> GetAsync()
         {
             try
             {
@@ -116,7 +116,7 @@ namespace SanyaaDelivery.Application.Services
                         DepartmentName = d.DepartmentSub1,
                         DepartmentSub0Id = d.DepartmentSub0Id
                     }).ToListAsync(),
-                    EmployeeLightList = await employeeRepository.DbSet.Select(d => new Domain.LightModels.EmployeeLight
+                    EmployeeLightList = await employeeRepository.DbSet.Where(d => d.IsApproved).Select(d => new Domain.LightModels.EmployeeLight
                     {
                         EmployeeId = d.EmployeeId,
                         EmployeeName = d.EmployeeName,

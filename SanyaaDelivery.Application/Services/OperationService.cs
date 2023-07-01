@@ -395,6 +395,7 @@ namespace SanyaaDelivery.Application.Services
             if (broadcast.HasItem())
             {
                 await broadcastRequestRepository.DbSet.AddRangeAsync(broadcast);
+                pendingBroadcastEmployeeIdList.AddRange(employeeIdList);
             }
             var broadcastStatus = GeneralSetting.GetRequestStatusId(RequestStatus.Broadcast);
             request.RequestStatus = broadcastStatus;
@@ -402,7 +403,7 @@ namespace SanyaaDelivery.Application.Services
             var affectedRows = await broadcastRequestRepository.SaveAsync();
             string title = $"طلب جديد #{requestId}";
             string body = $"يوجد طلب جديد, من فضلك قم بالتفاعل معه سريعا";
-            foreach (var id in employeeIdList)
+            foreach (var id in pendingBroadcastEmployeeIdList)
             {
                 try { await notificatonService.SendFirebaseNotificationAsync(AccountType.Employee, id, title, body); } catch { }
             }

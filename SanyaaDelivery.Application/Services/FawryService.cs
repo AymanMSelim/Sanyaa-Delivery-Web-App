@@ -29,13 +29,14 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRequestUtilityService requestUtilityService;
         private readonly IRepository<FawryChargeT> fawryChargeRepository;
         private readonly IRepository<MessagesT> messageRepository;
+        private readonly ITranslationService translationService;
         private readonly IRepository<EmployeeT> employeeRepository;
         private readonly IEmployeeSubscriptionService employeeSubscriptionService;
         private readonly IFawryAPIService fawryAPIService;
 
         public FawryService(IRequestService requestService, IConfiguration configuration, 
             IFawryAPIService fawryAPIService, IFawryChargeService fawryChargeService, IRepository<RequestT> requestRepository, INotificatonService notificatonService,
-            IRequestUtilityService requestUtilityService, IRepository<FawryChargeT> fawryChargeRepository, IRepository<MessagesT> messageRepository,
+            IRequestUtilityService requestUtilityService, IRepository<FawryChargeT> fawryChargeRepository, IRepository<MessagesT> messageRepository, ITranslationService translationService,
             IRepository<EmployeeT> employeeRepository, IEmployeeSubscriptionService employeeSubscriptionService, IUnitOfWork unitOfWork)
         {
             this.unitOfWork = unitOfWork;
@@ -47,6 +48,7 @@ namespace SanyaaDelivery.Application.Services
             this.requestUtilityService = requestUtilityService;
             this.fawryChargeRepository = fawryChargeRepository;
             this.messageRepository = messageRepository;
+            this.translationService = translationService;
             this.employeeRepository = employeeRepository;
             this.employeeSubscriptionService = employeeSubscriptionService;
             this.fawryAPIService = fawryAPIService;
@@ -72,7 +74,7 @@ namespace SanyaaDelivery.Application.Services
                 {
                     Description = $"Request insurance percentage #{d.RequestId}",
                     ItemId = d.RequestId.ToString(),
-                    Price = Math.Round(d.CompanyPercentageAmount * (GeneralSetting.RequestInsurancePercentge / 100), 2),
+                    Price = Math.Round((d.CompanyPercentageAmount + d.EmployeePercentageAmount) * (GeneralSetting.RequestInsurancePercentge / 100), 2),
                     Quantity = 1
                 }).ToList();
                 list.AddRange(insuranceItemList);
@@ -82,11 +84,13 @@ namespace SanyaaDelivery.Application.Services
 
         public App.Global.Models.Fawry.FawryRequest PrepareFawryRequest(List<App.Global.Models.Fawry.FawryChargeItem> fawryChargeItems, EmployeeT employee, int expireInDays = 3)
         {
+            var amount = fawryChargeItems.Sum(d => d.Price);
+            amount = Math.Round(Convert.ToDecimal(amount.ToString("0.00")), 2);
             App.Global.Models.Fawry.FawryRequest fawryRequest = new App.Global.Models.Fawry.FawryRequest
             {
-                Amount = Math.Round(fawryChargeItems.Sum(d => d.Price), 2),
+                Amount = Math.Round(amount, 2),
                 ChargeItems = fawryChargeItems,
-                Description = $@"Request #{string.Join(",", fawryChargeItems.Select(d => d.ItemId).ToList())}",
+                Description = $@"Request #{string.Join(",", fawryChargeItems.Select(d => d.ItemId).Distinct().ToList())}",
                 CustomerEmail = "ayman.mohamed5100@gmail.com",
                 CustomerMobile = employee.EmployeePhone,
                 CustomerName = employee.EmployeeName,
@@ -130,6 +134,7 @@ namespace SanyaaDelivery.Application.Services
                 }
                 var isInsuranceAmountCompleted = await employeeSubscriptionService.IsInsuranceAmountCompletedAsync(employeeId);
                 var includeInsurance = !isInsuranceAmountCompleted;
+                //var includeInsurance = false;
                 var chargeItem = ConvertRequestToChargeItem(requestList, includeInsurance);
                 if (chargeItem.IsEmpty())
                 {
@@ -167,7 +172,7 @@ namespace SanyaaDelivery.Application.Services
                     {
                         fawryCharge.FawryChargeRequestT.Add(new FawryChargeRequestT
                         {
-                            Amount = Math.Round(request.CompanyPercentageAmount * (GeneralSetting.RequestInsurancePercentge / 100), 2),
+                            Amount = Math.Round((request.CompanyPercentageAmount + request.EmployeePercentageAmount) *  (GeneralSetting.RequestInsurancePercentge / 100), 2),
                             Description = "Request insurance percentege #" + request.RequestId,
                             RequestId = request.RequestId,
                             Type = ((int)Domain.Enum.FawryRequestType.Insurance)
@@ -252,18 +257,58 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("No requests selected");
             }
-            var requestList = await requestRepository
-                .Where(d => model.RequestList.Contains(d.RequestId) && d.IsPaid == false && d.IsCompleted && d.IsCanceled == false)
-                .ToListAsync();
-            if(requestList.Any(d => d.EmployeeId != model.EmployeeId))
+            bool isRootTransaction = false;
+            try
             {
-                return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("One or more request not belong to this employee");
+                isRootTransaction = unitOfWork.StartTransaction();
+                var insuranceRequest = model.RequestList.Where(id => id == 0 || id == 1).ToList();
+                if (insuranceRequest.HasItem())
+                {
+                    int amount = 0;
+                    var employeeInsurance = await employeeSubscriptionService.GetEmployeeInsuranceInfoAsync(model.EmployeeId);
+                    if (insuranceRequest.Any(d => d == 0))
+                    {
+                        amount = employeeInsurance.RemainMinAmount;
+                    }
+                    if (insuranceRequest.Any(d => d == 1))
+                    {
+                        amount = employeeInsurance.RemainAmount;
+                    }
+                    await SendInsuranceAmountAsync(model.EmployeeId, amount);
+                }
+                var requestList = await requestRepository
+                    .Where(d => model.RequestList.Contains(d.RequestId) && d.IsPaid == false && d.IsCompleted && d.IsCanceled == false)
+                    .ToListAsync();
+                if (requestList.Any(d => d.EmployeeId != model.EmployeeId))
+                {
+                    return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("One or more request not belong to this employee");
+                }
+                if (requestList.IsEmpty())
+                {
+                    return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("No unpaid request found");
+                }
+                var result = await SendAllUnpaidRequestAsync(model.EmployeeId, requestList);
+                if(result.IsFail) { return result; }
+                int affectedRows = -1;
+                if (isRootTransaction)
+                {
+                     affectedRows = await unitOfWork.CommitAsync(false);
+                }
+                return result;
             }
-            if (requestList.IsEmpty())
+            catch (Exception ex)
             {
-                return ResultFactory<FawryRefNumberResponse>.CreateErrorResponseMessageFD("No unpaid request found");
+                unitOfWork.RollBack();
+                return ResultFactory<FawryRefNumberResponse>.CreateExceptionResponse(ex);
             }
-            return await SendAllUnpaidRequestAsync(model.EmployeeId, requestList);
+            finally
+            {
+                if (isRootTransaction)
+                {
+                    unitOfWork.DisposeTransaction(false);
+                }
+            }
+
         }
 
         public async Task UpdateStatusTask()
@@ -306,7 +351,7 @@ namespace SanyaaDelivery.Application.Services
                 {
                     if(item.Type == ((int)Domain.Enum.FawryRequestType.Request)) 
                     {
-                        var result = await requestUtilityService.PayAsync(item.RequestId.Value, GeneralSetting.FawrySystemUserId, null, false);
+                        var result = await requestUtilityService.PayAsync(item.RequestId.Value, GeneralSetting.FawrySystemUserId, item.Amount, true);
                         if (result.IsFail) { return ((int)App.Global.Enums.ResultStatusCode.Failed); }                    
                     }
                     else if (item.Type == ((int)Domain.Enum.FawryRequestType.Insurance))
@@ -316,11 +361,6 @@ namespace SanyaaDelivery.Application.Services
                     }
                     await unitOfWork.SaveAsync();
                 }
-                //bool haveUnPaidRequest = await requestUtilityService.IsHaveUnPaidRequestExceed3Days(fawryCharge.EmployeeId);
-                //if (haveUnPaidRequest == false)
-                //{
-                //    await employeeAppAccountService.ActiveAccountAsync(fawryCharge.EmployeeId);
-                //}
                 if (isRootTransaction)
                 {
                     return await unitOfWork.CommitAsync(false);
@@ -401,7 +441,11 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<int> CallbackNotification(FawryNotificationCallback model)
         {
-            if(Convert.ToInt32(model.MerchantRefNumber) < 14000)
+            if(model.MerchantRefNumber == "Callbacktest")
+            {
+                return (int)App.Global.Enums.ResultStatusCode.Success;
+            }
+            if (Convert.ToInt32(model.MerchantRefNumber) < 14000)
             {
                 return (int)App.Global.Enums.ResultStatusCode.Success;
             }
@@ -470,6 +514,7 @@ namespace SanyaaDelivery.Application.Services
                 };
                 int expireInDays = 10;
                 var fawryRequest = PrepareFawryRequest(chargeItem, employee, expireInDays);
+                fawryRequest.Description = translationService.Translate("Sanyaa Delivery Insurance");
                 var fawryCharge = new FawryChargeT
                 {
                     ChargeAmount = fawryRequest.Amount,

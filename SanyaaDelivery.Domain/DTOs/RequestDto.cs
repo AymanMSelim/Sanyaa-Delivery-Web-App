@@ -32,5 +32,9 @@ namespace SanyaaDelivery.Domain.DTOs
         public string SubscriptionName { get; set; }
         public int DepartmentId { get; set; }
         public string DeparmentName { get; set; }
+        public bool IsCompleted { get; set; }
+        public int? PhoneId { get; set; }
+        public int? AddressId { get; set; }
+        public int? ClientSubscriptionId { get; set; }
     }
 }

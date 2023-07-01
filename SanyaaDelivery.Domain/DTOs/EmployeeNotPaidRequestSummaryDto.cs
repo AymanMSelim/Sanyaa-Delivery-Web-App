@@ -15,5 +15,6 @@ namespace SanyaaDelivery.Domain.DTOs
         public decimal TotalCompanyPercentage { get; set; }
         public decimal TotalEmployeePercentage { get; set; }
         public bool AccountState { get; set; }
+        public decimal TotalInsurancePercentage { get; set; }
     }
 }

@@ -24,7 +24,7 @@ namespace SanyaaDelivery.API.Controllers
         {
             try
             {
-                var data = await runtimeDataService.Get();
+                var data = await runtimeDataService.GetAsync();
                 if (data != null)
                 {
                     return Ok(ResultFactory<RuntimeData>.CreateSuccessResponse(data));

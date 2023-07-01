@@ -20,6 +20,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Result<string> ValidateClientSubscription(ClientSubscriptionT clientSubscription);
         Task<decimal> GetDeliveryPriceAsync(int? cityId = null, int? region = null, int? departmentId = null);
         Result<T> ValidateRequest<T>(RequestT request, string employeeId = null, bool checkEmployee = false);
+        Result<T> ValidateRequestForPayment<T>(RequestT request);
         Result<T> ValidateFollowUpRequest<T>(RequestT request);
         void SetHost(string host);
         void SetSystemUser(int systemUserId);

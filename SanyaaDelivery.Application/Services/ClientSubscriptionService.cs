@@ -117,6 +117,84 @@ namespace SanyaaDelivery.Application.Services
             return query.ToListAsync();
         }
 
+        public async Task<List<SubscriberDto>> GetSubscriberListAsync(int? clientId = null, string clientName = null, string clientPhone = null, 
+            int? branchId = null, int? departmentId = null, bool? isExpired = null, bool? isActive = null, bool? isCanceled = null, int? subscriptionId = null, bool? isContract = null)
+        {
+            var query = repo.DbSet.AsQueryable();
+            if (clientId.HasValue)
+            {
+                query = query.Where(d => d.ClientId == clientId);
+            }
+            if (branchId.HasValue)
+            {
+                query = query.Where(d => d.Client.BranchId == branchId);
+            }
+            if (departmentId.HasValue)
+            {
+                query = query.Where(d => d.Subscription.DepartmentId == departmentId);
+            }
+            if (clientName.IsNotNullOrEmpty())
+            {
+                query = query.Where(d => d.Client.ClientName.Contains(clientName));
+            }
+            if (clientPhone.IsNotNullOrEmpty())
+            {
+                query = query.Where(d => d.Client.ClientPhonesT.Any(t => t.ClientPhone == clientPhone));
+            }
+            if (isExpired.HasValue)
+            {
+                var dateNow = DateTime.Now.EgyptTimeNow();
+                if (isExpired.Value)
+                {
+                    query = query.Where(d => d.ExpireDate <= dateNow);
+                }
+                else
+                {
+                    query = query.Where(d => d.ExpireDate >= dateNow);
+                }
+            }
+            if (isActive.HasValue)
+            {
+                query = query.Where(d => d.IsActive == isActive);
+            }
+            if (isCanceled.HasValue)
+            {
+                query = query.Where(d => d.IsCanceled == isCanceled);
+            }
+            if (subscriptionId.HasValue)
+            {
+                query = query.Where(d => d.SubscriptionId == subscriptionId);
+            }
+            if (isContract.HasValue)
+            {
+                query = query.Where(d => d.Subscription.IsContract == isContract);
+            }
+            query = query.OrderByDescending(d => d.CreationTime);
+            var list = await query.Select(d => new SubscriberDto
+            {
+                ClientId = d.Client.ClientId,
+                ClientBranchId = d.Client.BranchId,
+                Address = $"{d.Address.City.CityName}, {d.Address.Region.RegionName}",
+                AddressId = d.AddressId,
+                ClientName = d.Client.ClientName,
+                ClientSibscriptionId = d.ClientSubscriptionId,
+                EndDate = d.ExpireDate,
+                IsActive = d.IsActive,
+                IsContract = d.Subscription.IsContract,
+                Phone = d.Phone.ClientPhone,
+                PhoneId = d.PhoneId,
+                ServiceId = d.SubscriptionService.ServiceId,
+                ServiceName = d.SubscriptionService.Service.ServiceName,
+                StartDate = d.CreationTime,
+                SubscriptionId = d.SubscriptionId,
+                SubscriptionName = d.Subscription.SubscriptionName,
+                SubscriptionServiceId = d.SubscriptionServiceId,
+                IsCanceled = d.IsCanceled
+            }).ToListAsync();
+            list.ForEach(d => d.IsExpired = d.EndDate < DateTime.Now.EgyptTimeNow());
+            return list;
+        }
+
         public async Task<int> UnSubscripe(int id, int systemUserId)
         {
             bool isRootTransaction = false;

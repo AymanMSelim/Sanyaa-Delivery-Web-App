@@ -77,7 +77,7 @@ namespace SanyaaDelivery.Application.Services
         {
             var times = helperService.GetDepartmentTimeBetween(departmentId, dateTime);
             var query = GetFreeEmployeeConditionQuery(dateTime, departmentId, branchId);    
-            query = query.Where(d => d.RequestT.Count(t => t.RequestTimestamp > times.StartTime && t.RequestTimestamp < times.EndTime && t.IsCanceled == false) == 0);
+            query = query.Where(d => d.IsApproved == true && d.RequestT.Count(t => t.RequestTimestamp > times.StartTime && t.RequestTimestamp < times.EndTime && t.IsCanceled == false) == 0);
             if (includeReview)
             {
                 if (includeClientWithReview)
@@ -168,7 +168,7 @@ namespace SanyaaDelivery.Application.Services
                         .SumAsync(d => d.CompanyPercentageAmount);
                     if (unPaidRequestAmounts > (decimal)employee.Subscription.MaxUnPaidAmount.Value)
                     {
-                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The value of the unpaid requests exceeds the allowed value for the subscribed package. Please pay the unpaid requests first");
+                        return ResultFactory<EmployeeT>.CreateErrorResponseMessage("The value of the unpaid requests exceeds the allowed value for the subscribed package. Please pay the unpaid requests first");
                     }
                 }
                 if (employee.Subscription.MaxRequestCount.HasValue)
@@ -180,7 +180,7 @@ namespace SanyaaDelivery.Application.Services
                        .CountAsync();
                     if (completeRequestPerMonth > employee.Subscription.MaxRequestCount.Value)
                     {
-                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The number of requests for the subscribed package has been reached for the month");
+                        return ResultFactory<EmployeeT>.CreateErrorResponseMessage("The number of requests for the subscribed package has been reached for the month");
                     }
                 }
                 if(employee.Subscription.MaxRequestPrice.HasValue)
@@ -188,13 +188,13 @@ namespace SanyaaDelivery.Application.Services
                     var requestAmount = await requestRepository.Where(d => d.RequestId == requestId).Select(d => d.CustomerPrice).FirstOrDefaultAsync();
                     if (requestAmount > employee.Subscription.MaxRequestPrice.Value)
                     {
-                        var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The price of this request exceeds the maximum order price for the subscribed package");
+                        return ResultFactory<EmployeeT>.CreateErrorResponseMessage("The price of this request exceeds the maximum order price for the subscribed package");
                     }
                 }
                 var isPaidMinAmount = await employeeSubscriptionService.IsHasMinimumAmountPaidAsync(employeeId);
                 if(isPaidMinAmount is false)
                 {
-                    var result = ResultFactory<EmployeeT>.CreateErrorResponseMessage("The minimum required percentage of the insurance amount has not been paid. Please make the payment and try again");
+                    return ResultFactory<EmployeeT>.CreateErrorResponseMessage("The minimum required percentage of the insurance amount has not been paid. Please make the payment and try again");
                 }
             }
             return ResultFactory<EmployeeT>.CreateSuccessResponse(employee);

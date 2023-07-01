@@ -24,7 +24,7 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<EmployeeT> GetWithBeancesAndTimetable(string id);
 
-        EmployeeDto GetCustomInfo(string id);
+        Task<List<EmployeeDto>> GetCustomListAsync(string id = null, string name = null, string phone = null, int? departmentId = null, int? branchId = null, bool? isNewEmployee = null);
         Task<decimal> GetDepartmentPrecentageAsync(string employeeId, int departmentId);
         Task<bool> IsCleaningEmployeeAsync(string employeeId);
 

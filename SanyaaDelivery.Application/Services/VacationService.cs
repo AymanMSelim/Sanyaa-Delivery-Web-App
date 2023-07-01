@@ -112,7 +112,7 @@ namespace SanyaaDelivery.Application.Services
                 appVacationDto.IsVacation = true;
                 appVacationDto.VacationId = vacation.VacationId;
             }
-            return ResultFactory<AppVacationDto>.CreateSuccessResponse(date: appVacationDto);
+            return ResultFactory<AppVacationDto>.CreateSuccessResponse(data: appVacationDto);
 
         }
     }

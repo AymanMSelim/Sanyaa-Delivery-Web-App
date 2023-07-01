@@ -1,5 +1,6 @@
 ﻿using SanyaaDelivery.Domain.DTOs;
 using SanyaaDelivery.Domain.Models;
+using SanyaaDelivery.Domain.OtherModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,5 +22,8 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> AddPaymentAsync(InsurancePaymentT payment);
         Task<int> DeletePaymentAsync(int id);
         Task<int> UpdatePaymentAsync(InsurancePaymentT payment);
+        Task<InsurancePaymentT> GetPaymentAsync(int id);
+        Task<List<EmployeeInsuranceInfo>> GetEmployeeInsuranceInfoAsync(List<string> employeeIdList);
+        Task<EmployeeInsuranceInfo> GetEmployeeInsuranceInfoAsync(string employeeId);
     }
 }

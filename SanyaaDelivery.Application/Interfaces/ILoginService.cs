@@ -10,7 +10,7 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface ILoginService
     {
-        Task<Result<SystemUserT>> SystemUserLoginAsync(string userName, string password, int? version = null);
+        Task<Result<SystemUserT>> LoginSystemUserAsync(string userName, string password, int? version = null);
         Task<Result<EmployeeLoginResponseDto>> LoginEmployeeAsync(LoginEmployeeDto model);
         Task<Result<SystemUserDto>> LoginClientAsync(string phone, string password = null, string otp = null);
         Task<Result<OTPCodeDto>> RequestOTPForLoginAsync(string clientPhone);

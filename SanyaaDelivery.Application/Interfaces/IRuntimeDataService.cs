@@ -8,7 +8,7 @@ namespace SanyaaDelivery.Application.Interfaces
 {
     public interface IRuntimeDataService
     {
-        Task<RuntimeData> Get();
+        Task<RuntimeData> GetAsync();
         Task<object> Get1();
     }
 }

@@ -64,6 +64,20 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpGet("GetCustomList")]
+        public async Task<ActionResult<Result<List<EmployeeDto>>>> GetCustomList(string? id = null, string? name = null, string? phone = null, int? departmentId = null, int? branchId = null, bool? isNewEmployee = null)
+        {
+            try
+            {
+               var list = await employeeService.GetCustomListAsync(id, name, phone, departmentId, branchId, isNewEmployee);
+                return ResultFactory<List<EmployeeDto>>.CreateSuccessResponse(list);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<List<EmployeeDto>>.CreateExceptionResponse(ex));
+            }
+        }
+
         [HttpPost("AddWorkplace")]
         public async Task<ActionResult<Result<EmployeeWorkplacesT>>> AddWorkplace(EmployeeWorkplacesT employeeWorkplace)
         {
@@ -305,7 +319,7 @@ namespace SanyaaDelivery.API.Controllers
         {
             EmployeeDayStatusDto employeeDayStatusDto = new EmployeeDayStatusDto(employeeId, dateOfDay);
             int orderCount = await orderService.GetOrdersExceptCanceledCountByEmployee(employeeId, dateOfDay);
-            if(orderCount > 0)
+            if (orderCount > 0)
             {
                 employeeDayStatusDto.Status = "HaveOrders";
             }
@@ -314,6 +328,22 @@ namespace SanyaaDelivery.API.Controllers
                 employeeDayStatusDto.Status = "Free";
             }
             return employeeDayStatusDto;
+        }
+
+
+        [HttpGet("ValidateEmployee")]
+        public async Task<ActionResult<Result<EmployeeT>>> ValidateEmployee(string employeeId, DateTime date, int branchId, int departmentId)
+        {
+            try
+            {
+                var result = await employeeRequestService.ValidateEmployeeForRequest(employeeId, date, branchId, departmentId);
+                return Ok(result);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<EmployeeT>.CreateExceptionResponse(ex));
+            }
         }
 
         [HttpGet("GetDayStatusWithOrders")]
@@ -413,7 +443,6 @@ namespace SanyaaDelivery.API.Controllers
                      departmentId = cart.DepartmentId;
                 }
                 var employeeList = await employeeRequestService.GetFreeEmployeeListByBranch(selectedDate, departmentId.Value, branchId.Value, true, true, true);
-                //employeeService.GetListAsync(departmentId, branchId, true, true, true, true);
                 var mapList = mapper.Map<List<AppEmployeeDto>>(employeeList);
                 mapList.ForEach(d => d.EmployeeReviews = null);
                 if (isNewSubscription == false)

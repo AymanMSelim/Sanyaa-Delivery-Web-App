@@ -126,13 +126,28 @@ namespace SanyaaDelivery.Application.Services
 
         public Result<T> ValidateFollowUpRequest<T>(RequestT request)
         {
-            if (request.IsCompleted is false && request.IsCanceled is false)
-            {
-                return ResultFactory<T>.CreateErrorResponseMessageFD("This request is not completed or canceled to follow up");
-            }
+            var requestValidation = ValidateRequest<T>(request);
+            if (requestValidation.IsFail) { return requestValidation; }
             if (request.IsFollowed)
             {
                 return ResultFactory<T>.CreateErrorResponseMessageFD("This request is already followed");
+            }
+            return ResultFactory<T>.CreateSuccessResponse();
+        }
+
+        public Result<T> ValidateRequestForPayment<T>(RequestT request)
+        {
+            if (request.IsNull())
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD(message: "This request not found");
+            }
+            if (request.IsCanceled)
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD(message: "This request is canceled");
+            }
+            if (request.IsPaid.Value)
+            {
+                return ResultFactory<T>.CreateErrorResponseMessageFD("This request is already paid");
             }
             return ResultFactory<T>.CreateSuccessResponse();
         }
@@ -204,6 +219,6 @@ namespace SanyaaDelivery.Application.Services
             this.IsViaApp = isViaApp;
             this.IsViaEmpApp = isViaEmpApp;
             this.IsViaClientApp = isViaClientApp;
-        }
+        }   
     }
 }

@@ -9,5 +9,6 @@ namespace SanyaaDelivery.Domain.DTOs
         public string EmployeeId { get; set; }
         public int RequestCount { get; set; }
         public decimal TotalAmount { get; set; }
+        public List<PayRequestDto> RequestList { get; set; }
     }
 }

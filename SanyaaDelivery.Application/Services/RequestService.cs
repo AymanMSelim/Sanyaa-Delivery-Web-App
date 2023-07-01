@@ -468,16 +468,10 @@ namespace SanyaaDelivery.Application.Services
         }
 
 
-       public Task<List<RequestDto>> GetCustomList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
+       public Task<List<RequestDto>> GetCustomListAsync(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
        int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
-       bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
-       bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
-       bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
-       bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
-       bool includeDelayedT = false, bool includeFollowUpT = false, bool includeReviewT = false, bool includeSubscription = false,
-       bool includePayment = false, bool includeComplaiment = false, bool includeSite = false, bool includeBill = false,
-       bool includeFawryCharge = false, bool includeAddress = false, bool includePhone = false, bool includePromocode = false,
-       bool includeDepartment = false, bool includeBranch = false, bool includeSystemUser = false, bool includeEmployeeLogin = false)
+       bool? isCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
+       bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null)
         {
             var query = requestRepository.DbSet.AsQueryable();
             if (startDate.HasValue)
@@ -508,9 +502,9 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == requestStatusGroupId);
             }
-            if (getCanceled.HasValue)
+            if (isCanceled.HasValue)
             {
-                query = query.Where(d => d.IsCanceled);
+                query = query.Where(d => d.IsCanceled == isCanceled);
             }
             if (!string.IsNullOrEmpty(employeeId))
             {
@@ -556,109 +550,6 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.IsReviewed == isReviewed);
             }
-            if (includeRequestService)
-            {
-                if (includeService)
-                {
-                    query = query.Include(d => d.RequestServicesT).ThenInclude(d => d.Service);
-                }
-                else
-                {
-                    query = query.Include(d => d.RequestServicesT);
-                }
-            }
-            if (includeClient)
-            {
-                query = query.Include(d => d.Client);
-            }
-            if (includeEmployee)
-            {
-                if (includeEmployeeLogin)
-                {
-                    query = query.Include(d => d.Employee)
-                        .ThenInclude(d => d.LoginT);
-                }
-                else
-                {
-                    query = query.Include(d => d.Employee);
-                }
-            }
-            if (includeStatus)
-            {
-                query = query.Include(d => d.RequestStatusNavigation);
-            }
-            if (includeCancelT)
-            {
-                query = query.Include(d => d.RequestCanceledT);
-            }
-            if (includeDelayedT)
-            {
-                query = query.Include(d => d.RequestDelayedT);
-            }
-            if (includeComplaiment)
-            {
-                query = query.Include(d => d.RequestComplaintT);
-            }
-            if (includeDiscounts)
-            {
-                query = query.Include(d => d.RequestDiscountT);
-            }
-            if (includeFollowUpT)
-            {
-                query = query.Include(d => d.FollowUpT);
-            }
-            if (includePayment)
-            {
-                query = query.Include(d => d.PaymentT);
-            }
-            if (includeSite)
-            {
-                query = query.Include(d => d.Site);
-            }
-            if (includeSubscription)
-            {
-                query = query.Include(d => d.Subscription);
-            }
-            if (includeReviewT)
-            {
-                query = query.Include(d => d.EmployeeReviewT);
-            }
-            if (includeRequestStage)
-            {
-                query = query.Include(d => d.RequestStagesT);
-            }
-            if (includeBill)
-            {
-                query = query.Include(d => d.BillNumberT);
-            }
-            if (includeFawryCharge)
-            {
-                query = query.Include(d => d.FawryChargeRequestT);
-            }
-            if (includeAddress)
-            {
-                query = query.Include(d => d.RequestedAddress);
-            }
-            if (includePhone)
-            {
-                query = query.Include(d => d.RequestedPhone);
-            }
-            if (includePromocode)
-            {
-                query = query.Include(d => d.Promocode);
-            }
-            if (includeDepartment)
-            {
-                query = query.Include(d => d.Department);
-            }
-            if (includeBranch)
-            {
-                query = query.Include(d => d.Branch);
-            }
-            if (includeSystemUser)
-            {
-                query = query.Include(d => d.SystemUser);
-            }
             return query.Select(d => new RequestDto
             {
                 BranchId = d.BranchId,
@@ -672,7 +563,6 @@ namespace SanyaaDelivery.Application.Services
                 CustomerPrice = d.CustomerPrice,
                 DeparmentName = d.Department.DepartmentName,
                 DepartmentId = d.DepartmentId.Value,
-                //EmployeeAccountState = d.EmployeeId == null ? false : d.Employee.LoginT.LoginAccountState,
                 EmployeeId = d.EmployeeId,
                 EmployeeName = d.EmployeeId == null ? "" : d.Employee.EmployeeName,
                 IsCanceled = d.IsCanceled,
@@ -686,7 +576,11 @@ namespace SanyaaDelivery.Application.Services
                 SubscriptionName = d.SubscriptionId.HasValue ? d.Subscription.SubscriptionName : "",
                 SystemUserId = d.SystemUserId,
                 SystemUserName = d.SystemUser.SystemUserUsername,
-                ServicesNames = string.Join(", ", d.RequestServicesT.Select(s => s.Service.ServiceName))
+                ServicesNames = string.Join(", ", d.RequestServicesT.Select(s => s.Service.ServiceName)),
+                IsCompleted = d.IsCompleted,
+                PhoneId = d.RequestedPhoneId,
+                AddressId = d.RequestedAddressId,
+                ClientSubscriptionId = d.ClientSubscriptionId
             }).ToListAsync();
         }
 
