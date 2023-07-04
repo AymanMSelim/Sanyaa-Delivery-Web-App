@@ -49,6 +49,7 @@ namespace SanyaaDelivery.Application.Services
             else
             {
                 clientSubscription.AutoRenew = true;
+                clientSubscription.IsActive = true;
             }
             await repo.AddAsync(clientSubscription);
             var affectedRows = await repo.SaveAsync();

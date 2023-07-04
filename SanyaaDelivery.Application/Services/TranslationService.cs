@@ -23,15 +23,15 @@ namespace SanyaaDelivery.Application.Services
         {
             if (TranslationList.IsEmpty())
             {
-                this.context = serviceProvider.GetRequiredService<SanyaaDatabaseContext>();
+                this.context = serviceProvider.GetService<SanyaaDatabaseContext>();
                 TranslationList = context.TranslatorT.ToList();
+                App.Global.Translation.Translator.TranslationList = TranslationList.Select(d => new App.Global.Translation.Translation
+                {
+                    Key = d.Key,
+                    LangId = d.LangId,
+                    Value = d.Value
+                }).ToList();
             }
-            App.Global.Translation.Translator.TranslationList = TranslationList.Select(d => new App.Global.Translation.Translation
-            {
-                Key = d.Key,
-                LangId = d.LangId,
-                Value = d.Value
-            }).ToList();
         }
 
         public string Translate(string key)

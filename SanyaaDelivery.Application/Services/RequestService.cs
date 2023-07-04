@@ -674,7 +674,8 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is canceled", App.Global.Enums.ResultStatusCode.Failed);
             }
-            if (clientSubscription.ExpireDate.HasValue && DateTime.Now.EgyptTimeNow() > clientSubscription.ExpireDate.Value)
+            bool isExpired = await subscriptionRequestService.IsExpiredAsync(clientSubscription.ClientSubscriptionId, requestTime);
+            if (isExpired)
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Client subscription is expired", App.Global.Enums.ResultStatusCode.Failed);
             }
@@ -695,7 +696,8 @@ namespace SanyaaDelivery.Application.Services
             {
                 return ResultFactory<RequestT>.CreateErrorResponseMessage("Subscription service not found", App.Global.Enums.ResultStatusCode.NotFound);
             }
-            if (clientSubscription.ExpireDate.HasValue)
+            bool isContractSubscription = await subscriptionRequestService.IsContract(clientSubscription.ClientSubscriptionId);
+            if (isContractSubscription)
             {
                 var isExceed = await subscriptionRequestService.IsExceedContractSubscriptionLimitAsync(clientSubscription.ClientSubscriptionId, requestTime);
                 if (isExceed)

@@ -8,6 +8,7 @@ using App.Global.ExtensionMethods;
 using SanyaaDelivery.Domain;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using App.Global.DateTimeHelper;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -55,16 +56,28 @@ namespace SanyaaDelivery.Application.Services
 
         public async Task<bool> IsExceedSubscriptionLimitAsync(int clientSubscriptionId, DateTime requestTime)
         {
+            DateTime startTime;
+            DateTime endTime;
             int requestCount;
-            var clientSubscription = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
-                .Include(d => d.Subscription)
+            var clientSubscriptionDetails = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
+                .Select(d => new { d.ClientId, d.Subscription.RequestNumberPerMonth, d.CreationTime })
                 .FirstOrDefaultAsync();
-            var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscription.ClientId && d.IsCanceled == false &&
-            d.RequestTimestamp >= App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS(requestTime) &&
-            d.RequestTimestamp <= App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS(requestTime) &&
+            if(requestTime.Day >= clientSubscriptionDetails.CreationTime.Value.Day)
+            {
+                startTime = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
+                endTime = new DateTime(requestTime.Year, requestTime.Month + 1, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+            }
+            else
+            {
+                startTime = new DateTime(requestTime.Year, requestTime.Month - 1, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
+                endTime = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+            }
+            var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscriptionDetails.ClientId && d.IsCanceled == false &&
+            d.RequestTimestamp >= startTime &&
+            d.RequestTimestamp <= endTime &&
             d.ClientSubscriptionId == clientSubscriptionId);
             requestCount = await subscriptionRequestCountQuery.CountAsync();
-            if(requestCount >= clientSubscription.Subscription.RequestNumberPerMonth)
+            if(requestCount >= clientSubscriptionDetails.RequestNumberPerMonth)
             {
                 return true;
             }
@@ -91,6 +104,32 @@ namespace SanyaaDelivery.Application.Services
                 return true;
             }
             return false;
+        }
+
+        public Task<bool> IsContract(int clientSubscriptionId)
+        {
+            return clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
+                .Select(d => d.Subscription.IsContract)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> IsExpiredAsync(int clientSubscriptionId, DateTime requestTime)
+        {
+            var clientSubscriptionDetails = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
+                .Select(d => new { d.ExpireDate, d.AutoRenew })
+                .FirstOrDefaultAsync();
+            if (clientSubscriptionDetails.AutoRenew)
+            {
+                return false;
+            }
+            if(clientSubscriptionDetails.ExpireDate.HasValue && clientSubscriptionDetails.ExpireDate.Value <= requestTime)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

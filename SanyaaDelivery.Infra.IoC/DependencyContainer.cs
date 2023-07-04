@@ -155,11 +155,12 @@ namespace SanyaaDelivery.Infra.IoC
             services.AddScoped<INotificatonService, NotificatonService>();
             services.AddScoped<IFawryChargeService, FawryChargeService>();
             services.AddScoped<IEmployeeSubscriptionService, EmployeeSubscriptionService>();
+            services.AddScoped<ITranslationService, TranslationService>();
 
             services.AddSingleton<ISMSService, SMSMisrService>();
             services.AddSingleton<Translator, Translator>();
             services.AddSingleton<IFawryAPIService, FawryAPIService>();
-            services.AddSingleton<ITranslationService, TranslationService>();
+            //services.AddSingleton<ITranslationService, TranslationService>();
             services.AddSingleton<DateTimeHelperService, DateTimeHelperService>();
             services.AddSingleton<ITaskService, TaskService>();
             services.AddScoped<Application.IGeneralSetting, Application.GeneralSetting>();
