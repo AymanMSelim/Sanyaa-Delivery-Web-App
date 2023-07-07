@@ -13,5 +13,7 @@ namespace SanyaaDelivery.Domain.DTOs
         public string Twitter { get; set; }
         public string WhatsApp { get; set; }
         public string Instegram { get; set; }
+        public string AndroidLink { get; set; }
+        public string IPhoneLink { get; set; }
     }
 }

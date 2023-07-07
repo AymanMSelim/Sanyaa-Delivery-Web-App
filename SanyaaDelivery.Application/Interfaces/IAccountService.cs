@@ -35,5 +35,6 @@ namespace SanyaaDelivery.Application.Interfaces
 
         Task<int> ConfirmRegisterOtp(AccountT account);
         Task<Result<bool>> ConfirmOTPAsync(ConfirmOtpDto confirmOtpDto);
+        Task<int> UpdateFirebaseTokenAsync(AddFirebaseTokenDto model);
     }
 }

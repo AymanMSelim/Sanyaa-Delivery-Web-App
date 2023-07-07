@@ -58,5 +58,7 @@ namespace SanyaaDelivery.Application.Interfaces
         Task<int> ReturnEmployeeAsync(string employeeId);
 
         Task<int> FireEmpolyeeAsync(FireEmployeeDto model);
+        Task<int> ApproveEmployeeAsync(string id);
+        Task<int> DeleteEmployeeAsync(string id);
     }
 }

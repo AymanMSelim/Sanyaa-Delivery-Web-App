@@ -211,40 +211,42 @@ namespace SanyaaDelivery.Application.Services
                     Price = d.CustomerPrice,
                     RequestId = d.RequestId,
                 }).ToListAsync();
-
-            if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
+            if (helperService.IsViaApp)
             {
-                foreach (var item in data)
+                if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
                 {
-                    var amounts = GetPercentageAfterInsurance(employeeInsuranceInfo.IsCompleteInsuranceAmount, item.EmployeePercentage, item.CompanyPercentage);
-                    item.EmployeePercentage = amounts.EmployeeAmountPercentage;
-                    item.CompanyPercentage = amounts.CompanyAmountPercentage;
-                    item.InsuranceAmount = amounts.InsuranceAmountPercentage;
+                    foreach (var item in data)
+                    {
+                        var amounts = GetPercentageAfterInsurance(employeeInsuranceInfo.IsCompleteInsuranceAmount, item.EmployeePercentage, item.CompanyPercentage);
+                        item.EmployeePercentage = amounts.EmployeeAmountPercentage;
+                        item.CompanyPercentage = amounts.CompanyAmountPercentage;
+                        item.InsuranceAmount = amounts.InsuranceAmountPercentage;
+                    }
                 }
-            }
-            if (employeeInsuranceInfo.IsCompleteMinAmount is false)
-            {
-                data.Add(new EmployeeNotPaidRequestDto
+                if (employeeInsuranceInfo.IsCompleteMinAmount is false)
                 {
-                    RequestId = 0,
-                    DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
-                    EmployeePercentage = 0,
-                    FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
-                    CompanyPercentage = employeeInsuranceInfo.RemainMinAmount,
-                    Note = "طلب دفع أقل قيمة تأمين متبقية",
-                });
-            }
-            if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
-            {
-                data.Add(new EmployeeNotPaidRequestDto
+                    data.Add(new EmployeeNotPaidRequestDto
+                    {
+                        RequestId = 0,
+                        DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                        EmployeePercentage = 0,
+                        FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                        CompanyPercentage = employeeInsuranceInfo.RemainMinAmount,
+                        Note = "طلب دفع أقل قيمة تأمين متبقية",
+                    });
+                }
+                if (employeeInsuranceInfo.IsCompleteInsuranceAmount is false)
                 {
-                    RequestId = 1,
-                    DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
-                    EmployeePercentage = 0,
-                    FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
-                    CompanyPercentage = employeeInsuranceInfo.RemainAmount,
-                    Note = "طلب دفع قيمة التأمين المتبقية",
-                });
+                    data.Add(new EmployeeNotPaidRequestDto
+                    {
+                        RequestId = 1,
+                        DueTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                        EmployeePercentage = 0,
+                        FinishTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm tt"),
+                        CompanyPercentage = employeeInsuranceInfo.RemainAmount,
+                        Note = "طلب دفع قيمة التأمين المتبقية",
+                    });
+                }
             }
             return data;
         }

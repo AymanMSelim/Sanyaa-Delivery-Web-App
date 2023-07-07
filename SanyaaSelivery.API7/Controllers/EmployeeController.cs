@@ -556,6 +556,34 @@ namespace SanyaaDelivery.API.Controllers
             }
         }
 
+        [HttpPost("ApproveEmployee")]
+        public async Task<ActionResult<Result<object>>> ApproveEmployee(StringIdDto model)
+        {
+            try
+            {
+                var affectedRows = await employeeService.ApproveEmployeeAsync(model.Id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("DeleteEmployee")]
+        public async Task<ActionResult<Result<object>>> DeleteEmployee(StringIdDto model)
+        {
+            try
+            {
+                var affectedRows = await employeeService.DeleteEmployeeAsync(model.Id);
+                return Ok(ResultFactory<object>.CreateAffectedRowsResult(affectedRows));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
         [HttpPost("ReturnEmployee")]
         public async Task<ActionResult<Result<object>>> ReturnEmployee(StringIdDto model)
         {

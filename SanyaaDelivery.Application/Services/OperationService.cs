@@ -403,10 +403,7 @@ namespace SanyaaDelivery.Application.Services
             var affectedRows = await broadcastRequestRepository.SaveAsync();
             string title = $"طلب جديد #{requestId}";
             string body = $"يوجد طلب جديد, من فضلك قم بالتفاعل معه سريعا";
-            foreach (var id in pendingBroadcastEmployeeIdList)
-            {
-                try { await notificatonService.SendFirebaseNotificationAsync(AccountType.Employee, id, title, body); } catch { }
-            }
+            try { await notificatonService.SendFirebaseMulticastNotificationAsync(AccountType.Employee, pendingBroadcastEmployeeIdList, title, body, null); } catch { }
             //broadcast.ForEach(d => d.Request = null);
             return ResultFactory<List<BroadcastRequestT>>.CreateAffectedRowsResult(affectedRows, data: broadcast);
         }

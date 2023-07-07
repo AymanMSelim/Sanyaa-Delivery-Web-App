@@ -275,7 +275,7 @@ namespace SanyaaDelivery.Application.Services
 
         public Task<List<RequestT>> GetList(DateTime? startDate = null, DateTime? endDate = null, int? requestId = null, int? siteId = null,
         int? subscriptionId = null, int? clientSubscriptionId = null, int? clientId = null, string employeeId = null, int? systemUserId = null, int? requestStatus = null, int? requestStatusGroupId = null,
-        bool? getCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
+        bool? isCanceled = null, int? branchId = null, bool? isPaid = null, int? promocode = null, int? departmentId = null,
         bool? isCompleted = null, bool? isReviewed = null, bool? isFollowUp = null,
         bool includeRequestStage = false, bool includeClient = false, bool includeEmployee = false, bool includeStatus = false,
         bool includeRequestService = false, bool includeService = false, bool includeDiscounts = false, bool includeCancelT = false,
@@ -313,9 +313,9 @@ namespace SanyaaDelivery.Application.Services
             {
                 query = query.Where(d => d.RequestStatusNavigation.RequestStatusGroupId == requestStatusGroupId);
             }
-            if (getCanceled.HasValue)
+            if (isCanceled.HasValue)
             {
-                query = query.Where(d => d.IsCanceled);
+                query = query.Where(d => d.IsCanceled == isCanceled);
             }
             if (!string.IsNullOrEmpty(employeeId))
             {
@@ -829,9 +829,9 @@ namespace SanyaaDelivery.Application.Services
                 await AddAsync(request);
                 cart.HaveRequest = true;
                 await cartService.UpdateAsync(cart);
+                await unitOfWork.SaveAsync();
                 if (request.UsedPoints > 0)
                 {
-                    await unitOfWork.SaveAsync();
                     await clientPointService.WithdrawAsync(new ClientPointT
                     {
                         ClientId = request.ClientId,
@@ -857,7 +857,6 @@ namespace SanyaaDelivery.Application.Services
                 }
                 if ((isViaApp && (string.IsNullOrEmpty(model.EmployeeId))) || string.IsNullOrEmpty(model.EmployeeId))
                 {
-                    await unitOfWork.SaveAsync();
                     var broadCastResult = await operationService.BroadcastAsync(request.RequestId);
                     if (broadCastResult.IsFail)
                     {
@@ -1268,9 +1267,10 @@ namespace SanyaaDelivery.Application.Services
             try
             {
                 isRootTransaction = unitOfWork.StartTransaction();
-                var requestList = await GetList(clientSubscriptionId: clientSubscriptionId, getCanceled: false, isCompleted: false,
-                    startDate: App.Global.DateTimeHelper.DateTimeHelperService.GetStartDateOfMonthS(dateTime),
-                    endDate: App.Global.DateTimeHelper.DateTimeHelperService.GetEndDateOfMonthS(dateTime),
+                var subscriptionDates = await subscriptionRequestService.GetSubscriptionDates(clientSubscriptionId, dateTime);
+                var requestList = await GetList(clientSubscriptionId: clientSubscriptionId, isCanceled: false, isCompleted: false,
+                    startDate: subscriptionDates.StartDate,
+                    endDate: subscriptionDates.EndDate,
                     includeRequestService: true, includeRequestStage: true, includeDiscounts: true);
                 requestList = requestList.OrderBy(d => d.RequestTimestamp.Value).ToList();
                 if (requestList.IsEmpty())

@@ -25,6 +25,8 @@ namespace SanyaaDelivery.Application.Services
         public bool IsViaApp { get; set; }
         public bool IsViaClientApp { get; set; }
         public bool IsViaEmpApp { get; set; }
+        public TokenClaimsModel TokenClaims { get; set; }
+
         public HelperService(IRepository<ClientSubscriptionT> clientSubscriptionRepository, IRepository<DepartmentT> departmentRepository,
              IRepository<CityT> cityRepository, IRepository<RegionT> regionRepository)
         {
@@ -219,6 +221,11 @@ namespace SanyaaDelivery.Application.Services
             this.IsViaApp = isViaApp;
             this.IsViaEmpApp = isViaEmpApp;
             this.IsViaClientApp = isViaClientApp;
-        }   
+        }
+
+        public void SetTokenClaims(TokenClaimsModel model)
+        {
+            this.TokenClaims = model;
+        }
     }
 }

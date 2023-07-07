@@ -50,6 +50,13 @@ namespace SanyaaDelivery.API
             helperService.SetHost(GetHost());
             helperService.SetSystemUser(GetSystemUserId());
             helperService.SetViaApp(IsViaApp(), IsViaClientApp(), IsViaEmpApp());
+            helperService.SetTokenClaims(new Domain.OtherModels.TokenClaimsModel
+            {
+                AccountId = GetAccountId(),
+                SystemUserId = GetSystemUserId(),
+                ReferenceId = GetReferenceId(),
+                AccountTypeId = GetAccountType()
+            });
         }
 
         public int? GetClientId(int? clientId = null)
@@ -210,6 +217,20 @@ namespace SanyaaDelivery.API
             return int.Parse(claimValue);
         }
 
+
+        public string? GetReferenceId()
+        {
+            var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+            string? id = App.Global.JWT.TokenHelper.GetReferenceIdString(identity);
+            return id;
+        }
+
+        public int? GetAccountType()
+        {
+            var identity = context.HttpContext.User.Identity as ClaimsIdentity;
+            int? accountType = App.Global.JWT.TokenHelper.GetAccountType(identity);
+            return accountType;
+        }
         public bool IsViaApp()
         {
             var identity = context.HttpContext.User.Identity as ClaimsIdentity;

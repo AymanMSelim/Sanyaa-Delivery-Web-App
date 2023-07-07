@@ -24,6 +24,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IRepository<FiredStaffT> firedRepository;
         private readonly IRepository<DepartmentT> departmentRepository;
         private readonly IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository;
+        private readonly IRepository<AccountT> accountRepository;
         private readonly IRepository<EmploymentApplicationsT> employmentApplicationRepository;
         private readonly INotificatonService notificatonService;
         private readonly IRepository<FollowUpT> followUpRepository;
@@ -31,7 +32,7 @@ namespace SanyaaDelivery.Application.Services
         private readonly IHelperService helperService;
 
         public EmployeeService(IRepository<EmployeeT> employeeRepository, IRepository<DepartmentEmployeeT> employeeDepartmentRepository, IRepository<FiredStaffT> firedRepository,
-            IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository,
+            IRepository<DepartmentT> departmentRepository, IRepository<EmployeeWorkplacesT> employeeWorkplaceRepository, IRepository<AccountT> accountRepository,
             IRepository<EmploymentApplicationsT> employmentApplicationRepository, INotificatonService notificatonService,
            IRepository<FollowUpT> followUpRepository, IRepository<CityT> cityRepository, IHelperService helperService)
         {
@@ -40,6 +41,7 @@ namespace SanyaaDelivery.Application.Services
             this.firedRepository = firedRepository;
             this.departmentRepository = departmentRepository;
             this.employeeWorkplaceRepository = employeeWorkplaceRepository;
+            this.accountRepository = accountRepository;
             this.employmentApplicationRepository = employmentApplicationRepository;
             this.notificatonService = notificatonService;
             this.followUpRepository = followUpRepository;
@@ -441,6 +443,23 @@ namespace SanyaaDelivery.Application.Services
             string title = "إعادة تعيين";
             string body = $"لقد تم اعادة تعيينك مرة أخرى";
             try { await notificatonService.SendFirebaseNotificationAsync(Domain.Enum.AccountType.Employee, employeeId, title, body); } catch { }
+            return await employeeRepository.SaveAsync();
+        }
+
+        public async Task<int> ApproveEmployeeAsync(string id)
+        {
+            var employee = await GetAsync(id);
+            employee.IsApproved = true;
+            employee.IsNewEmployee = false;
+            employee.IsActive = true;
+            return await UpdateAsync(employee);
+        }
+
+        public async Task<int> DeleteEmployeeAsync(string id)
+        {
+            var account = await accountRepository.Where(d => d.AccountReferenceId == id && d.AccountTypeId == GeneralSetting.EmployeeAccountTypeId).FirstOrDefaultAsync();
+            await accountRepository.DeleteAsync(account.AccountId);
+            await employeeRepository.DeleteAsync(id);
             return await employeeRepository.SaveAsync();
         }
     }

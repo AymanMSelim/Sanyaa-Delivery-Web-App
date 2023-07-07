@@ -1,10 +1,12 @@
 ﻿using App.Global.DTOs;
 using App.Global.ExtensionMethods;
+using FirebaseAdmin.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SanyaaDelivery.Application;
 using SanyaaDelivery.Application.Interfaces;
 using SanyaaDelivery.Domain.DTOs;
+using SanyaaDelivery.Domain.Enum;
 using SanyaaDelivery.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -27,30 +29,12 @@ namespace SanyaaDelivery.API.Controllers
         }
 
         [HttpPost("AddFirebaseToken")]
-        public async Task<ActionResult<Result<object>>> AddFirebaseToken(AddFirebaseTokenDto addFirebaseTokenDto)
+        public async Task<ActionResult<Result<object>>> AddFirebaseToken(AddFirebaseTokenDto model)
         {
-            AccountT account = null;
             try
             {
-                if (commonService.IsViaApp())
-                {
-                    var clientId = commonService.GetClientId();
-                    account = await accountService.Get((int)SanyaaDelivery.Domain.Enum.AccountType.Client, clientId.ToString());
-                }
-                else
-                {
-                    if (addFirebaseTokenDto.AccountId.HasValue && addFirebaseTokenDto.AccountId != 0)
-                    {
-                        account = await accountService.Get(addFirebaseTokenDto.AccountId.Value);
-                    }
-                }
-                if (account.IsNotNull())
-                {
-                    account.FcmToken = addFirebaseTokenDto.Token;
-                    var affectedRows = await accountService.Update(account);
-                    return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
-                }
-                return ResultFactory<object>.CreateErrorResponseMessage("Error update token");
+                var affectedRows = await accountService.UpdateFirebaseTokenAsync(model);
+                return ResultFactory<object>.CreateAffectedRowsResult(affectedRows);
             }
             catch (Exception ex)
             {
@@ -93,6 +77,20 @@ namespace SanyaaDelivery.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ResultFactory<object>.CreateExceptionResponse(ex));
+            }
+        }
+
+        [HttpPost("SendMulticastNotification")]
+        public async Task<ActionResult<Result<BatchResponse>>> SendMulticastNotification(SendMulticastNotificationDto model)
+        {
+            try
+            {
+                var result = await notificatonService.SendFirebaseMulticastNotificationAsync((AccountType)model.AccountType, model.IdList, model.Title, model.Body, model.Image, model.Link);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ResultFactory<BatchResponse>.CreateExceptionResponse(ex));
             }
         }
 

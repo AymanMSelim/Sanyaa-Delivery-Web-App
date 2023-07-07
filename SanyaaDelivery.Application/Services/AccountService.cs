@@ -17,10 +17,12 @@ namespace SanyaaDelivery.Application.Services
     public class AccountService : IAccountService
     {
         private readonly IRepository<AccountT> accountRepository;
+        private readonly IHelperService helperService;
 
-        public AccountService(IRepository<AccountT> accountRepository)
+        public AccountService(IRepository<AccountT> accountRepository, IHelperService helperService)
         {
             this.accountRepository = accountRepository;
+            this.helperService = helperService;
         }
 
         public async Task<int> Add(AccountT account)
@@ -172,6 +174,24 @@ namespace SanyaaDelivery.Application.Services
             accountRepository.Update(account.AccountId, account);
             await accountRepository.SaveAsync();
             return ResultFactory<bool>.CreateSuccessResponse(true); 
+        }
+
+        public async Task<int> UpdateFirebaseTokenAsync(AddFirebaseTokenDto model)
+        {
+            if (helperService.IsViaApp)
+            {
+                model.AccountId = helperService.TokenClaims.AccountId;
+            }
+            if(model.AccountId.IsNull())
+            {
+                return ((int)App.Global.Enums.ResultStatusCode.Failed);
+            }
+            var account = await accountRepository.GetAsync(model.AccountId);
+            if(account.FcmToken != model.Token)
+            {
+                account.FcmToken = model.Token;
+            }
+            return await Update(account);
         }
     }
 }

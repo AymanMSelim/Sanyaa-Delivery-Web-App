@@ -9,6 +9,7 @@ using SanyaaDelivery.Domain;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using App.Global.DateTimeHelper;
+using SanyaaDelivery.Domain.OtherModels;
 
 namespace SanyaaDelivery.Application.Services
 {
@@ -54,27 +55,44 @@ namespace SanyaaDelivery.Application.Services
             return subscriptionSequence;
         }
 
-        public async Task<bool> IsExceedSubscriptionLimitAsync(int clientSubscriptionId, DateTime requestTime)
+        public async Task<SubscriptionDateModel> GetSubscriptionDates(int clientSubscriptionId,  DateTime requestTime)
         {
-            DateTime startTime;
-            DateTime endTime;
-            int requestCount;
+            var model = new SubscriptionDateModel();
             var clientSubscriptionDetails = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
-                .Select(d => new { d.ClientId, d.Subscription.RequestNumberPerMonth, d.CreationTime })
+                .Select(d => new { d.CreationTime, d.ExpireDate, d.AutoRenew, d.Subscription.IsContract })
                 .FirstOrDefaultAsync();
-            if(requestTime.Day >= clientSubscriptionDetails.CreationTime.Value.Day)
+            if (clientSubscriptionDetails.IsContract)
             {
-                startTime = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
-                endTime = new DateTime(requestTime.Year, requestTime.Month + 1, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+                model.EndDate = clientSubscriptionDetails.ExpireDate.Value;
+                model.StartDate = clientSubscriptionDetails.CreationTime.Value;
             }
             else
             {
-                startTime = new DateTime(requestTime.Year, requestTime.Month - 1, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
-                endTime = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+                if (requestTime.Day >= clientSubscriptionDetails.CreationTime.Value.Day)
+                {
+                    model.StartDate = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
+                    requestTime = requestTime.AddMonths(1);
+                    model.EndDate = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+                }
+                else
+                {
+                    model.EndDate = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 23, 59, 59);
+                    requestTime = requestTime.AddMonths(-1);
+                    model.StartDate = new DateTime(requestTime.Year, requestTime.Month, clientSubscriptionDetails.CreationTime.Value.Day, 0, 0, 1);
+                }
             }
+            return model;
+        }
+        public async Task<bool> IsExceedSubscriptionLimitAsync(int clientSubscriptionId, DateTime requestTime)
+        {
+            int requestCount;
+            var clientSubscriptionDetails = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
+                .Select(d => new { d.ClientId, d.Subscription.RequestNumberPerMonth })
+                .FirstOrDefaultAsync();
+            var subscriptionDates = await GetSubscriptionDates(clientSubscriptionId, requestTime);
             var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscriptionDetails.ClientId && d.IsCanceled == false &&
-            d.RequestTimestamp >= startTime &&
-            d.RequestTimestamp <= endTime &&
+            d.RequestTimestamp >= subscriptionDates.StartDate &&
+            d.RequestTimestamp <= subscriptionDates.EndDate &&
             d.ClientSubscriptionId == clientSubscriptionId);
             requestCount = await subscriptionRequestCountQuery.CountAsync();
             if(requestCount >= clientSubscriptionDetails.RequestNumberPerMonth)
@@ -87,19 +105,17 @@ namespace SanyaaDelivery.Application.Services
         public async Task<bool> IsExceedContractSubscriptionLimitAsync(int clientSubscriptionId, DateTime requestTime)
         {
             int requestCount;
-            var clientSubscription = await clientSubscriptionRepository
-                .Where(d => d.ClientSubscriptionId == clientSubscriptionId && requestTime >= d.CreationTime  && requestTime <= d.ExpireDate)
-                .Include(d => d.Subscription)
-                .OrderByDescending(d => d.ExpireDate)
-                .FirstOrDefaultAsync();
-            if (clientSubscription.IsNull())
+            var clientSubscriptionDetails = await clientSubscriptionRepository.Where(d => d.ClientSubscriptionId == clientSubscriptionId)
+                 .Select(d => new { d.ClientId, d.Subscription.RequestNumberPerMonth, d.Subscription.NumberOfMonth })
+                 .FirstOrDefaultAsync();
+            if (clientSubscriptionDetails.IsNull())
             {
                 return true;
             }
-            var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscription.ClientId
+            var subscriptionRequestCountQuery = requestRepository.DbSet.Where(d => d.ClientId == clientSubscriptionDetails.ClientId
             && d.IsCanceled == false && d.ClientSubscriptionId == clientSubscriptionId);
             requestCount = await subscriptionRequestCountQuery.CountAsync();
-            if (requestCount >= (clientSubscription.Subscription.RequestNumberPerMonth * clientSubscription.Subscription.NumberOfMonth))
+            if (requestCount >= (clientSubscriptionDetails.RequestNumberPerMonth * clientSubscriptionDetails.NumberOfMonth))
             {
                 return true;
             }
